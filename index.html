@@ -193,6 +193,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 </head>
 <body>
 
+<!-- Coming Soon Banner -->
+<div id="coming-soon-banner" style="background:linear-gradient(90deg,var(--accent),var(--orange));color:#fff;text-align:center;padding:10px 24px;font-size:14px;font-weight:600;letter-spacing:0.3px;position:relative;z-index:101;">
+  🚀 Coming Soon — Join the waitlist below to get notified at launch!
+</div>
+
 <!-- Nav -->
 <nav class="nav" id="nav">
   <div class="nav-inner">
@@ -427,7 +432,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <li><span class="check">✓</span> Works offline forever</li>
           <li><span class="check">✓</span> Lifetime access</li>
         </ul>
-        <a href="https://ambitbudget.lemonsqueezy.com/checkout/buy/83990c64-8c99-430a-9885-02348f3afea0" class="btn-hero primary lemonsqueezy-button" style="width:100%;justify-content:center;">Buy Starter →</a>
+        <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/83990c64-8c99-430a-9885-02348f3afea0 -->
+        <a href="#waitlist" class="btn-hero primary" style="width:100%;justify-content:center;opacity:0.7;pointer-events:none;">Coming Soon</a>
       </div>
 
       <!-- Plus (Popular) -->
@@ -445,7 +451,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <li><span class="check">✓</span> Lifetime access</li>
           <li><span class="check">✓</span> Checking + savings + credit card</li>
         </ul>
-        <a href="https://ambitbudget.lemonsqueezy.com/checkout/buy/0cce8c89-2888-4c22-b7c6-030cb190b477" class="btn-hero primary lemonsqueezy-button" style="width:100%;justify-content:center;">Buy Plus →</a>
+        <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/0cce8c89-2888-4c22-b7c6-030cb190b477 -->
+        <a href="#waitlist" class="btn-hero primary" style="width:100%;justify-content:center;opacity:0.7;pointer-events:none;">Coming Soon</a>
       </div>
 
       <!-- Pro -->
@@ -462,7 +469,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <li><span class="check">✓</span> Lifetime access</li>
           <li><span class="check">✓</span> Unlimited accounts for families</li>
         </ul>
-        <a href="https://ambitbudget.lemonsqueezy.com/checkout/buy/abd7c8e0-d5ea-437f-8f7b-2e357d2e99ce" class="btn-hero primary lemonsqueezy-button" style="width:100%;justify-content:center;">Buy Pro →</a>
+        <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/abd7c8e0-d5ea-437f-8f7b-2e357d2e99ce -->
+        <a href="#waitlist" class="btn-hero primary" style="width:100%;justify-content:center;opacity:0.7;pointer-events:none;">Coming Soon</a>
       </div>
 
     </div>
@@ -547,12 +555,18 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   </div>
 </section>
 
-<!-- Final CTA -->
-<section class="final-cta">
+<!-- Waitlist CTA -->
+<section class="final-cta" id="waitlist">
   <div class="container">
-    <h2>Ready to take control of your finances?</h2>
-    <p>Start with the free demo. No sign-up. No credit card. Just clarity.</p>
-    <a href="./app/index.html?mode=demo" class="btn-hero primary">Try Free Demo →</a>
+    <h2>Be the first to know when we launch.</h2>
+    <p>Drop your email and we'll notify you when Ambit Budget Pro is available.</p>
+    <form id="waitlist-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST" style="display:flex;gap:10px;max-width:460px;margin:24px auto 0;flex-wrap:wrap;justify-content:center;">
+      <input type="email" name="email" required placeholder="you@example.com" style="flex:1;min-width:220px;padding:14px 18px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:15px;font-family:inherit;outline:none;">
+      <button type="submit" class="btn-hero primary" style="white-space:nowrap;">Notify Me →</button>
+    </form>
+    <div id="waitlist-thanks" style="display:none;margin-top:20px;color:var(--green);font-weight:600;">✅ You're on the list! We'll email you at launch.</div>
+    <p style="margin-top:16px;font-size:13px;color:var(--text2);opacity:0.6;">No spam. Just one email when we go live.</p>
+    <a href="./app/index.html?mode=demo" class="btn-hero secondary" style="margin-top:12px;">Try Free Demo →</a>
   </div>
 </section>
 
@@ -616,6 +630,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 // Nav scroll effect
 window.addEventListener('scroll', () => {
   document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// Waitlist form — submit via fetch, show thank you
+var wf = document.getElementById('waitlist-form');
+if(wf) wf.addEventListener('submit', function(e) {
+  e.preventDefault();
+  var data = new FormData(wf);
+  fetch(wf.action, { method:'POST', body:data, headers:{'Accept':'application/json'} })
+    .then(function(r) {
+      if(r.ok) {
+        wf.style.display='none';
+        document.getElementById('waitlist-thanks').style.display='block';
+      }
+    });
 });
 </script>
 </body>
