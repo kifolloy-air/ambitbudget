@@ -556,6 +556,32 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   </div>
 </section>
 
+<!-- Beta Download -->
+<div id="download" style="text-align:center;padding:40px 0 20px;">
+  <div style="max-width:360px;margin:0 auto;padding:24px;border:1px solid rgba(255,255,255,0.08);border-radius:12px;background:rgba(16,24,80,0.5);">
+    <div style="font-size:20px;margin-bottom:4px;">🔒</div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text2);">Already have access?</div>
+    <div style="font-size:12px;color:var(--text2);opacity:0.6;margin-bottom:16px;">Enter your download password</div>
+    <div style="display:flex;gap:8px;">
+      <input id="dl-pass" type="password" placeholder="Password" style="flex:1;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:var(--text);font-size:14px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')document.getElementById('dl-btn').click()">
+      <button id="dl-btn" onclick="
+        var p=document.getElementById('dl-pass').value;
+        var e=document.getElementById('dl-err');
+        if(p==='kifolo13'){
+          e.style.display='none';
+          var a=document.createElement('a');
+          a.href='./dl/ambit-budget-pro.html';
+          a.download='AmbitBudgetPro.html';
+          a.click();
+        } else {
+          e.style.display='block';
+        }
+      " style="padding:10px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap;">Download</button>
+    </div>
+    <div id="dl-err" style="display:none;color:var(--red);font-size:12px;margin-top:8px;">Invalid password</div>
+  </div>
+</div>
+
 <!-- Footer -->
 <footer class="footer">
   <div class="container">
