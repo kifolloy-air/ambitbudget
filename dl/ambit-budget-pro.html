@@ -680,6 +680,7 @@ function App() {
   const TIERS = useMemo(()=>({ Starter:{limit:1,label:'Starter'}, Plus:{limit:3,label:'Plus'}, Pro:{limit:Infinity,label:'Pro'} }),[]);
   const [license, setLicense] = useState(()=>{ try { return JSON.parse(localStorage.getItem('ambit_license'))||null; } catch{ return null; } });
   const [showLicenseGate, setShowLicenseGate] = useState(false);
+  const [licenseDismissed, setLicenseDismissed] = useState(()=> localStorage.getItem('ambit_license_dismissed')==='1');
   const isLicensed = license && license.valid;
   const tier = isLicensed ? (TIERS[license.tier]||TIERS.Starter) : null;
   const accountLimit = tier ? tier.limit : 0;
@@ -818,7 +819,6 @@ function App() {
   if(showSplash) return h(SplashScreen, {onDone:()=>setShowSplash(false)});
 
   // License gate — full-screen on first launch (no license, no URL mode, not previously dismissed)
-  const [licenseDismissed, setLicenseDismissed] = useState(()=> localStorage.getItem('ambit_license_dismissed')==='1');
   if(!isLicensed && !urlMode && !licenseDismissed) {
     return h(LicenseGate, {
       onActivate: activateLicense,
