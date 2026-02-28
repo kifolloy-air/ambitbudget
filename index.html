@@ -103,15 +103,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .preview-body .placeholder { color: var(--text2); font-size: 14px; }
 
 /* ── Pricing ── */
-.pricing-card { background: var(--bg2); border: 2px solid rgba(232,160,32,0.3); border-radius: 16px; padding: 40px; max-width: 480px; margin: 0 auto; text-align: center; position: relative; overflow: hidden; }
-.pricing-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--blue)); }
-.pricing-amount { font-size: 56px; font-weight: 800; color: var(--accent2); letter-spacing: -2px; }
-.pricing-amount span { font-size: 20px; font-weight: 500; color: var(--text2); vertical-align: super; }
-.pricing-period { color: var(--text2); font-size: 16px; margin-bottom: 24px; }
-.pricing-features { list-style: none; text-align: left; margin-bottom: 32px; }
-.pricing-features li { padding: 8px 0; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.pricing-features li .check { color: var(--green); font-size: 16px; }
-.pricing-compare { margin-top: 24px; padding: 16px; background: rgba(64,192,128,0.08); border-radius: 10px; border: 1px solid rgba(64,192,128,0.15); }
+.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 960px; margin: 0 auto; align-items: stretch; }
+.pricing-card { background: var(--bg2); border: 2px solid rgba(232,160,32,0.15); border-radius: 16px; padding: 32px 28px; text-align: center; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+.pricing-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: rgba(232,160,32,0.3); }
+.pricing-card.popular { border-color: var(--accent2); transform: scale(1.04); }
+.pricing-card.popular::before { background: linear-gradient(90deg, var(--accent), var(--blue)); height: 3px; }
+.pricing-badge { position: absolute; top: 12px; right: -28px; background: var(--accent2); color: var(--bg); font-size: 10px; font-weight: 700; padding: 4px 32px; transform: rotate(45deg); text-transform: uppercase; letter-spacing: 0.5px; }
+.pricing-tier { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent2); margin-bottom: 8px; }
+.pricing-amount { font-size: 48px; font-weight: 800; color: var(--accent2); letter-spacing: -2px; }
+.pricing-amount span { font-size: 18px; font-weight: 500; color: var(--text2); vertical-align: super; }
+.pricing-period { color: var(--text2); font-size: 14px; margin-bottom: 20px; }
+.pricing-highlight { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+.pricing-features { list-style: none; text-align: left; margin-bottom: 24px; flex-grow: 1; }
+.pricing-features li { padding: 7px 0; font-size: 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.pricing-features li .check { color: var(--green); font-size: 14px; flex-shrink: 0; }
+.pricing-compare { margin-top: 20px; padding: 14px; background: rgba(64,192,128,0.08); border-radius: 10px; border: 1px solid rgba(64,192,128,0.15); }
 .pricing-compare p { font-size: 13px; color: var(--green); }
 .pricing-compare strong { font-weight: 700; }
 
@@ -157,6 +163,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   .privacy-grid { grid-template-columns: 1fr; }
   .nav-links { display: none; }
   .section-header h2 { font-size: 28px; }
+  .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+  .pricing-card.popular { transform: none; }
   .pricing-amount { font-size: 44px; }
   .footer-inner { flex-direction: column; text-align: center; }
 }
@@ -168,6 +176,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   .trust-inner { flex-direction: column; align-items: center; gap: 16px; }
 }
 </style>
+<script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
 </head>
 <body>
 
@@ -192,7 +201,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <a href="#how-it-works">How It Works</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
-      <a href="./app/?mode=demo" class="nav-cta">Try Demo</a>
+      <a href="./app/index.html?mode=demo" class="nav-cta">Try Demo</a>
     </div>
   </div>
 </nav>
@@ -220,7 +229,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     <h1>Personal finance,<br><span class="accent">your way.</span></h1>
     <p>Track spending, manage bills, set budgets, and forecast your balance — all from one beautiful dashboard. No subscriptions. No cloud. Just clarity.</p>
     <div class="hero-ctas">
-      <a href="./app/?mode=demo" class="btn-hero primary">Try Free Demo →</a>
+      <a href="./app/index.html?mode=demo" class="btn-hero primary">Try Free Demo →</a>
       <a href="#pricing" class="btn-hero secondary">View Pricing</a>
     </div>
   </div>
@@ -335,7 +344,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           </g>
         </svg>
         <p class="placeholder">Live demo coming soon — check back for the interactive preview.</p>
-        <a href="./app/?mode=demo" class="btn-hero primary" style="font-size:14px;padding:10px 24px;">Launch Demo →</a>
+        <a href="./app/index.html?mode=demo" class="btn-hero primary" style="font-size:14px;padding:10px 24px;">Launch Demo →</a>
       </div>
     </div>
   </div>
@@ -387,25 +396,65 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <div class="container">
     <div class="section-header">
       <div class="section-label">Pricing</div>
-      <h2>Simple. Honest. One price.</h2>
-      <p>No subscriptions. No hidden fees. No "premium" tiers.</p>
+      <h2>Simple. Honest. No subscriptions.</h2>
+      <p>One-time purchase. Yours forever. Pick the plan that fits your needs.</p>
     </div>
-    <div class="pricing-card">
-      <div class="pricing-amount"><span>$</span>29</div>
-      <div class="pricing-period">One-time purchase. Yours forever.</div>
-      <ul class="pricing-features">
-        <li><span class="check">✓</span> All features included</li>
-        <li><span class="check">✓</span> Unlimited accounts & transactions</li>
-        <li><span class="check">✓</span> Auto-categorization engine</li>
-        <li><span class="check">✓</span> Budget tracking & forecasting</li>
-        <li><span class="check">✓</span> Works on desktop, tablet, and phone</li>
-        <li><span class="check">✓</span> Free updates</li>
-        <li><span class="check">✓</span> No internet required after download</li>
-      </ul>
-      <a href="./app/?mode=demo" class="btn-hero primary" style="width:100%;justify-content:center;">Get Ambit Budget Pro →</a>
-      <div class="pricing-compare">
-        <p>Most budget apps charge <strong>$5–15/month</strong>. That's $60–180/year.<br>Ambit pays for itself in <strong>under 6 months</strong>.</p>
+    <div class="pricing-grid">
+
+      <!-- Starter -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Starter</div>
+        <div class="pricing-amount"><span>$</span>9<span style="font-size:28px;vertical-align:baseline;color:var(--accent2)">.99</span></div>
+        <div class="pricing-period">One-time purchase</div>
+        <div class="pricing-highlight">1 Account</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> All features included</li>
+          <li><span class="check">✓</span> Auto-categorization</li>
+          <li><span class="check">✓</span> Budget tracking & forecasting</li>
+          <li><span class="check">✓</span> Works offline forever</li>
+          <li><span class="check">✓</span> Free updates</li>
+        </ul>
+        <a href="#" class="btn-hero primary lemonsqueezy-button" style="width:100%;justify-content:center;">Buy Starter →</a>
       </div>
+
+      <!-- Plus (Popular) -->
+      <div class="pricing-card popular">
+        <div class="pricing-badge">Popular</div>
+        <div class="pricing-tier">Plus</div>
+        <div class="pricing-amount"><span>$</span>19<span style="font-size:28px;vertical-align:baseline;color:var(--accent2)">.99</span></div>
+        <div class="pricing-period">One-time purchase</div>
+        <div class="pricing-highlight">3 Accounts</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> All features included</li>
+          <li><span class="check">✓</span> Auto-categorization</li>
+          <li><span class="check">✓</span> Budget tracking & forecasting</li>
+          <li><span class="check">✓</span> Works offline forever</li>
+          <li><span class="check">✓</span> Free updates</li>
+          <li><span class="check">✓</span> Checking + savings + credit card</li>
+        </ul>
+        <a href="#" class="btn-hero primary lemonsqueezy-button" style="width:100%;justify-content:center;">Buy Plus →</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Pro</div>
+        <div class="pricing-amount"><span>$</span>29<span style="font-size:28px;vertical-align:baseline;color:var(--accent2)">.99</span></div>
+        <div class="pricing-period">One-time purchase</div>
+        <div class="pricing-highlight">Unlimited Accounts</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> All features included</li>
+          <li><span class="check">✓</span> Auto-categorization</li>
+          <li><span class="check">✓</span> Budget tracking & forecasting</li>
+          <li><span class="check">✓</span> Works offline forever</li>
+          <li><span class="check">✓</span> Free updates</li>
+          <li><span class="check">✓</span> Unlimited accounts for families</li>
+        </ul>
+        <a href="#" class="btn-hero primary lemonsqueezy-button" style="width:100%;justify-content:center;">Buy Pro →</a>
+      </div>
+
+    </div>
+    <div class="pricing-compare" style="max-width:600px;margin:24px auto 0;text-align:center;">
+      <p>Most budget apps charge <strong>$5–15/month</strong>. That's $60–180/year.<br>Ambit pays for itself in <strong>weeks, not months</strong>.</p>
     </div>
   </div>
 </section>
@@ -455,6 +504,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
+          What's the difference between plans?
+          <span class="arrow">▼</span>
+        </div>
+        <div class="faq-a">All plans include every feature. The only difference is the number of bank accounts you can track: Starter supports 1 account, Plus supports 3, and Pro gives you unlimited accounts. You can upgrade anytime by purchasing a higher tier.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
+          How does the license key work?
+          <span class="arrow">▼</span>
+        </div>
+        <div class="faq-a">After purchase, you receive a license key via email along with a download link. Open the downloaded file in your browser and enter your key once to activate. After that, the app works entirely offline — no internet needed.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
           What happens if I clear my browser data?
           <span class="arrow">▼</span>
         </div>
@@ -476,7 +539,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <div class="container">
     <h2>Ready to take control of your finances?</h2>
     <p>Start with the free demo. No sign-up. No credit card. Just clarity.</p>
-    <a href="./app/?mode=demo" class="btn-hero primary">Try Free Demo →</a>
+    <a href="./app/index.html?mode=demo" class="btn-hero primary">Try Free Demo →</a>
   </div>
 </section>
 
