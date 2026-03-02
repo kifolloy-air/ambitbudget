@@ -407,16 +407,27 @@ const DEMO_DATA = (()=>{
     addTxn(dtt(1), 'TRANSFER FROM CHECKING', 'Savings Transfer', 'Savings Transfer', 500, 'acct-2');
   }
 
+  // Add some pending (uncleared) transactions for demo
+  const pendingDate1 = dt(m, Math.min(today.getDate()+2, 28));
+  const pendingDate2 = dt(m, Math.min(today.getDate()+1, 28));
+  const pendCat1 = categories.find(c=>c.name==='Mortgage');
+  const pendCat2 = categories.find(c=>c.name==='Car Insurance');
+  txns.push({ id:id(), date:pendingDate1, description:'CHECK #1847 - RENT DEPOSIT', cleanName:'Rent Deposit Check', category:'Home Maintenance', group:'Housing', amount:-425.00, catType:'discretionary', accountId:'acct-1', pending:true, checkNumber:'1847' });
+  txns.push({ id:id(), date:pendingDate2, description:'ONLINE PMT - GEICO INSURANCE', cleanName:'Geico Insurance', category:'Car Insurance', group:'Transport', amount:-134.00, catType:'fixed', accountId:'acct-1', pending:true });
+
   return { accounts, categories, dictionary, transactions: txns };
 })();
 
 // ── Default groups & their colors ───────────────────────
-const GROUP_LIST = ['Housing','Food','Transport','Utilities','Personal','Health','Entertainment','Savings','Income','Other'];
-const GROUP_COLORS = {
-  Housing:'#f0c050', Food:'#40c080', Transport:'#e07828', Utilities:'#5090e8',
-  Personal:'#d060a0', Health:'#e05050', Entertainment:'#e8a020', Savings:'#40c080',
-  Income:'#50c8a0', Other:'#9da5d0'
-};
+const DEFAULT_GROUPS = [
+  {name:'Housing',color:'#f0c050'},{name:'Food',color:'#40c080'},{name:'Transport',color:'#e07828'},
+  {name:'Utilities',color:'#5090e8'},{name:'Personal',color:'#d060a0'},{name:'Health',color:'#e05050'},
+  {name:'Entertainment',color:'#e8a020'},{name:'Savings',color:'#40c080'},{name:'Income',color:'#50c8a0'},
+  {name:'Other',color:'#9da5d0'}
+];
+const GROUP_LIST = DEFAULT_GROUPS.map(g=>g.name);
+const GROUP_COLORS = Object.fromEntries(DEFAULT_GROUPS.map(g=>[g.name,g.color]));
+const COLOR_PRESETS = ['#f0c050','#40c080','#e07828','#5090e8','#d060a0','#e05050','#e8a020','#50c8a0','#9da5d0','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1'];
 function grpClass(g) { return 'grp-' + (g||'other').toLowerCase(); }
 
 // ── Format helpers ──────────────────────────────────────
@@ -665,6 +676,111 @@ function OnboardingTour({step, setStep, onClose}) {
   );
 }
 
+// ── Monthly Budget Review Modal ─────────────────────────
+function MonthlyReviewModal({categories, transactions, onClose, onUpdateBudgets}) {
+  const now = new Date();
+  const prevMonthIdx = now.getMonth()===0 ? 11 : now.getMonth()-1;
+  const prevYear = now.getMonth()===0 ? now.getFullYear()-1 : now.getFullYear();
+  const prevYM = prevYear+'-'+String(prevMonthIdx+1).padStart(2,'0');
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const prevMonthName = monthNames[prevMonthIdx]+' '+prevYear;
+
+  const expenseCats = categories.filter(c=>c.catType!=='transfer' && c.group!=='Income');
+  const prevTxns = transactions.filter(t=>getYearMonth(t.date)===prevYM && t.amount<0);
+
+  const reviewData = useMemo(()=>{
+    return expenseCats.map(c=>{
+      const actual = prevTxns.filter(t=>t.category===c.name).reduce((s,t)=>s+Math.abs(t.amount),0);
+      return {name:c.name, group:c.group, catType:c.catType, budget:c.budget||0, actual:Math.round(actual*100)/100};
+    }).filter(c=>c.budget>0||c.actual>0);
+  },[]);
+
+  const [adjustedBudgets, setAdjustedBudgets] = useState(()=>{
+    const m = {};
+    reviewData.forEach(c=>{ m[c.name] = c.budget; });
+    return m;
+  });
+
+  const matchActuals = ()=>{
+    const m = {};
+    reviewData.forEach(c=>{ m[c.name] = Math.round(c.actual); });
+    setAdjustedBudgets(m);
+  };
+
+  const totalBudget = reviewData.reduce((s,c)=>s+c.budget,0);
+  const totalActual = reviewData.reduce((s,c)=>s+c.actual,0);
+  const totalNew = reviewData.reduce((s,c)=>s+(adjustedBudgets[c.name]||0),0);
+
+  return h(Modal,{onClose},
+    h('h3',{style:{marginBottom:4}}, '📊 '+prevMonthName+' Budget Review'),
+    h('p',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:16}},
+      'Compare your budgets against actual spending last month. Adjust if needed.'),
+
+    // Summary row
+    h('div',{style:{display:'flex',gap:12,marginBottom:14}},
+      h('div',{style:{flex:1,textAlign:'center',padding:8,background:'rgba(232,160,32,0.06)',borderRadius:8}},
+        h('div',{style:{fontSize:18,fontWeight:700,color:'var(--accent2)'}},fmt(totalBudget)),
+        h('div',{style:{fontSize:10,color:'var(--card-text2)'}},'Budget')
+      ),
+      h('div',{style:{flex:1,textAlign:'center',padding:8,background:'rgba(224,80,80,0.06)',borderRadius:8}},
+        h('div',{style:{fontSize:18,fontWeight:700,color:'var(--red)'}},fmt(totalActual)),
+        h('div',{style:{fontSize:10,color:'var(--card-text2)'}},'Actual')
+      ),
+      h('div',{style:{flex:1,textAlign:'center',padding:8,background:totalBudget>=totalActual?'rgba(64,192,128,0.06)':'rgba(224,80,80,0.06)',borderRadius:8}},
+        h('div',{style:{fontSize:18,fontWeight:700,color:totalBudget>=totalActual?'var(--green)':'var(--red)'}},
+          (totalBudget>=totalActual?'+':'-')+fmt(Math.abs(totalBudget-totalActual))),
+        h('div',{style:{fontSize:10,color:'var(--card-text2)'}},totalBudget>=totalActual?'Under':'Over')
+      )
+    ),
+
+    // Category table
+    h('div',{style:{maxHeight:350,overflowY:'auto'}},
+      h('table',{className:'table',style:{fontSize:12}},
+        h('thead',null,h('tr',null,
+          h('th',{style:{padding:'4px 6px'}},'Category'),
+          h('th',{style:{textAlign:'right',padding:'4px 6px'}},'Budget'),
+          h('th',{style:{textAlign:'right',padding:'4px 6px'}},'Actual'),
+          h('th',{style:{textAlign:'right',padding:'4px 6px'}},'+/-'),
+          h('th',{style:{textAlign:'right',padding:'4px 6px',width:80}},'New Budget')
+        )),
+        h('tbody',null, reviewData.map(c=>{
+          const diff = c.budget - c.actual;
+          return h('tr',{key:c.name,style:{background:diff<0?'rgba(224,80,80,0.05)':'transparent'}},
+            h('td',{style:{padding:'4px 6px'}},
+              h('div',{style:{display:'flex',alignItems:'center',gap:6}},
+                h('span',{style:{fontWeight:500}},c.name),
+                h(TypeTag,{catType:c.catType})
+              )
+            ),
+            h('td',{style:{textAlign:'right',padding:'4px 6px'}},fmt(c.budget)),
+            h('td',{style:{textAlign:'right',padding:'4px 6px',fontWeight:600}},fmt(c.actual)),
+            h('td',{style:{textAlign:'right',padding:'4px 6px',fontWeight:700,color:diff>=0?'var(--green)':'var(--red)'}},
+              (diff>=0?'+':'-')+fmt(Math.abs(diff))),
+            h('td',{style:{padding:'4px 6px'}},
+              h('input',{className:'input',type:'number',value:adjustedBudgets[c.name]||0,
+                onChange:e=>setAdjustedBudgets(prev=>({...prev,[c.name]:Math.max(0,+e.target.value)})),
+                style:{width:'100%',padding:'3px 6px',fontSize:12,textAlign:'right'}
+              })
+            )
+          );
+        }))
+      )
+    ),
+
+    // New total
+    h('div',{style:{display:'flex',justifyContent:'flex-end',padding:'8px 6px',fontSize:12,fontWeight:600,color:'var(--card-text2)'}},
+      'New total: ',h('span',{style:{color:'var(--accent2)',marginLeft:4}},fmt(totalNew))
+    ),
+
+    // Action buttons
+    h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}},
+      h('button',{className:'btn',onClick:onClose},'Keep Current'),
+      h('button',{className:'btn',onClick:matchActuals},'Match Actuals'),
+      h('button',{className:'btn primary',onClick:()=>{onUpdateBudgets(adjustedBudgets);onClose();}},'Save Changes')
+    )
+  );
+}
+
 // ── Main App ────────────────────────────────────────────
 function App() {
   const saved = useMemo(()=>loadState(),[]);
@@ -677,7 +793,11 @@ function App() {
   const [tourStep, setTourStep] = useState(()=> urlMode === 'demo' ? 0 : null);
 
   // ── License / Tier system ──
-  const TIERS = useMemo(()=>({ Starter:{limit:1,label:'Starter'}, Plus:{limit:3,label:'Plus'}, Pro:{limit:Infinity,label:'Pro'} }),[]);
+  const TIERS = useMemo(()=>({
+    Starter: { limit:1, label:'Starter', forecast:false, dayByDay:false, review:false, yearView:false },
+    Plus:    { limit:3, label:'Plus',    forecast:true,  dayByDay:false, review:true,  yearView:true  },
+    Pro:     { limit:Infinity, label:'Pro', forecast:true, dayByDay:true, review:true, yearView:true }
+  }),[]);
   const [license, setLicense] = useState(()=>{ try { return JSON.parse(localStorage.getItem('ambit_license'))||null; } catch{ return null; } });
   const [showLicenseGate, setShowLicenseGate] = useState(false);
   const [licenseDismissed, setLicenseDismissed] = useState(()=> localStorage.getItem('ambit_license_dismissed')==='1');
@@ -746,12 +866,14 @@ function App() {
   });
   const [myDictionary, setMyDictionary] = useState(saved?.dictionary || []);
   const [myTransactions, setMyTransactions] = useState(saved?.transactions || []);
+  const [myGroups, setMyGroups] = useState(saved?.groups || DEFAULT_GROUPS);
 
   // ── Demo state (in-memory only, not persisted) ──
   const [demoAccounts, setDemoAccounts] = useState(DEMO_DATA.accounts);
   const [demoCategories, setDemoCategories] = useState(DEMO_DATA.categories);
   const [demoDictionary, setDemoDictionary] = useState(DEMO_DATA.dictionary);
   const [demoTransactions, setDemoTransactions] = useState(DEMO_DATA.transactions);
+  const [demoGroups, setDemoGroups] = useState(DEFAULT_GROUPS);
 
   // ── Active data based on mode ──
   const isDemo = mode === 'demo';
@@ -763,15 +885,35 @@ function App() {
   const setDictionary = isDemo ? setDemoDictionary : setMyDictionary;
   const transactions = isDemo ? demoTransactions : myTransactions;
   const setTransactions = isDemo ? setDemoTransactions : setMyTransactions;
+  const groups = isDemo ? demoGroups : myGroups;
+  const setGroups = isDemo ? setDemoGroups : setMyGroups;
+
+  const groupList = useMemo(()=>groups.map(g=>g.name),[groups]);
+  const groupColors = useMemo(()=>{const m={};groups.forEach(g=>{m[g.name]=g.color;});return m;},[groups]);
 
   const [page, setPage] = useState('dashboard');
   const [moreOpen, setMoreOpen] = useState(false);
   const [toast, setToast] = useState(null);
+  const [showReview, setShowReview] = useState(false);
 
   // Save "My Budget" data on change (never save demo data)
   useEffect(()=>{
-    saveState({accounts: myAccounts, categories: myCategories, dictionary: myDictionary, transactions: myTransactions});
-  },[myAccounts, myCategories, myDictionary, myTransactions]);
+    saveState({accounts: myAccounts, categories: myCategories, dictionary: myDictionary, transactions: myTransactions, groups: myGroups});
+  },[myAccounts, myCategories, myDictionary, myTransactions, myGroups]);
+
+  // Monthly budget review — trigger once per month on first open in 'mine' mode
+  useEffect(()=>{
+    if(mode !== 'mine' || !isLicensed || !tier?.review) return;
+    const now = new Date();
+    const reviewKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    if(localStorage.getItem('ambit_review_month') === reviewKey) return;
+    const prevMonth = now.getMonth(); // 0-indexed current getMonth() = previous month number (1-indexed)
+    const prevYM = prevMonth===0
+      ? (now.getFullYear()-1)+'-12'
+      : now.getFullYear()+'-'+String(prevMonth).padStart(2,'0');
+    const hasPrevData = myTransactions.some(t=>getYearMonth(t.date)===prevYM);
+    if(hasPrevData) setShowReview(true);
+  },[mode]);
 
   const showToast = (msg) => setToast(msg);
 
@@ -835,6 +977,20 @@ function App() {
 
     // Onboarding tour overlay
     tourStep !== null && h(OnboardingTour, {step:tourStep, setStep:setTourStep, onClose:()=>setTourStep(null)}),
+
+    // Monthly budget review modal
+    showReview && h(MonthlyReviewModal, {
+      categories, transactions: myTransactions,
+      onClose:()=>{
+        const now = new Date();
+        localStorage.setItem('ambit_review_month', now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+        setShowReview(false);
+      },
+      onUpdateBudgets:(updates)=>{
+        setCategories(prev=>prev.map(c=>updates[c.name]!==undefined?{...c,budget:updates[c.name]}:c));
+        showToast('✅ Budgets updated from review');
+      }
+    }),
 
     // Sidebar
     h('nav',{className:'sidebar'},
@@ -999,7 +1155,7 @@ function App() {
           setMode('mine');setPage('dashboard');
         })},'My Budget'), h('span',null,' to start fresh.'),
         h('span',{style:{marginLeft:'auto',display:'flex',gap:12,alignItems:'center'}},
-          urlMode === 'demo' && h('a',{href:'/',style:{cursor:'pointer',opacity:0.8,fontSize:12,whiteSpace:'nowrap',color:'inherit',textDecoration:'none'}},'← Home'),
+          urlMode === 'demo' && h('a',{href:'../index.html',style:{cursor:'pointer',opacity:0.8,fontSize:12,whiteSpace:'nowrap',color:'inherit',textDecoration:'none'}},'← Home'),
           h('span',{style:{cursor:'pointer',opacity:0.8,fontSize:12,whiteSpace:'nowrap'}, ...a11yClick(()=>{
             setDemoAccounts(DEMO_DATA.accounts); setDemoCategories(DEMO_DATA.categories);
             setDemoDictionary(DEMO_DATA.dictionary); setDemoTransactions(DEMO_DATA.transactions);
@@ -1013,13 +1169,13 @@ function App() {
           }, 'Hide demo mode')},'✕ Hide Demo')
         )
       ),
-      page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0)}),
-      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, setDictionary, categories, setCategories, catMap, categorize, showToast, accounts}),
+      page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, groupColors}),
+      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, setDictionary, categories, setCategories, catMap, categorize, showToast, accounts, groupList, groups, setGroups}),
       page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts}),
-      page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns}),
+      page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns, dictionary, groupColors}),
       page==='accounts' && h(AccountsPage, {accounts, setAccounts, transactions:liveTxns, setTransactions, catMap, showToast, accountLimit, tier, isDemo}),
-      page==='categories' && h(CategoriesPage, {categories, setCategories, dictionary, showToast}),
-      page==='dictionary' && h(DictionaryPage, {dictionary, setDictionary, categories, showToast}),
+      page==='categories' && h(CategoriesPage, {categories, setCategories, dictionary, showToast, groups, setGroups, groupList, groupColors}),
+      page==='dictionary' && h(DictionaryPage, {dictionary, setDictionary, categories, showToast, groupColors}),
     ),
 
     toast && h(Toast, {message:toast, onDone:()=>setToast(null)})
@@ -1027,7 +1183,7 @@ function App() {
 }
 
 // ── Categories Page ─────────────────────────────────────
-function CategoriesPage({categories, setCategories, dictionary, showToast}) {
+function CategoriesPage({categories, setCategories, dictionary, showToast, groups, setGroups, groupList, groupColors}) {
   const [showAdd, setShowAdd] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [name, setName] = useState('');
@@ -1042,6 +1198,73 @@ function CategoriesPage({categories, setCategories, dictionary, showToast}) {
   };
 
   const resetForm = () => { setName(''); setGroup('Other'); setCatType('discretionary'); setBudget(0); setEditIdx(null); setShowAdd(false); };
+
+  // ── Group management state ──
+  const [showGroupMgr, setShowGroupMgr] = useState(false);
+  const [newGrpName, setNewGrpName] = useState('');
+  const [newGrpColor, setNewGrpColor] = useState('#8b90a5');
+  const [editGrpIdx, setEditGrpIdx] = useState(null);
+  const [editGrpName, setEditGrpName] = useState('');
+  const [editGrpColor, setEditGrpColor] = useState('');
+
+  const addGroup = () => {
+    if(!newGrpName.trim()) return;
+    if(groups.find(g=>g.name.toLowerCase()===newGrpName.trim().toLowerCase())) { showToast('\u26A0\uFE0F Group already exists'); return; }
+    setGroups(prev=>[...prev, {name:newGrpName.trim(), color:newGrpColor}]);
+    showToast('\u2705 Group added: '+newGrpName.trim());
+    setNewGrpName(''); setNewGrpColor('#8b90a5');
+  };
+  const startEditGrp = (idx) => { setEditGrpIdx(idx); setEditGrpName(groups[idx].name); setEditGrpColor(groups[idx].color); };
+  const saveEditGrp = () => {
+    if(editGrpIdx===null) return;
+    const oldName = groups[editGrpIdx].name;
+    const newName = editGrpName.trim();
+    if(!newName) { setEditGrpIdx(null); return; }
+    if(oldName!==newName && groups.find((g,i)=>i!==editGrpIdx && g.name.toLowerCase()===newName.toLowerCase())) { showToast('\u26A0\uFE0F Group name already exists'); return; }
+    setGroups(prev=>prev.map((g,i)=>i===editGrpIdx?{...g, name:newName, color:editGrpColor}:g));
+    if(oldName!==newName) setCategories(prev=>prev.map(c=>c.group===oldName?{...c, group:newName}:c));
+    showToast('\u2705 Group updated: '+newName);
+    setEditGrpIdx(null);
+  };
+  const deleteGroup = (idx) => {
+    const g = groups[idx];
+    if(g.name==='Income'||g.name==='Other') { showToast('\u26A0\uFE0F Cannot delete system group: '+g.name); return; }
+    const inUse = categories.filter(c=>c.group===g.name).length;
+    if(inUse>0) { showToast('\u26A0\uFE0F Cannot delete: '+inUse+' categories use "'+g.name+'". Reassign them first.'); return; }
+    setGroups(prev=>prev.filter((_,i)=>i!==idx));
+    showToast('\uD83D\uDDD1\uFE0F Deleted group: '+g.name);
+  };
+
+  // ── Bulk category import state ──
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkText, setBulkText] = useState('');
+
+  const bulkImportCategories = () => {
+    const lines = bulkText.split('\n').map(l=>l.trim()).filter(Boolean);
+    const results = [];
+    let newGroups = [];
+    for(const line of lines) {
+      const parts = line.split(/[,\t]+/).map(s=>s.trim());
+      if(parts.length<1 || !parts[0]) continue;
+      const catName = parts[0];
+      const grp = parts[1] || 'Other';
+      const typeRaw = (parts[2]||'discretionary').toLowerCase();
+      const catType = typeRaw.startsWith('f') ? 'fixed' : typeRaw.startsWith('t') ? 'transfer' : 'discretionary';
+      const bgt = parseFloat(parts[3]) || 0;
+      if(categories.find(c=>c.name.toLowerCase()===catName.toLowerCase())) continue;
+      if(results.find(r=>r.name.toLowerCase()===catName.toLowerCase())) continue;
+      if(!groupList.includes(grp) && !newGroups.find(g=>g.name===grp)) newGroups.push({name:grp, color:'#8b90a5'});
+      results.push({name:catName, group:grp, catType, budget:bgt});
+    }
+    if(newGroups.length>0) setGroups(prev=>[...prev, ...newGroups]);
+    if(results.length>0) {
+      setCategories(prev=>[...prev, ...results]);
+      showToast('\u2705 Imported '+results.length+' categories'+(newGroups.length>0?' ('+newGroups.length+' new groups created)':''));
+    } else {
+      showToast('\u26A0\uFE0F No new categories to import (all duplicates or empty)');
+    }
+    setBulkText(''); setShowBulkImport(false);
+  };
 
   const save = () => {
     if(!name.trim()) return;
@@ -1082,14 +1305,70 @@ function CategoriesPage({categories, setCategories, dictionary, showToast}) {
         h('h2',null,'📂 Categories', h(InfoPill,{text:'Organize your spending into categories (e.g., Groceries, Rent) and groups (e.g., Food, Housing). Set each as Income, Fixed, Discretionary, or Transfer. Budget amounts are set on the Budget page.'})),
         h('p',null,'Define your spending categories and assign them to groups.')
       ),
-      h('button',{className:'btn primary', onClick:()=>{resetForm();setShowAdd(true);}}, '+ New Category')
+      h('div',{style:{display:'flex',gap:8,flexWrap:'wrap'}},
+        h('button',{className:'btn primary', onClick:()=>{resetForm();setShowAdd(true);}}, '+ New Category'),
+        h('button',{className:'btn', onClick:()=>setShowBulkImport(true)}, '\uD83D\uDCE5 Import'),
+        h('button',{className:'btn'+(showGroupMgr?' primary':''), onClick:()=>setShowGroupMgr(!showGroupMgr)}, showGroupMgr?'Hide Groups':'Manage Groups')
+      )
     ),
 
     h('div',{className:'stats'},
       h(Stat, {label:'Categories', value:categories.length, color:'var(--accent2)'}),
+      h(Stat, {label:'Groups', value:groups.length, color:'var(--blue)'}),
       h(Stat, {label:'Discretionary', value:categories.filter(c=>c.catType==='discretionary').length, color:'var(--yellow)'}),
       h(Stat, {label:'Fixed', value:categories.filter(c=>c.catType==='fixed').length, color:'var(--blue)'}),
       h(Stat, {label:'Transfer', value:categories.filter(c=>c.catType==='transfer').length, color:'var(--pink)'})
+    ),
+
+    // ── Group Management Card ──
+    showGroupMgr && h('div',{className:'card',style:{marginBottom:14}},
+      h('h3',{style:{marginBottom:12}},'\uD83C\uDFA8 Manage Groups'),
+      h('table',{className:'table'},
+        h('thead',null, h('tr',null,
+          h('th',{style:{width:30}},'Color'), h('th',null,'Name'), h('th',null,'Categories'), h('th',{style:{width:100}},null)
+        )),
+        h('tbody',null,
+          groups.map((g,i)=>
+            h('tr',{key:g.name},
+              h('td',null,
+                editGrpIdx===i
+                  ? h('div',{style:{display:'flex',gap:3,flexWrap:'wrap'}},
+                      COLOR_PRESETS.map(c=>h('div',{key:c,onClick:()=>setEditGrpColor(c),style:{width:16,height:16,borderRadius:'50%',background:c,cursor:'pointer',border:editGrpColor===c?'2px solid white':'2px solid transparent'}}))
+                    )
+                  : h('div',{style:{width:16,height:16,borderRadius:'50%',background:g.color}})
+              ),
+              h('td',null,
+                editGrpIdx===i
+                  ? h('input',{className:'input',value:editGrpName,onChange:e=>setEditGrpName(e.target.value),onKeyDown:e=>{if(e.key==='Enter')saveEditGrp();if(e.key==='Escape')setEditGrpIdx(null);},style:{fontSize:12,padding:'3px 6px',width:120},autoFocus:true,disabled:g.name==='Income'||g.name==='Other'})
+                  : h('span',{style:{fontWeight:500}},g.name, (g.name==='Income'||g.name==='Other') && h('span',{style:{fontSize:10,color:'var(--text2)',marginLeft:6}},'(system)'))
+              ),
+              h('td',{style:{fontSize:12,color:'var(--text2)'}}, categories.filter(c=>c.group===g.name).length),
+              h('td',null,
+                editGrpIdx===i
+                  ? h('div',{style:{display:'flex',gap:4}},
+                      h('button',{className:'btn sm',onClick:saveEditGrp},'\u2713'),
+                      h('button',{className:'btn sm',onClick:()=>setEditGrpIdx(null)},'\u2717')
+                    )
+                  : h('div',{style:{display:'flex',gap:4}},
+                      h('button',{className:'btn sm',onClick:()=>startEditGrp(i)},'\u270E'),
+                      g.name!=='Income' && g.name!=='Other' && h('button',{className:'table del-btn',onClick:()=>deleteGroup(i)},'\u00D7')
+                    )
+              )
+            )
+          ),
+          // Add new group row
+          h('tr',null,
+            h('td',null,
+              h('div',{style:{display:'flex',gap:3,flexWrap:'wrap'}},
+                COLOR_PRESETS.slice(0,7).map(c=>h('div',{key:c,onClick:()=>setNewGrpColor(c),style:{width:14,height:14,borderRadius:'50%',background:c,cursor:'pointer',border:newGrpColor===c?'2px solid white':'2px solid transparent'}}))
+              )
+            ),
+            h('td',null, h('input',{className:'input',value:newGrpName,onChange:e=>setNewGrpName(e.target.value),onKeyDown:e=>{if(e.key==='Enter')addGroup();},placeholder:'New group name...',style:{fontSize:12,padding:'3px 6px',width:140}})),
+            h('td',null),
+            h('td',null, h('button',{className:'btn sm green',onClick:addGroup,disabled:!newGrpName.trim()},'+'))
+          )
+        )
+      )
     ),
 
     categories.length === 0
@@ -1103,7 +1382,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast}) {
           h('div',{key:grp, className:'card', style:{marginBottom:14}},
             h('h3',null,
               h('span',{className:'icon'},'▸'),
-              h(Tag,{color:GROUP_COLORS[grp]||'#8b90a5'}, grp),
+              h(Tag,{color:groupColors[grp]||'#8b90a5'}, grp),
               h('span',{style:{color:'var(--text2)',fontWeight:400,fontSize:12}}, cats.length + ' categor'+(cats.length===1?'y':'ies'))
             ),
             h('table',{className:'table'},
@@ -1136,7 +1415,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast}) {
         h('div',null,
           h('label',{htmlFor:'cat-group',style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Group'),
           h('select',{id:'cat-group',className:'input',value:group,onChange:e=>setGroup(e.target.value),style:{width:'100%'}},
-            GROUP_LIST.map(g=>h('option',{key:g,value:g},g))
+            groupList.map(g=>h('option',{key:g,value:g},g))
           )
         ),
         h('div',null,
@@ -1155,11 +1434,33 @@ function CategoriesPage({categories, setCategories, dictionary, showToast}) {
           h('input',{id:'cat-budget',className:'input',type:'number',value:budget,onChange:e=>setBudget(e.target.value),style:{width:'100%'},min:0})
         ),
         catType==='transfer' && h('div',{style:{padding:10,background:'rgba(208,96,160,0.08)',borderRadius:8,fontSize:12,color:'var(--pink)'}},
-          '💡 Transfer categories are excluded from spending totals and tracked separately.'
+          '\uD83D\uDCA1 Transfer categories are excluded from spending totals and tracked separately.'
         ),
         h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}},
           h('button',{className:'btn',onClick:resetForm},'Cancel'),
           h('button',{className:'btn primary',onClick:save,disabled:!name.trim()}, editIdx!==null?'Update':'Add Category')
+        )
+      )
+    ),
+
+    // ── Bulk Import Modal ──
+    showBulkImport && h(Modal, {onClose:()=>{setBulkText('');setShowBulkImport(false);}},
+      h('h3',null,'\uD83D\uDCE5 Import Categories'),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:12}},
+        h('p',{style:{fontSize:12,color:'var(--text2)',margin:0}},
+          'Paste categories, one per line. Format: ', h('code',{style:{background:'var(--surface2)',padding:'1px 4px',borderRadius:3}},'name, group, type, budget')
+        ),
+        h('div',{style:{fontSize:11,color:'var(--text2)',padding:'6px 10px',background:'var(--surface2)',borderRadius:6}},
+          'Type shortcuts: d=discretionary, f=fixed, t=transfer. Group is auto-created if new.',
+          h('br'),
+          'Example: Groceries, Food, d, 600'
+        ),
+        h('textarea',{className:'input',value:bulkText,onChange:e=>setBulkText(e.target.value),
+          placeholder:'Groceries, Food, discretionary, 600\nRent, Housing, fixed, 1500\nNetflix, Entertainment, fixed, 15',
+          style:{width:'100%',height:140,fontSize:12,fontFamily:'monospace',resize:'vertical'}}),
+        h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:4}},
+          h('button',{className:'btn',onClick:()=>{setBulkText('');setShowBulkImport(false);}},'Cancel'),
+          h('button',{className:'btn primary',onClick:bulkImportCategories,disabled:!bulkText.trim()},'Import Categories')
         )
       )
     )
@@ -1167,7 +1468,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast}) {
 }
 
 // ── Dictionary (Payee Rules) Page ───────────────────────
-function DictionaryPage({dictionary, setDictionary, categories, showToast}) {
+function DictionaryPage({dictionary, setDictionary, categories, showToast, groupColors}) {
   const [keyword, setKeyword] = useState('');
   const [cleanName, setCleanName] = useState('');
   const [category, setCategory] = useState('');
@@ -1315,7 +1616,7 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast}) {
                 h('td',null, h('code',{style:{background:'var(--surface2)',padding:'2px 6px',borderRadius:4,fontSize:12}},d.keyword)),
                 h('td',{style:{fontWeight:500}},d.cleanName),
                 h('td',null,d.category),
-                h('td',null, h(Tag,{color:GROUP_COLORS[grp]||'#8b90a5'},grp)),
+                h('td',null, h(Tag,{color:groupColors[grp]||'#8b90a5'},grp)),
                 editDueDayIdx===i
                   ? h('td',null,
                       h('input',{className:'input',type:'number',min:1,max:31,
@@ -1462,7 +1763,7 @@ function detectColumns(headers, sampleRows) {
 }
 
 // ── Unmatched Row Translator ────────────────────────────
-function UnmatchedRow({txn, index, categories, setCategories, showToast, onResolve, onSkip}) {
+function UnmatchedRow({txn, index, categories, setCategories, showToast, onResolve, onSkip, groupList}) {
   const [expanded, setExpanded] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [cleanName, setCleanName] = useState('');
@@ -1567,7 +1868,7 @@ function UnmatchedRow({txn, index, categories, setCategories, showToast, onResol
             h('label',{htmlFor:'trans-newcat-group',style:{fontSize:10,color:'var(--text2)',display:'block',marginBottom:2}},'Group'),
             h('select',{id:'trans-newcat-group',className:'input',value:newCatGroup,onChange:e=>setNewCatGroup(e.target.value),
               style:{width:'100%',fontSize:12,padding:'5px 8px'}},
-              GROUP_LIST.map(g=>h('option',{key:g,value:g},g))
+              groupList.map(g=>h('option',{key:g,value:g},g))
             )
           ),
           h('label',{style:{fontSize:11,display:'flex',alignItems:'center',gap:4,cursor:'pointer',whiteSpace:'nowrap'}},
@@ -1586,7 +1887,7 @@ function UnmatchedRow({txn, index, categories, setCategories, showToast, onResol
 }
 
 // ── Import Page ─────────────────────────────────────────
-function ImportPage({transactions, setTransactions, dictionary, setDictionary, categories, setCategories, catMap, categorize, showToast, accounts}) {
+function ImportPage({transactions, setTransactions, dictionary, setDictionary, categories, setCategories, catMap, categorize, showToast, accounts, groupList, groups, setGroups}) {
   const [csv, setCsv] = useState('');
   const [preview, setPreview] = useState(null);
   const [parsedData, setParsedData] = useState(null);
@@ -1663,6 +1964,11 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
     const existingKeys = new Set(transactions.map(t=>t.date+t.description+t.amount));
     let matched=[], unmatched=[], dupes=0, errors=0;
     let autoTransfers = 0;
+    let pendingMatched = 0;
+
+    // Build list of pending transactions for matching
+    const pendingTxns = transactions.filter(t=>t.pending && t.accountId===selectedAccount);
+    const matchedPendingIds = new Set();
 
     // Find a transfer category to use for auto-detected transfers
     const transferCat = categories.find(c=>c.catType==='transfer');
@@ -1687,6 +1993,25 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
       const key = dateStr+desc+amt;
       if(existingKeys.has(key)) { dupes++; existingKeys.add(key); continue; }
       existingKeys.add(key);
+
+      // Check if this imported row matches a pending transaction
+      const pendingMatch = pendingTxns.find(pt=>{
+        if(matchedPendingIds.has(pt.id)) return false;
+        // Amount must match exactly (or within $0.01)
+        if(Math.abs(pt.amount - amt) > 0.011) return false;
+        // Date within 14 days OR description similarity
+        const dateDiff = Math.abs(safeDate(pt.date) - safeDate(dateStr));
+        const within14Days = dateDiff <= 14*86400000;
+        const descMatch = desc.toLowerCase().includes(pt.cleanName.toLowerCase()) || pt.cleanName.toLowerCase().includes(desc.toLowerCase().substring(0,10));
+        return within14Days || descMatch;
+      });
+      if(pendingMatch) {
+        matchedPendingIds.add(pendingMatch.id);
+        pendingMatched++;
+        // This will update the existing pending txn on confirm, skip adding a new one
+        matched.push({_matchesPendingId:pendingMatch.id, date:dateStr, description:desc, amount:amt, cleanName:pendingMatch.cleanName, category:pendingMatch.category, group:pendingMatch.group, catType:pendingMatch.catType, accountId:selectedAccount});
+        continue;
+      }
 
       const match = categorize(desc);
       let txn;
@@ -1732,14 +2057,25 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
     }
 
     if(autoTransfers > 0) {
-      showToast(`✅ Auto-detected ${autoTransfers} transfer(s) by account number`);
+      showToast(`\u2705 Auto-detected ${autoTransfers} transfer(s) by account number`);
     }
-    setPreview({matched, unmatched, dupes, errors, autoTransfers, total: matched.length+unmatched.length+dupes+errors});
+    if(pendingMatched > 0) {
+      showToast(`\u23F3 Matched ${pendingMatched} pending transaction(s) with imported data`);
+    }
+    setPreview({matched, unmatched, dupes, errors, autoTransfers, pendingMatched, total: matched.length+unmatched.length+dupes+errors});
   };
 
   const confirmImport = () => {
     if(!preview) return;
-    const all = [...preview.matched, ...preview.unmatched];
+
+    // Separate pending matches from new transactions
+    const pendingUpdates = preview.matched.filter(t=>t._matchesPendingId);
+    const newMatched = preview.matched.filter(t=>!t._matchesPendingId);
+    const all = [...newMatched, ...preview.unmatched];
+
+    // Build pending update map for clearing matched pending transactions
+    const pendingUpdateMap = {};
+    pendingUpdates.forEach(pu=>{ pendingUpdateMap[pu._matchesPendingId] = pu; });
 
     // For transfer-type transactions, create paired entries on the destination account
     // Use auto-detected destination if available, otherwise fall back to manual selection
@@ -1785,9 +2121,22 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
       }
     }
 
-    setTransactions(prev=>[...prev,...all,...paired]);
+    setTransactions(prev=>{
+      // First, update any matched pending transactions (clear flag, update date/desc from bank)
+      let updated = prev;
+      if(pendingUpdates.length > 0) {
+        updated = updated.map(t=>{
+          const upd = pendingUpdateMap[t.id];
+          if(upd) return {...t, pending:false, date:upd.date, description:upd.description};
+          return t;
+        });
+      }
+      // Then add new transactions
+      return [...updated,...all,...paired];
+    });
     const pairMsg = paired.length > 0 ? ` (${paired.length} paired transfers created)` : '';
-    showToast(`✅ Imported ${all.length} transactions${pairMsg}`);
+    const pendMsg = pendingUpdates.length > 0 ? `, ${pendingUpdates.length} pending cleared` : '';
+    showToast(`\u2705 Imported ${all.length} transactions${pairMsg}${pendMsg}`);
     setCsv(''); setPreview(null); setParsedData(null);
   };
 
@@ -2002,6 +2351,10 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
               h('div',{style:{fontSize:24,fontWeight:700,color:'var(--text2)'}},preview.dupes),
               h('div',{style:{fontSize:11,color:'var(--text2)'}},'Duplicates')
             ),
+            preview.pendingMatched>0 && h('div',{style:{flex:1,textAlign:'center',padding:12,background:'rgba(232,160,32,0.1)',borderRadius:8}},
+              h('div',{style:{fontSize:24,fontWeight:700,color:'var(--accent2)'}},preview.pendingMatched),
+              h('div',{style:{fontSize:11,color:'var(--text2)'}},'\u23F3 Pending Cleared')
+            ),
             preview.errors>0 && h('div',{style:{flex:1,textAlign:'center',padding:12,background:'rgba(224,80,80,0.1)',borderRadius:8}},
               h('div',{style:{fontSize:24,fontWeight:700,color:'var(--red)'}},preview.errors),
               h('div',{style:{fontSize:11,color:'var(--text2)'}},'Skipped')
@@ -2014,7 +2367,7 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
                 h('span',{style:{minWidth:75,color:'var(--text2)'}},t.date),
                 h('span',{style:{flex:1,color:'var(--text2)'}},t.description.substring(0,25)),
                 h('span',{style:{fontWeight:500}},t.cleanName),
-                h(Tag,{color:GROUP_COLORS[t.group]||'#8b90a5'},t.category),
+                h(Tag,{color:groupColors[t.group]||'#8b90a5'},t.category),
                 h('span',{style:{fontWeight:600,color:t.amount>=0?'var(--green)':'var(--text)'}}, (t.amount>=0?'+':'')+fmt(t.amount))
               ))
             )
@@ -2028,7 +2381,7 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
               }},'Skip All')
             ),
             h('div',{style:{border:'1px solid rgba(232,160,32,0.3)',borderRadius:8,background:'rgba(232,160,32,0.05)',overflow:'hidden',maxHeight:350,overflowY:'auto'}},
-              preview.unmatched.map((t,i)=>h(UnmatchedRow,{key:t.id, txn:t, index:i, categories, setCategories, showToast,
+              preview.unmatched.map((t,i)=>h(UnmatchedRow,{key:t.id, txn:t, index:i, categories, setCategories, showToast, groupList,
                 onResolve:(keyword, cleanName, category) => {
                   // Save rule to dictionary
                   const cat = catMap[category];
@@ -2039,6 +2392,7 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
                   });
                   // Apply to ALL unmatched transactions that contain this keyword (normalize both sides)
                   const kwNorm = normalizeForMatch(kw);
+                  const matchCount = preview.unmatched.filter(u=>normalizeForMatch(u.description).includes(kwNorm)).length;
                   setPreview(prev=>{
                     const nowMatched = [];
                     const stillUnmatched = [];
@@ -2049,14 +2403,13 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
                         stillUnmatched.push(u);
                       }
                     }
-                    const count = nowMatched.length;
                     return {
                       ...prev,
                       matched:[...prev.matched, ...nowMatched],
                       unmatched:stillUnmatched
                     };
                   });
-                  showToast('✅ Rule saved: '+keyword+' → '+category+' (applied to all matches)');
+                  showToast('\u2705 Rule saved: '+keyword+' \u2192 '+category+' (matched '+matchCount+' transaction'+(matchCount===1?'':'s')+')');
                 },
                 onSkip:() => {}
               }))
@@ -2108,12 +2461,13 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   const [showReconcile, setShowReconcile] = useState(false);
   const [reconcileDate, setReconcileDate] = useState('');
   const [showAddTxn, setShowAddTxn] = useState(false);
-  const [newTxn, setNewTxn] = useState({date:'',description:'',amount:'',category:'',accountId:''});
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [newTxn, setNewTxn] = useState({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:''});
 
-  const resetNewTxn = () => { setNewTxn({date:'',description:'',amount:'',category:'',accountId:''}); setShowAddTxn(false); };
+  const resetNewTxn = () => { setNewTxn({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:''}); setShowAddTxn(false); };
 
   const saveNewTxn = () => {
-    const {date,description,amount,category,accountId} = newTxn;
+    const {date,description,amount,category,accountId,pending,checkNumber} = newTxn;
     if(!date||!description||!amount||!accountId) return;
     const cat = catMap[category];
     const txn = {
@@ -2126,6 +2480,8 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       catType: cat?.catType || 'discretionary',
       accountId
     };
+    if(pending) txn.pending = true;
+    if(checkNumber.trim()) txn.checkNumber = checkNumber.trim();
     setTransactions(prev=>[...prev, txn]);
     resetNewTxn();
   };
@@ -2167,9 +2523,13 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     return balMap;
   },[transactions, startBalMap]);
 
+  const pendingCount = useMemo(()=>transactions.filter(t=>t.pending).length,[transactions]);
+
   const sorted = useMemo(()=>{
     let arr = [...transactions];
     if(acctFilter!=='all') arr = arr.filter(t=>t.accountId===acctFilter);
+    if(statusFilter==='pending') arr = arr.filter(t=>t.pending);
+    else if(statusFilter==='cleared') arr = arr.filter(t=>!t.pending);
     if(filter) {
       const f = filter.toLowerCase();
       arr = arr.filter(t=>t.cleanName.toLowerCase().includes(f)||t.description.toLowerCase().includes(f)||t.category.toLowerCase().includes(f));
@@ -2180,7 +2540,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       return (a[sortCol]||'').localeCompare(b[sortCol]||'')*sortDir;
     });
     return arr;
-  },[transactions,filter,acctFilter,sortCol,sortDir]);
+  },[transactions,filter,acctFilter,statusFilter,sortCol,sortDir]);
 
   const toggleSort = (col) => {
     if(sortCol===col) setSortDir(d=>d*-1);
@@ -2194,6 +2554,8 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     }
     setTransactions(prev=>prev.filter(t=>t.id!==id));
   };
+
+  const togglePending = (id) => setTransactions(prev=>prev.map(t=>t.id===id?{...t, pending:!t.pending}:t));
 
   const startEditCat = (t) => {
     if(isReconciled(t)) {
@@ -2247,7 +2609,8 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       h(Stat,{label:'Income', value:fmt(totalInc), color:'var(--green)'}),
       h(Stat,{label:'Expenses', value:fmt(totalExp), color:'var(--red)'}),
       h(Stat,{label:'Transfers', value:fmt(totalXfer), color:'var(--pink)'}),
-      h(Stat,{label:'Net', value:fmt(totalInc-totalExp), color:totalInc-totalExp>=0?'var(--green)':'var(--red)'})
+      h(Stat,{label:'Net', value:fmt(totalInc-totalExp), color:totalInc-totalExp>=0?'var(--green)':'var(--red)'}),
+      pendingCount>0 && h(Stat,{label:'Pending', value:pendingCount, color:'var(--accent2)'})
     ),
 
     h('div',{className:'card'},
@@ -2257,6 +2620,11 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
           accounts.length>0 && h('select',{className:'input',value:acctFilter,onChange:e=>setAcctFilter(e.target.value),style:{fontSize:12}},
             h('option',{value:'all'},'All Accounts'),
             accounts.map(a=>h('option',{key:a.id,value:a.id},a.name))
+          ),
+          h('select',{className:'input',value:statusFilter,onChange:e=>setStatusFilter(e.target.value),style:{fontSize:12}},
+            h('option',{value:'all'},'All Status'),
+            h('option',{value:'pending'},'\u23F3 Pending'),
+            h('option',{value:'cleared'},'Cleared')
           ),
           h('input',{className:'input',value:filter,onChange:e=>setFilter(e.target.value),placeholder:'Search...', 'aria-label':'Search transactions', style:{width:180}}),
           acctFilter!=='all'
@@ -2288,17 +2656,19 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
               )),
               h('tbody',null, sorted.slice(0,200).map(t => {
                 const rec = isReconciled(t);
-                return h('tr',{key:t.id, style:rec?{background:'rgba(64,192,128,0.06)'}:undefined},
-                  h('td',{style:{textAlign:'center',fontSize:14,color:rec?'var(--green)':'var(--border)'}}, rec?'✓':''),
+                const rowBg = t.pending ? {background:'rgba(232,160,32,0.06)'} : rec ? {background:'rgba(64,192,128,0.06)'} : undefined;
+                return h('tr',{key:t.id, style:rowBg},
+                  h('td',{style:{textAlign:'center',fontSize:14,color:t.pending?'var(--accent2)':rec?'var(--green)':'var(--border)'}}, t.pending?'\u23F3':rec?'\u2713':''),
                   h('td',{style:{color:'var(--text2)',fontSize:12}},t.date),
                   h('td',{style:{fontWeight:500}},
                     editPayeeId===t.id
                       ? h('div',{style:{display:'flex',gap:4}},
                           h('input',{className:'input',value:editPayeeName,onChange:e=>setEditPayeeName(e.target.value),onKeyDown:e=>{if(e.key==='Enter')savePayee(t.id);if(e.key==='Escape')setEditPayeeId(null);},style:{fontSize:12,padding:'3px 6px',width:140},autoFocus:true}),
-                          h('button',{className:'btn sm',onClick:()=>savePayee(t.id)},'✓'),
-                          h('button',{className:'btn sm',onClick:()=>setEditPayeeId(null)},'✗')
+                          h('button',{className:'btn sm',onClick:()=>savePayee(t.id)},'\u2713'),
+                          h('button',{className:'btn sm',onClick:()=>setEditPayeeId(null)},'\u2717')
                         )
                       : h('span',{onClick:()=>startEditPayee(t), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();startEditPayee(t);}}, tabIndex:0, role:'button', style:{cursor:'pointer'},title:'Click to edit payee'},t.cleanName,
+                          t.checkNumber && h('span',{style:{fontSize:10,color:'var(--text2)',marginLeft:6}},'#'+t.checkNumber),
                           t.cleanName!==t.description && h('div',{style:{fontSize:10,color:'var(--text2)',marginTop:1}},t.description.substring(0,30))
                         )
                   ),
@@ -2321,7 +2691,10 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
                   accounts.length>0 && h('td',{style:{fontSize:11,color:'var(--text2)'}}, acctMap[t.accountId]?.name||'—'),
                   h('td',{style:{fontWeight:600,color:t.catType==='transfer'?'var(--pink)':t.amount>=0?'var(--green)':'var(--text)'}}, (t.amount>=0?'+':'')+fmt(t.amount)),
                   h('td',{style:{fontWeight:600,fontSize:12,color:(runningBalMap[t.id]||0)>=0?'var(--green)':'var(--red)'}}, (runningBalMap[t.id]<0?'-':'')+fmt(runningBalMap[t.id]||0)),
-                  h('td',null, h('button',{className:'table del-btn',onClick:()=>delTxn(t.id)},'×'))
+                  h('td',{style:{display:'flex',gap:2,alignItems:'center'}},
+                    h('button',{className:'btn sm',onClick:()=>togglePending(t.id),title:t.pending?'Mark as cleared':'Mark as pending',style:{fontSize:10,padding:'2px 5px',color:t.pending?'var(--green)':'var(--accent2)',background:t.pending?'rgba(64,192,128,0.12)':'rgba(232,160,32,0.12)',border:'none',borderRadius:4,cursor:'pointer'}}, t.pending?'\u2713 Clear':'\u23F3'),
+                    h('button',{className:'table del-btn',onClick:()=>delTxn(t.id)},'×')
+                  )
                 );
               }))
             ),
@@ -2379,6 +2752,13 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
             )
           )
         ),
+        h('div',{style:{display:'flex',alignItems:'center',gap:12,padding:'8px 0',borderTop:'1px solid rgba(255,255,255,0.06)',marginTop:4}},
+          h('label',{style:{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13}},
+            h('input',{type:'checkbox',checked:newTxn.pending,onChange:e=>setNewTxn(p=>({...p,pending:e.target.checked})),style:{accentColor:'var(--accent2)'}}),
+            '\u23F3 Mark as pending (uncleared)'
+          ),
+          newTxn.pending && h('input',{className:'input',value:newTxn.checkNumber,onChange:e=>setNewTxn(p=>({...p,checkNumber:e.target.value})),placeholder:'Check # (optional)',style:{width:130,fontSize:12,padding:'4px 8px'}})
+        ),
         h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}},
           h('button',{className:'btn',onClick:resetNewTxn},'Cancel'),
           h('button',{className:'btn primary',onClick:saveNewTxn,disabled:!newTxn.date||!newTxn.description||!newTxn.amount||!newTxn.accountId},'Add Transaction')
@@ -2411,10 +2791,21 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
 }
 
 // ── Budget Page ─────────────────────────────────────────
-function BudgetPage({categories, setCategories, transactions}) {
+function BudgetPage({categories, setCategories, transactions, dictionary, groupColors}) {
   const [expandedGroup, setExpandedGroup] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState('all');
+  const [selectedMonth, setSelectedMonth] = useState(()=>{const now=new Date();return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');});
   const [drilldown, setDrilldown] = useState(null);
+
+  // Build due day lookup: category → earliest dueDay from dictionary entries
+  const dueDayByCategory = useMemo(()=>{
+    const m = {};
+    (dictionary||[]).forEach(d=>{
+      if(d.dueDay && d.dueDay>=1 && d.dueDay<=31 && d.category){
+        if(!m[d.category]) m[d.category] = d.dueDay;
+      }
+    });
+    return m;
+  },[dictionary]);
 
   // Get months with data
   const months = useMemo(()=>{
@@ -2425,6 +2816,12 @@ function BudgetPage({categories, setCategories, transactions}) {
     });
     return [...m].sort();
   },[transactions]);
+
+  const monthIdx = selectedMonth==='all' ? -1 : months.indexOf(selectedMonth);
+  const canGoPrev = selectedMonth!=='all' && monthIdx > 0;
+  const canGoNext = selectedMonth!=='all' && monthIdx < months.length-1;
+  const goPrevMonth = ()=>{ if(canGoPrev) setSelectedMonth(months[monthIdx-1]); };
+  const goNextMonth = ()=>{ if(canGoNext) setSelectedMonth(months[monthIdx+1]); };
 
   // Filter transactions by selected month
   const filteredTxns = useMemo(()=>{
@@ -2443,7 +2840,7 @@ function BudgetPage({categories, setCategories, transactions}) {
     return g;
   },[categories]);
 
-  const spendingCats = categories.filter(c=>c.catType!=='transfer');
+  const spendingCats = categories.filter(c=>c.catType!=='transfer' && c.group!=='Income');
   const totalBudget = spendingCats.reduce((s,c)=>s+(c.budget||0),0);
   const discBudget = spendingCats.filter(c=>c.catType==='discretionary').reduce((s,c)=>s+(c.budget||0),0);
   const fixedBudget = spendingCats.filter(c=>c.catType==='fixed').reduce((s,c)=>s+(c.budget||0),0);
@@ -2505,12 +2902,22 @@ function BudgetPage({categories, setCategories, transactions}) {
   return h('div',{className:'animate-in'},
     h('div',{className:'page-header',style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}},
       h('div',null,
-        h('h2',null,'💰 Budget Setup', h(InfoPill,{text:'Set monthly budget amounts for each category. The app tracks your actual spending against these budgets across all pages.'})),
+        h('h2',null,'\uD83D\uDCB0 Budget Setup', h(InfoPill,{text:'Set monthly budget amounts for each category. The app tracks your actual spending against these budgets across all pages.'})),
         h('p',null,'Set monthly budget targets for each category.')
       ),
-      months.length>0 && h('select',{className:'input',value:selectedMonth,onChange:e=>setSelectedMonth(e.target.value),style:{fontSize:13,padding:'8px 12px'}},
-        h('option',{value:'all'},'All Months (Average)'),
-        [...months].reverse().map(m=>h('option',{key:m,value:m},monthLabel(m)))
+      h('div',{style:{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}},
+        selectedMonth!=='all'
+          ? h('button',{className:'btn sm',onClick:()=>setSelectedMonth('all'),style:{fontSize:11,padding:'4px 10px'}}, 'All Months (Avg)')
+          : h('span',{style:{fontSize:12,fontWeight:600,color:'var(--accent2)',background:'rgba(232,160,32,0.12)',padding:'4px 10px',borderRadius:6}}, 'All Months (Avg)'),
+        months.length>0 && selectedMonth!=='all' && h('div',{style:{display:'flex',alignItems:'center',gap:4}},
+          h('button',{className:'btn sm',onClick:goPrevMonth,disabled:!canGoPrev,'aria-label':'Previous month',style:{padding:'4px 8px',fontSize:14}}, '\u2190'),
+          h('span',{style:{fontWeight:700,fontSize:14,minWidth:100,textAlign:'center'}}, monthLabel(selectedMonth)),
+          h('button',{className:'btn sm',onClick:goNextMonth,disabled:!canGoNext,'aria-label':'Next month',style:{padding:'4px 8px',fontSize:14}}, '\u2192')
+        ),
+        selectedMonth==='all' && months.length>0 && h('button',{className:'btn sm',onClick:()=>{
+          const now=new Date();const curYM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+          setSelectedMonth(months.includes(curYM)?curYM:months[months.length-1]);
+        },style:{fontSize:11,padding:'4px 10px'}}, 'Go to Month \u25b8')
       )
     ),
 
@@ -2525,7 +2932,7 @@ function BudgetPage({categories, setCategories, transactions}) {
     categories.length === 0
       ? h('div',{className:'card'},
           h('div',{className:'empty'},
-            h('div',{className:'icon'},'💰'),
+            h('div',{className:'icon'},'\uD83D\uDCB0'),
             h('p',null,'Create categories first on the Categories page, then come back here to set budgets.')
           )
         )
@@ -2586,7 +2993,7 @@ function BudgetPage({categories, setCategories, transactions}) {
                   padding:'12px 16px',background:'var(--surface2)',borderRadius:8,cursor:'pointer',
                   border:'1px solid var(--border)',flexWrap:'wrap',gap:8
                 }},
-                  h('span',{style:{fontWeight:600,color:GROUP_COLORS[grp]||'var(--text)'}}, (isOpen?'▼':'▶')+' '+grp),
+                  h('span',{style:{fontWeight:600,color:groupColors[grp]||'var(--text)'}}, (isOpen?'▼':'▶')+' '+grp),
                   h('div',{style:{display:'flex',gap:16,alignItems:'center'}},
                     h('span',{style:{fontSize:12,color:'var(--text2)'}},
                       selectedMonth==='all'?'Avg: ':'Spent: ',
@@ -2606,6 +3013,7 @@ function BudgetPage({categories, setCategories, transactions}) {
                       h('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}},
                         h(TypeTag,{catType:c.catType}),
                         h('span',{style:{width:130,fontSize:13}}, c.name),
+                        dueDayByCategory[c.name] && h('span',{style:{fontSize:9,padding:'1px 5px',borderRadius:99,background:'rgba(80,144,232,0.12)',color:'var(--blue)',fontWeight:600,whiteSpace:'nowrap'}}, 'Day '+dueDayByCategory[c.name]),
                         h('span',{style:{color:'var(--text2)',fontSize:13}},'$'),
                         h('input',{className:'input',type:'number',value:c.budget||0,
                           onChange:e=>updateBudget(c.name,e.target.value),
@@ -2674,7 +3082,7 @@ function BudgetPage({categories, setCategories, transactions}) {
 }
 
 // ── Dashboard Page ──────────────────────────────────────
-function DashboardPage({categories, transactions, catMap, accounts, dictionary, setDictionary, onStartTour}) {
+function DashboardPage({categories, transactions, catMap, accounts, dictionary, setDictionary, onStartTour, tier, isDemo, groupColors}) {
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedAcct, setSelectedAcct] = useState('all');
   const [drilldown, setDrilldown] = useState(null);
@@ -2683,19 +3091,29 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
   const [dueDayFreqInput, setDueDayFreqInput] = useState('monthly');
   const [expandedCats, setExpandedCats] = useState(new Set());
   const [expandedPayee, setExpandedPayee] = useState(null);
+  const [forecastExpanded, setForecastExpanded] = useState(false);
+  const [forecastDiscExpanded, setForecastDiscExpanded] = useState(new Set());
+  const [dashView, setDashView] = useState('overview');
+  const [yearViewYear, setYearViewYear] = useState(()=>new Date().getFullYear());
+  const [yearViewDrilldown, setYearViewDrilldown] = useState(null);
   const toggleCat = k => setExpandedCats(prev => { const s = new Set(prev); s.has(k)?s.delete(k):s.add(k); return s; });
 
-  // ── Bills & Budget Window (always current month) ──
+  // ── Bills & Budget Window ──
   const bbWindow = useMemo(()=>{
     const now = new Date();
-    const curYear = now.getFullYear();
-    const curMonth = now.getMonth()+1;
-    const currentYM = curYear+'-'+String(curMonth).padStart(2,'0');
-    const todayDay = now.getDate();
+    const realYear = now.getFullYear();
+    const realMonth = now.getMonth()+1;
+    const realYM = realYear+'-'+String(realMonth).padStart(2,'0');
+    // Target month: use selectedMonth if specific, otherwise current month
+    const targetYM = (selectedMonth!=='all') ? selectedMonth : realYM;
+    const isCurrentMonth = targetYM===realYM;
+    const [tYear, tMonth] = targetYM.split('-').map(Number);
+    const todayDay = isCurrentMonth ? now.getDate() : new Date(tYear, tMonth, 0).getDate();
     const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const monthLabel = monthNames[curMonth-1]+' '+curYear;
+    const monthLabel = monthNames[tMonth-1]+' '+tYear;
+    const curMonth = tMonth; // alias for backward compat within bbWindow
 
-    const currentMonthTxns = transactions.filter(t=>getYearMonth(t.date)===currentYM);
+    const currentMonthTxns = transactions.filter(t=>getYearMonth(t.date)===targetYM);
 
     // Historical data by payee
     const historyByPayee = {};
@@ -2852,10 +3270,123 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
     const nextMonthBills = billsData.reduce((s,cat)=>s+cat.totalExpected,0);
     const nextMonthBalance = endOfMonthBalance + nextMonthIncome - nextMonthBills - totalDiscBudget;
 
-    return {monthLabel, curMonth, incomeData, billsData, discretionaryData,
+    return {monthLabel, curMonth, isCurrentMonth, incomeData, billsData, discretionaryData,
       currentBalance, remainingIncome, remainingBills, remainingDiscBudget,
       endOfMonthBalance, nextMonthBalance, totalDiscBudget};
-  },[transactions, categories, dictionary, accounts]);
+  },[transactions, categories, dictionary, accounts, selectedMonth]);
+
+  // ── Day-by-Day Forecast ──
+  const forecastRows = useMemo(()=>{
+    const now = new Date();
+    const todayDay = now.getDate();
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth(); // 0-indexed
+    const daysInCurMonth = new Date(curYear, curMonth+1, 0).getDate();
+    const nextMonth = curMonth===11 ? 0 : curMonth+1;
+    const nextYear = curMonth===11 ? curYear+1 : curYear;
+    const daysInNextMonth = new Date(nextYear, nextMonth+1, 0).getDate();
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    // Collect unpaid bills for current month (each with expectedDay and amount)
+    const curBills = [];
+    bbWindow.billsData.forEach(cat=>{
+      cat.payees.forEach(p=>{
+        if(!p.isPaid && p.expectedDay) curBills.push({day:p.expectedDay, label:'🔵 '+p.cleanName, amount:-p.expectedAmount, type:'bill'});
+      });
+    });
+
+    // Collect unreceived income for current month
+    const curIncome = [];
+    bbWindow.incomeData.forEach(cat=>{
+      cat.payees.forEach(p=>{
+        if(!p.received && p.expectedDay) curIncome.push({day:p.expectedDay, label:'🟢 '+p.cleanName, amount:p.expectedAmount, type:'income'});
+      });
+    });
+
+    // Discretionary: each category's budget / 4, placed on Mondays
+    const discCats = categories.filter(c=>c.catType==='discretionary' && c.group!=='Income');
+    const weeklyDisc = discCats.map(c=>({name:c.name, weekly:Math.round(((c.budget||0)/4)*100)/100})).filter(c=>c.weekly>0);
+
+    // Next month: all bills expected (using expectedDay from all payees)
+    const nextBills = [];
+    bbWindow.billsData.forEach(cat=>{
+      cat.payees.forEach(p=>{
+        if(p.expectedDay) nextBills.push({day:Math.min(p.expectedDay, daysInNextMonth), label:'🔵 '+p.cleanName, amount:-p.expectedAmount, type:'bill'});
+      });
+    });
+
+    // Next month: all income expected
+    const nextIncome = [];
+    bbWindow.incomeData.forEach(cat=>{
+      cat.payees.forEach(p=>{
+        if(p.expectedDay) nextIncome.push({day:Math.min(p.expectedDay, daysInNextMonth), label:'🟢 '+p.cleanName, amount:p.expectedAmount, type:'income'});
+      });
+    });
+
+    const rows = [];
+    let running = bbWindow.currentBalance;
+
+    // Current month: today through end of month
+    for(let d=todayDay; d<=daysInCurMonth; d++){
+      const dt = new Date(curYear, curMonth, d);
+      const dateStr = (curMonth+1)+'/'+d;
+      const isToday = d===todayDay;
+      const dayOfWeek = dt.getDay(); // 0=Sun, 1=Mon
+
+      // Add items for this day
+      const dayItems = [];
+
+      // Bills due this day
+      curBills.filter(b=>b.day===d).forEach(b=>dayItems.push(b));
+      // Income due this day
+      curIncome.filter(i=>i.day===d).forEach(i=>dayItems.push(i));
+      // Discretionary on Mondays
+      if(dayOfWeek===1 && weeklyDisc.length>0){
+        const totalWeekly = weeklyDisc.reduce((s,c)=>s+c.weekly,0);
+        dayItems.push({day:d, label:'🟡 Weekly discretionary', amount:-totalWeekly, type:'discretionary',
+          details:weeklyDisc.map(c=>({name:c.name, amount:c.weekly}))});
+      }
+
+      if(dayItems.length===0 && !isToday) continue; // skip empty days (except today)
+
+      if(isToday){
+        rows.push({date:dateStr, label:'Today', amount:0, runningBalance:running, isToday:true, type:'today'});
+      }
+
+      dayItems.forEach(item=>{
+        running += item.amount;
+        rows.push({date:dateStr, label:item.label, amount:item.amount, runningBalance:running, type:item.type});
+      });
+    }
+
+    // Month divider
+    rows.push({date:'', label:monthNames[nextMonth]+' '+nextYear, amount:0, runningBalance:running, isMonthDivider:true, type:'divider'});
+
+    // Next month: day 1 through end
+    for(let d=1; d<=daysInNextMonth; d++){
+      const dt = new Date(nextYear, nextMonth, d);
+      const dateStr = (nextMonth+1)+'/'+d;
+      const dayOfWeek = dt.getDay();
+
+      const dayItems = [];
+      nextBills.filter(b=>b.day===d).forEach(b=>dayItems.push(b));
+      nextIncome.filter(i=>i.day===d).forEach(i=>dayItems.push(i));
+      if(dayOfWeek===1 && weeklyDisc.length>0){
+        const totalWeekly = weeklyDisc.reduce((s,c)=>s+c.weekly,0);
+        dayItems.push({day:d, label:'🟡 Weekly discretionary', amount:-totalWeekly, type:'discretionary',
+          details:weeklyDisc.map(c=>({name:c.name, amount:c.weekly}))});
+      }
+
+      if(dayItems.length===0) continue;
+
+      dayItems.forEach(item=>{
+        running += item.amount;
+        rows.push({date:dateStr, label:item.label, amount:item.amount, runningBalance:running, type:item.type});
+      });
+    }
+
+    return rows;
+  },[bbWindow, categories]);
 
   const openDueDayEditor = (keyword, currentDueDay, currentFreq) => {
     setEditingDueDay(keyword);
@@ -2897,7 +3428,7 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
   const totalExp = expenses.reduce((s,t)=>s+Math.abs(t.amount),0);
   const totalInc = income.reduce((s,t)=>s+t.amount,0);
   const totalXfer = transferTxns.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
-  const spendingCats = categories.filter(c=>c.catType!=='transfer');
+  const spendingCats = categories.filter(c=>c.catType!=='transfer' && c.group!=='Income');
   const totalBudget = spendingCats.reduce((s,c)=>s+(c.budget||0),0) * numMonths;
 
   // Category analysis (exclude transfers)
@@ -2933,6 +3464,41 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
     return Object.entries(g).sort((a,b)=>b[1]-a[1]);
   },[expenses]);
 
+  // ── Calendar Year View data ──
+  const expenseBudgetPerMonth = spendingCats.reduce((s,c)=>s+(c.budget||0),0);
+  const yearViewData = useMemo(()=>{
+    if(dashView!=='annual') return null;
+    const monthKeys = [];
+    for(let m=1;m<=12;m++) monthKeys.push(yearViewYear+'-'+String(m).padStart(2,'0'));
+    const cats = categories.filter(c=>c.catType!=='transfer' && c.group!=='Income');
+    const spendMap = {};
+    const txnMap = {};
+    transactions.forEach(t=>{
+      if(t.amount>=0 || t.catType==='transfer') return;
+      const ym = getYearMonth(t.date);
+      if(!ym || !ym.startsWith(yearViewYear+'-')) return;
+      const key = t.category+'|'+ym;
+      spendMap[key] = (spendMap[key]||0) + Math.abs(t.amount);
+      if(!txnMap[key]) txnMap[key]=[];
+      txnMap[key].push(t);
+    });
+    const grpd = {};
+    cats.forEach(c=>{if(!grpd[c.group]) grpd[c.group]=[];grpd[c.group].push(c);});
+    const colTotals = {};
+    monthKeys.forEach(ym=>{colTotals[ym]=cats.reduce((s,c)=>s+(spendMap[c.name+'|'+ym]||0),0);});
+    const rowTotals = {};
+    cats.forEach(c=>{rowTotals[c.name]=monthKeys.reduce((s,ym)=>s+(spendMap[c.name+'|'+ym]||0),0);});
+    const grandTotal = Object.values(rowTotals).reduce((s,v)=>s+v,0);
+    return {monthKeys,cats,grouped:grpd,spendMap,txnMap,colTotals,rowTotals,grandTotal};
+  },[dashView,yearViewYear,categories,transactions]);
+
+  const availableYears = useMemo(()=>{
+    const yrs = new Set();
+    transactions.forEach(t=>{const ym=getYearMonth(t.date);if(ym) yrs.add(+ym.split('-')[0]);});
+    yrs.add(new Date().getFullYear());
+    return [...yrs].sort();
+  },[transactions]);
+
   return h('div',{className:'animate-in'},
     h('div',{className:'page-header',style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}},
       h('div',null,
@@ -2940,18 +3506,24 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
         h('p',null,'Budget performance and spending analysis.')
       ),
       h('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}},
-        onStartTour && h('button',{className:'btn sm',onClick:onStartTour,style:{fontSize:12}},'🎯 Tour'),
-        accounts.length>0 && h('select',{className:'input',value:selectedAcct,onChange:e=>setSelectedAcct(e.target.value)},
+        (isDemo || tier?.yearView) && h('div',{style:{display:'flex',gap:0,borderRadius:8,overflow:'hidden',border:'1px solid var(--border)',marginRight:4}},
+          h('button',{onClick:()=>setDashView('overview'),style:{padding:'5px 14px',fontSize:11,fontWeight:dashView==='overview'?700:400,border:'none',cursor:'pointer',background:dashView==='overview'?'var(--accent2)':'var(--surface2)',color:dashView==='overview'?'#fff':'var(--card-text)'}},'Dashboard'),
+          h('button',{onClick:()=>setDashView('annual'),style:{padding:'5px 14px',fontSize:11,fontWeight:dashView==='annual'?700:400,border:'none',cursor:'pointer',background:dashView==='annual'?'var(--accent2)':'var(--surface2)',color:dashView==='annual'?'#fff':'var(--card-text)'}},'Annual View')
+        ),
+        dashView==='overview' && onStartTour && h('button',{className:'btn sm',onClick:onStartTour,style:{fontSize:12}},'\uD83C\uDFAF Tour'),
+        dashView==='overview' && accounts.length>0 && h('select',{className:'input',value:selectedAcct,onChange:e=>setSelectedAcct(e.target.value)},
           h('option',{value:'all'},'All Accounts'),
           accounts.map(a=>h('option',{key:a.id,value:a.id},a.name))
         ),
-        h('select',{className:'input',value:selectedMonth,onChange:e=>setSelectedMonth(e.target.value)},
+        dashView==='overview' && h('select',{className:'input',value:selectedMonth,onChange:e=>setSelectedMonth(e.target.value)},
           h('option',{value:'all'},'All Time ('+months.length+' months)'),
           months.map(m=>h('option',{key:m,value:m}, new Date(+m.split('-')[0], +m.split('-')[1]-1, 1).toLocaleDateString('en-US',{year:'numeric',month:'long'})))
         )
       )
     ),
 
+    // ── Overview View ──
+    dashView==='overview' && h('div',null,
     // Top stats
     h('div',{className:'stats'},
       h(Stat,{label:'Income', value:fmt(totalInc), color:'var(--green)'}),
@@ -2961,46 +3533,71 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
       h(Stat,{label:'Budget', value:totalBudget>0?fmt(totalBudget):'—', sub:totalBudget>0?(totalExp<=totalBudget?'Under ✅':'Over ⚠️'):'Not set', color:'var(--accent2)'})
     ),
 
-    // ── Balance Forecast ──
-    accounts.length>0 && h('div',{className:'card',style:{marginBottom:14,padding:'10px 16px'}},
-      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}},
-        h('h3',{style:{margin:0,fontSize:13}}, h('span',{className:'icon'},'🔮'), 'Balance Forecast', h(InfoPill,{text:'Projects your balance at end of month and next month. Uses your current balance, expected remaining income, unpaid bills, and remaining discretionary budget. Red means projected negative.'})),
-        h('span',{style:{fontSize:10,color:'var(--card-text2)'}},'budget + expected bills')
+    // ── Day-by-Day Forecast (collapsible, current month only) ──
+    bbWindow.isCurrentMonth && accounts.length>0 && forecastRows.length>0 && (isDemo || tier?.dayByDay
+    ? h('div',{className:'card',style:{marginBottom:14,padding:0,overflow:'hidden'}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 16px',cursor:'pointer',background:forecastExpanded?'var(--surface2)':'transparent',transition:'background 0.15s'},
+        ...a11yClick(()=>setForecastExpanded(!forecastExpanded),'Toggle day-by-day forecast'),'aria-expanded':forecastExpanded},
+        h('h3',{style:{margin:0,fontSize:13,display:'flex',alignItems:'center',gap:8}},
+          h('span',{className:'icon'},'📅'), 'Day-by-Day Forecast',
+          h('span',{style:{fontSize:10,color:'var(--card-text2)',fontWeight:400,marginLeft:4}}, forecastRows.filter(r=>!r.isMonthDivider&&!r.isToday).length+' events'),
+          h(InfoPill,{text:'Projects your balance day-by-day through the end of next month. Fixed bills and income use their due dates. Discretionary budget is spread weekly on Mondays.'})
+        ),
+        h('span',{style:{fontSize:10,color:'var(--card-text2)',transition:'transform 0.2s',transform:forecastExpanded?'rotate(180deg)':'rotate(0)'}}, '▼')
       ),
-      // Top-line numbers
-      h('div',{style:{display:'flex',gap:0,alignItems:'center'}},
-        // Current Balance
-        h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px'}},
-          h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'Current'),
-          h('div',{style:{fontSize:18,fontWeight:700,color:bbWindow.currentBalance>=0?'var(--green)':'var(--red)'}},
-            (bbWindow.currentBalance<0?'-':'')+fmt(bbWindow.currentBalance))
-        ),
-        h('div',{style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
-        // End of Month
-        h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px',
-          background:bbWindow.endOfMonthBalance<0?'rgba(224,80,80,0.08)':'transparent',
-          borderRadius:6}},
-          h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'End of Month'),
-          h('div',{style:{fontSize:18,fontWeight:700,color:bbWindow.endOfMonthBalance>=0?'var(--green)':'var(--red)'}},
-            (bbWindow.endOfMonthBalance<0?'-':'')+fmt(bbWindow.endOfMonthBalance),
-            bbWindow.endOfMonthBalance<0&&h('span',{style:{fontSize:10,marginLeft:4}},'⚠️'))
-        ),
-        h('div',{style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
-        // Next Month
-        h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px',
-          background:bbWindow.nextMonthBalance<0?'rgba(224,80,80,0.08)':'transparent',
-          borderRadius:6}},
-          h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'Next Month'),
-          h('div',{style:{fontSize:18,fontWeight:700,color:bbWindow.nextMonthBalance>=0?'var(--green)':'var(--red)'}},
-            (bbWindow.nextMonthBalance<0?'-':'')+fmt(bbWindow.nextMonthBalance),
-            bbWindow.nextMonthBalance<0&&h('span',{style:{fontSize:10,marginLeft:4}},'⚠️'))
+      forecastExpanded && h('div',{style:{maxHeight:400,overflowY:'auto',padding:'0 16px 12px'}},
+        h('table',{className:'table',style:{fontSize:12}},
+          h('thead',null,h('tr',null,
+            h('th',{style:{width:50,padding:'4px 6px'}},'Date'),
+            h('th',{style:{padding:'4px 6px'}},'Description'),
+            h('th',{style:{width:80,textAlign:'right',padding:'4px 6px'}},'Amount'),
+            h('th',{style:{width:90,textAlign:'right',padding:'4px 6px'}},'Balance')
+          )),
+          h('tbody',null, forecastRows.map((row,i)=>{
+            if(row.isMonthDivider) return h('tr',{key:'div-'+i,style:{background:'rgba(126,200,227,0.1)'}},
+              h('td',{colSpan:4,style:{fontWeight:700,fontSize:12,textAlign:'center',padding:'8px 6px',color:'var(--blue)',letterSpacing:0.5}}, '— '+row.label+' —')
+            );
+            if(row.isToday) return h('tr',{key:'today-'+i,style:{background:'rgba(232,160,32,0.08)'}},
+              h('td',{style:{fontWeight:600,padding:'4px 6px',color:'var(--accent2)'}},row.date),
+              h('td',{style:{fontWeight:600,padding:'4px 6px',color:'var(--accent2)'}},'📍 Today'),
+              h('td',{style:{padding:'4px 6px'}}),
+              h('td',{style:{textAlign:'right',fontWeight:700,padding:'4px 6px',color:row.runningBalance>=0?'var(--green)':'var(--red)'}},
+                (row.runningBalance<0?'-':'')+fmt(Math.abs(row.runningBalance)))
+            );
+            const amtColor = row.type==='income'?'var(--green)':row.type==='bill'?'var(--red)':row.type==='discretionary'?'var(--yellow)':'var(--card-text2)';
+            const hasDetails = row.details && row.details.length>0;
+            const discKey = 'disc-'+i;
+            const isDiscOpen = forecastDiscExpanded.has(discKey);
+            const toggleDisc = ()=> setForecastDiscExpanded(prev=>{const s=new Set(prev); s.has(discKey)?s.delete(discKey):s.add(discKey); return s;});
+            const mainRow = h('tr',{key:i,style:{background:row.runningBalance<0?'rgba(224,80,80,0.05)':'transparent',cursor:hasDetails?'pointer':'default'},
+              onClick:hasDetails?toggleDisc:undefined},
+              h('td',{style:{padding:'4px 6px',color:'var(--card-text2)',fontSize:11}},row.date),
+              h('td',{style:{padding:'4px 6px',fontWeight:500}},
+                hasDetails && h('span',{style:{fontSize:9,color:'var(--card-text2)',marginRight:5}},isDiscOpen?'▾':'▸'),
+                row.label),
+              h('td',{style:{textAlign:'right',padding:'4px 6px',fontWeight:600,color:amtColor}},
+                (row.amount>=0?'+':'-')+fmt(Math.abs(row.amount))),
+              h('td',{style:{textAlign:'right',padding:'4px 6px',fontWeight:700,color:row.runningBalance>=0?'var(--green)':'var(--red)'}},
+                (row.runningBalance<0?'-':'')+fmt(Math.abs(row.runningBalance)))
+            );
+            if(!hasDetails || !isDiscOpen) return mainRow;
+            return [mainRow].concat(row.details.map((d,di)=>
+              h('tr',{key:i+'-d-'+di,style:{background:'rgba(232,160,32,0.04)'}},
+                h('td',{style:{padding:'2px 6px'}}),
+                h('td',{style:{padding:'2px 6px 2px 24px',fontSize:11,color:'var(--card-text2)',fontWeight:400}}, d.name),
+                h('td',{style:{textAlign:'right',padding:'2px 6px',fontSize:11,color:'var(--yellow)'}}, '-'+fmt(d.amount)),
+                h('td',{style:{padding:'2px 6px'}})
+              )
+            ));
+          }).flat())
         )
-      ),
-      // Breakdown detail
-      h('div',{style:{display:'flex',gap:12,marginTop:6,paddingTop:6,borderTop:'1px solid var(--border)',flexWrap:'wrap',justifyContent:'center'}},
-        h('span',{style:{fontSize:10,color:'var(--green)'}}, '+Income: ',h('strong',null,fmt(bbWindow.remainingIncome))),
-        h('span',{style:{fontSize:10,color:'var(--red)'}}, '-Bills: ',h('strong',null,fmt(bbWindow.remainingBills))),
-        h('span',{style:{fontSize:10,color:'var(--yellow)'}}, '-Disc: ',h('strong',null,fmt(bbWindow.remainingDiscBudget)))
+      )
+    )
+    : h('div',{className:'card',style:{textAlign:'center',padding:'16px 20px',marginBottom:14,background:'rgba(126,200,227,0.06)',border:'1px dashed var(--blue)',borderRadius:8}},
+        h('div',{style:{fontSize:24,marginBottom:6}},'📅'),
+        h('div',{style:{fontSize:13,fontWeight:600,color:'var(--blue)',marginBottom:4}},'Day-by-Day Projections'),
+        h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:8}},'See a detailed daily breakdown of your balance — every bill, income, and budget event mapped out.'),
+        h('a',{href:'https://ambitbudget.com/#pricing',style:{fontSize:11,fontWeight:600,color:'var(--blue)',textDecoration:'none'}},'Upgrade to Pro →')
       )
     ),
 
@@ -3012,60 +3609,60 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
           )
         )
       : h('div',null,
-          // Main layout: left analysis + right bills window
+          // Main layout: left spending + right forecast/bills (50/50)
           h('div',{className:'dash-layout',style:{display:'flex',gap:16,marginBottom:20,flexWrap:'wrap',alignItems:'flex-start'}},
 
-            // Left column: Spending analysis
-            h('div',{className:'dash-left',style:{flex:1,minWidth:300,display:'flex',flexDirection:'column',gap:16}},
-              h('div',{style:{display:'flex',gap:16,flexWrap:'wrap'}},
-                h('div',{className:'card',style:{flex:1,minWidth:250}},
-                  h('h3',null, h('span',{className:'icon'},'🏷'), 'Spending by Group', h(InfoPill,{text:'Shows how your spending breaks down by category group (Housing, Food, Transport, etc.) as a percentage of total expenses.'})),
-                  grpAnalysis.map(([grp,amt])=>{
-                    const pct = totalExp>0 ? (amt/totalExp*100) : 0;
-                    return h('div',{key:grp,style:{marginBottom:10}},
-                      h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:4}},
-                        h(Tag,{color:GROUP_COLORS[grp]||'#8b90a5'},grp),
-                        h('span',{style:{fontSize:12}}, fmt(amt), h('span',{style:{color:'var(--text2)',marginLeft:4}},Math.round(pct)+'%'))
-                      ),
-                      h('div',{className:'progress'},
-                        h('div',{className:'progress-fill',style:{width:pct+'%',background:GROUP_COLORS[grp]||'#8b90a5'}})
-                      )
-                    );
-                  })
-                ),
-                h('div',{className:'card',style:{flex:1,minWidth:250}},
-                  h('h3',null, h('span',{className:'icon'},'📈'), 'Spending Breakdown', h(InfoPill,{text:'Compares your discretionary vs fixed spending. Discretionary is what you can control; fixed bills are recurring obligations.'})),
-                  h('div',{style:{display:'flex',gap:16,justifyContent:'center',padding:'20px 0',flexWrap:'wrap'}},
+            // Left column: Combined Spending Analysis
+            h('div',{className:'dash-left',style:{flex:1,minWidth:300}},
+              h('div',{className:'card'},
+                h('h3',null, h('span',{className:'icon'},'📊'), 'Spending Analysis', h(InfoPill,{text:'Spending breakdown by group and category with budget vs actual. Click any category row to see individual transactions.'})),
+
+                // Group bars + Disc/Fixed/Transfer summary side-by-side
+                h('div',{style:{display:'flex',gap:16,flexWrap:'wrap',marginBottom:16}},
+                  // Group spending bars
+                  h('div',{style:{flex:1,minWidth:180}},
+                    grpAnalysis.map(([grp,amt])=>{
+                      const pct = totalExp>0 ? (amt/totalExp*100) : 0;
+                      return h('div',{key:grp,style:{marginBottom:8}},
+                        h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:3}},
+                          h(Tag,{color:groupColors[grp]||'#8b90a5'},grp),
+                          h('span',{style:{fontSize:11}}, fmt(amt), h('span',{style:{color:'var(--text2)',marginLeft:4}},Math.round(pct)+'%'))
+                        ),
+                        h('div',{className:'progress'},
+                          h('div',{className:'progress-fill',style:{width:pct+'%',background:groupColors[grp]||'#8b90a5'}})
+                        )
+                      );
+                    })
+                  ),
+                  // Disc / Fixed / Transfers summary
+                  h('div',{style:{flex:1,minWidth:180,display:'flex',gap:12,justifyContent:'center',alignItems:'center',flexWrap:'wrap'}},
                     (()=>{
                       const discSpent = expenses.filter(t=>t.catType==='discretionary').reduce((s,t)=>s+Math.abs(t.amount),0);
                       const fixedSpent = expenses.filter(t=>t.catType==='fixed').reduce((s,t)=>s+Math.abs(t.amount),0);
                       return [
                         h('div',{key:'disc',style:{textAlign:'center'}},
-                          h('div',{style:{fontSize:26,fontWeight:700,color:'var(--yellow)'}},fmt(discSpent)),
-                          h('div',{style:{fontSize:12,color:'var(--text2)'}},'Discretionary'),
-                          h('div',{style:{fontSize:11,color:'var(--text2)'}},totalExp>0?Math.round(discSpent/totalExp*100)+'%':'—')
+                          h('div',{style:{fontSize:20,fontWeight:700,color:'var(--yellow)'}},fmt(discSpent)),
+                          h('div',{style:{fontSize:11,color:'var(--text2)'}},'Discretionary'),
+                          h('div',{style:{fontSize:10,color:'var(--text2)'}},totalExp>0?Math.round(discSpent/totalExp*100)+'%':'—')
                         ),
-                        h('div',{key:'sep1',style:{width:1,background:'var(--border)'}}),
+                        h('div',{key:'sep1',style:{width:1,height:36,background:'var(--border)'}}),
                         h('div',{key:'fix',style:{textAlign:'center'}},
-                          h('div',{style:{fontSize:26,fontWeight:700,color:'var(--blue)'}},fmt(fixedSpent)),
-                          h('div',{style:{fontSize:12,color:'var(--text2)'}},'Fixed'),
-                          h('div',{style:{fontSize:11,color:'var(--text2)'}},totalExp>0?Math.round(fixedSpent/totalExp*100)+'%':'—')
+                          h('div',{style:{fontSize:20,fontWeight:700,color:'var(--blue)'}},fmt(fixedSpent)),
+                          h('div',{style:{fontSize:11,color:'var(--text2)'}},'Fixed'),
+                          h('div',{style:{fontSize:10,color:'var(--text2)'}},totalExp>0?Math.round(fixedSpent/totalExp*100)+'%':'—')
                         ),
-                        h('div',{key:'sep2',style:{width:1,background:'var(--border)'}}),
+                        h('div',{key:'sep2',style:{width:1,height:36,background:'var(--border)'}}),
                         h('div',{key:'xfer',style:{textAlign:'center'}},
-                          h('div',{style:{fontSize:26,fontWeight:700,color:'var(--pink)'}},fmt(totalXfer)),
-                          h('div',{style:{fontSize:12,color:'var(--text2)'}},'Transfers'),
-                          h('div',{style:{fontSize:11,color:'var(--text2)'}},'excluded')
+                          h('div',{style:{fontSize:20,fontWeight:700,color:'var(--pink)'}},fmt(totalXfer)),
+                          h('div',{style:{fontSize:11,color:'var(--text2)'}},'Transfers'),
+                          h('div',{style:{fontSize:10,color:'var(--text2)'}},'excluded')
                         )
                       ];
                     })()
                   )
-                )
-              ),
+                ),
 
-              // Category budget table
-              h('div',{className:'card'},
-                h('h3',null, h('span',{className:'icon'},'📋'), 'Category Budget vs Actual', h(InfoPill,{text:'Each row shows a spending category with its budget, actual spend, and variance (+/-). Red rows are over budget. Click any row to see the individual transactions.'})),
+                // Category Budget vs Actual table
                 catAnalysis.length===0
                   ? h('p',{style:{color:'var(--text2)',textAlign:'center',padding:20}},'No spending data for this period.')
                   : h('table',{className:'table compact-budget'},
@@ -3078,7 +3675,7 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
                           h('td',null,
                             h('div',{style:{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}},
                               h('span',{style:{fontWeight:500}},c.name),
-                              h(Tag,{color:GROUP_COLORS[c.group]||'#8b90a5'},c.group),
+                              h(Tag,{color:groupColors[c.group]||'#8b90a5'},c.group),
                               h(TypeTag,{catType:c.catType})
                             )
                           ),
@@ -3092,13 +3689,63 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
               )
             ),
 
-            // Right column: Bills & Budget Window
-            h('div',{className:'card dash-right',style:{width:380,minWidth:320,flexShrink:0}},
+            // Right column: Balance Forecast + This Month's Bills
+            h('div',{className:'dash-right',style:{flex:1,minWidth:300,display:'flex',flexDirection:'column',gap:16}},
+
+              // Balance Forecast (only for current month)
+              bbWindow.isCurrentMonth && accounts.length>0 && (isDemo || tier?.forecast
+              ? h('div',{className:'card',style:{padding:'10px 16px'}},
+                h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}},
+                  h('h3',{style:{margin:0,fontSize:13}}, h('span',{className:'icon'},'🔮'), 'Balance Forecast', h(InfoPill,{text:'End of Month = Current Balance + Remaining Income \u2212 Unpaid Bills \u2212 Remaining Discretionary Budget. \"Remaining Disc\" = your total discretionary budget minus what you have already spent this month. Next Month projects a full month of income, bills, and discretionary spending. Red means projected negative.'})),
+                  h('span',{style:{fontSize:10,color:'var(--card-text2)'}},'budget + expected bills')
+                ),
+                h('div',{style:{display:'flex',gap:0,alignItems:'center'}},
+                  h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px'}},
+                    h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'Current'),
+                    h('div',{style:{fontSize:18,fontWeight:700,color:bbWindow.currentBalance>=0?'var(--green)':'var(--red)'}},
+                      (bbWindow.currentBalance<0?'-':'')+fmt(bbWindow.currentBalance))
+                  ),
+                  h('div',{style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
+                  h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px',
+                    background:bbWindow.endOfMonthBalance<0?'rgba(224,80,80,0.08)':'transparent',
+                    borderRadius:6}},
+                    h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'End of Month'),
+                    h('div',{style:{fontSize:18,fontWeight:700,color:bbWindow.endOfMonthBalance>=0?'var(--green)':'var(--red)'}},
+                      (bbWindow.endOfMonthBalance<0?'-':'')+fmt(bbWindow.endOfMonthBalance),
+                      bbWindow.endOfMonthBalance<0&&h('span',{style:{fontSize:10,marginLeft:4}},'⚠️'))
+                  ),
+                  h('div',{style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
+                  h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px',
+                    background:bbWindow.nextMonthBalance<0?'rgba(224,80,80,0.08)':'transparent',
+                    borderRadius:6}},
+                    h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'Next Month'),
+                    h('div',{style:{fontSize:18,fontWeight:700,color:bbWindow.nextMonthBalance>=0?'var(--green)':'var(--red)'}},
+                      (bbWindow.nextMonthBalance<0?'-':'')+fmt(bbWindow.nextMonthBalance),
+                      bbWindow.nextMonthBalance<0&&h('span',{style:{fontSize:10,marginLeft:4}},'⚠️'))
+                  )
+                ),
+                h('div',{style:{display:'flex',gap:12,marginTop:6,paddingTop:6,borderTop:'1px solid var(--border)',flexWrap:'wrap',justifyContent:'center'}},
+                  h('span',{style:{fontSize:10,color:'var(--green)'}}, '+Income: ',h('strong',null,fmt(bbWindow.remainingIncome)), bbWindow.remainingIncome===0 && h('span',{style:{fontSize:9,color:'var(--card-text2)',marginLeft:2}},'(received)')),
+                  h('span',{style:{fontSize:10,color:'var(--red)'}}, '-Bills: ',h('strong',null,fmt(bbWindow.remainingBills))),
+                  h('span',{style:{fontSize:10,color:'var(--yellow)'}}, '-Disc: ',h('strong',null,fmt(bbWindow.remainingDiscBudget)))
+                )
+              )
+              : h('div',{style:{textAlign:'center',padding:'16px 20px',background:'rgba(232,160,32,0.06)',border:'1px dashed var(--accent2)',borderRadius:8}},
+                  h('div',{style:{fontSize:24,marginBottom:6}},'🔮'),
+                  h('div',{style:{fontSize:13,fontWeight:600,color:'var(--accent2)',marginBottom:4}},'Balance Forecast'),
+                  h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:8}},'See where your balance is headed — end of month and next month projections.'),
+                  h('a',{href:'https://ambitbudget.com/#pricing',style:{fontSize:11,fontWeight:600,color:'var(--accent2)',textDecoration:'none'}},'Upgrade to Plus →')
+              )),
+
+              // Bills
+              h('div',{className:'card'},
               h('h3',null,
-                h('span',{className:'icon'},'📅'),
-                "This Month's Bills",
-                h('span',{style:{fontWeight:400,fontSize:12,color:'var(--card-text2)',marginLeft:8}},'— '+bbWindow.monthLabel),
-                h(InfoPill,{text:"Tracks this month's income, fixed bills, and discretionary spending. Click \u25b8 on a category to expand payee details. Click a payee to see transactions. Use \ud83d\udcc5 to set due dates and billing frequency."})
+                h('span',{className:'icon'},'\uD83D\uDCC5'),
+                bbWindow.isCurrentMonth ? "This Month's Bills" : 'Bills',
+                h('span',{style:{fontWeight:400,fontSize:12,color:'var(--card-text2)',marginLeft:8}},'\u2014 '+bbWindow.monthLabel),
+                h(InfoPill,{text:bbWindow.isCurrentMonth
+                  ? "Tracks this month's income, fixed bills, and discretionary spending. Click \u25b8 on a category to expand payee details. Click a payee to see transactions. Use \ud83d\udcc5 to set due dates and billing frequency."
+                  : "Shows income, fixed bills, and discretionary spending for "+bbWindow.monthLabel+". Click \u25b8 on a category to expand payee details."})
               ),
 
               // Income section
@@ -3253,7 +3900,132 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
                 h('div',{style:{color:'var(--card-text2)',textAlign:'center',padding:'20px 0',fontSize:12}},
                   'Set up categories and payee rules to see your bills window here.')
             )
+            ) // close right column
+          )
+    )), // close overview wrapper
+
+    // ── Annual View ──
+    dashView==='annual' && (isDemo || tier?.yearView)
+      ? h('div',{className:'animate-in'},
+          h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:16,marginTop:8}},
+            h('button',{className:'btn sm',onClick:()=>setYearViewYear(y=>y-1),disabled:availableYears.length>0&&yearViewYear<=availableYears[0],'aria-label':'Previous year',style:{padding:'6px 12px',fontSize:16}}, '\u2190'),
+            h('span',{style:{fontWeight:700,fontSize:20,minWidth:60,textAlign:'center'}}, String(yearViewYear)),
+            h('button',{className:'btn sm',onClick:()=>setYearViewYear(y=>y+1),disabled:availableYears.length>0&&yearViewYear>=availableYears[availableYears.length-1],'aria-label':'Next year',style:{padding:'6px 12px',fontSize:16}}, '\u2192')
           ),
+          yearViewData && h('div',{className:'stats'},
+            h(Stat,{label:'Year', value:String(yearViewYear), color:'var(--blue)'}),
+            h(Stat,{label:'Total Spent', value:fmt(yearViewData.grandTotal), color:'var(--red)'}),
+            h(Stat,{label:'Monthly Avg', value:fmt(yearViewData.grandTotal/12), sub:'/mo', color:'var(--accent2)'}),
+            h(Stat,{label:'Categories', value:String(yearViewData.cats.length), color:'var(--text)'}),
+            h(Stat,{label:'Expense Budget', value:fmt(expenseBudgetPerMonth), sub:'/month', color:'var(--accent2)'})
+          ),
+          yearViewData && h('div',{className:'card',style:{marginTop:16,overflow:'hidden'}},
+            h('h3',null, h('span',{className:'icon'},'\uD83D\uDCC5'), 'Calendar Year View \u2014 '+yearViewYear,
+              h(InfoPill,{text:'12-month grid showing actual spend per category. Green = under budget, yellow = 80-100%, red = over budget. Click any cell to see transactions.'})
+            ),
+            h('div',{style:{overflowX:'auto',WebkitOverflowScrolling:'touch'}},
+              h('table',{className:'table',style:{minWidth:800,fontSize:12}},
+                h('thead',null,h('tr',null,
+                  h('th',{style:{position:'sticky',left:0,background:'var(--surface)',zIndex:2,minWidth:120,textAlign:'left'}},'Category'),
+                  ...(yearViewData.monthKeys.map(ym=>{
+                    const mIdx=+ym.split('-')[1];
+                    const mNames=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    return h('th',{key:ym,style:{textAlign:'right',minWidth:62,padding:'6px 4px'}},mNames[mIdx]);
+                  })),
+                  h('th',{style:{textAlign:'right',fontWeight:700,minWidth:72}},'Total')
+                )),
+                h('tbody',null,
+                  ...(Object.entries(yearViewData.grouped).map(([grp,cats])=>{
+                    const grpRow = h('tr',{key:'grp-'+grp,style:{background:'var(--surface2)'}},
+                      h('td',{colSpan:14,style:{fontWeight:700,fontSize:12,color:groupColors[grp]||'var(--text)',padding:'8px 8px'}}, grp)
+                    );
+                    const catRows = cats.map(c=>{
+                      const budget = c.budget||0;
+                      return h('tr',{key:c.name},
+                        h('td',{style:{position:'sticky',left:0,background:'var(--surface)',zIndex:1,fontSize:12,fontWeight:500}}, c.name),
+                        ...(yearViewData.monthKeys.map(ym=>{
+                          const spent = yearViewData.spendMap[c.name+'|'+ym]||0;
+                          const pct = budget>0 ? spent/budget : 0;
+                          const bg = spent===0?'transparent':budget===0?'transparent':pct>1?'rgba(224,80,80,0.12)':pct>=0.8?'rgba(232,160,32,0.12)':'rgba(64,192,128,0.10)';
+                          const clr = spent===0?'var(--card-text2)':budget===0?'var(--card-text)':pct>1?'var(--red)':pct>=0.8?'#c87820':'var(--green)';
+                          const txns = yearViewData.txnMap[c.name+'|'+ym]||[];
+                          return h('td',{key:ym,style:{textAlign:'right',background:bg,color:clr,fontSize:11,fontWeight:spent>0?600:400,padding:'5px 4px',cursor:txns.length>0?'pointer':'default'},
+                            onClick:txns.length>0?()=>setYearViewDrilldown({category:c.name,ym,txns,budget,spent}):undefined
+                          }, spent>0?fmt(spent):'\u2014');
+                        })),
+                        h('td',{style:{textAlign:'right',fontWeight:700,fontSize:12}},
+                          yearViewData.rowTotals[c.name]>0?fmt(yearViewData.rowTotals[c.name]):'\u2014'
+                        )
+                      );
+                    });
+                    return [grpRow,...catRows];
+                  }).flat()),
+                  h('tr',{style:{borderTop:'2px solid var(--border)',fontWeight:700}},
+                    h('td',{style:{position:'sticky',left:0,background:'var(--surface)',zIndex:1,fontWeight:700}},'Total'),
+                    ...(yearViewData.monthKeys.map(ym=>
+                      h('td',{key:ym,style:{textAlign:'right',fontSize:12,fontWeight:700}},
+                        yearViewData.colTotals[ym]>0?fmt(yearViewData.colTotals[ym]):'\u2014'
+                      )
+                    )),
+                    h('td',{style:{textAlign:'right',fontWeight:700,fontSize:13,color:'var(--accent2)'}}, fmt(yearViewData.grandTotal))
+                  )
+                )
+              )
+            )
+          )
+        )
+      : dashView==='annual' && !(isDemo || tier?.yearView)
+        ? h('div',{style:{textAlign:'center',padding:'40px 20px',background:'rgba(232,160,32,0.06)',border:'1px dashed var(--accent2)',borderRadius:8,marginTop:16}},
+            h('div',{style:{fontSize:28,marginBottom:8}},'\uD83D\uDCC5'),
+            h('div',{style:{fontSize:14,fontWeight:600,color:'var(--accent2)',marginBottom:4}},'Calendar Year View'),
+            h('div',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:10}},'See a 12-month grid of spending by category with budget color-coding and drilldown.'),
+            h('a',{href:'https://ambitbudget.com/#pricing',style:{fontSize:12,fontWeight:600,color:'var(--accent2)',textDecoration:'none'}},'Upgrade to Plus \u2192')
+          )
+        : null,
+
+    // Year View drilldown modal
+    yearViewDrilldown && h(Modal, {onClose:()=>setYearViewDrilldown(null)},
+      h('h3',null, '\uD83D\uDD0D ', yearViewDrilldown.category,
+        h('span',{style:{fontWeight:400,fontSize:13,color:'var(--card-text2)'}},
+          ' \u2014 '+(()=>{const [y,m]=yearViewDrilldown.ym.split('-');const n=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return n[+m]+' '+y;})())
+      ),
+      h('div',{style:{display:'flex',gap:12,marginBottom:14}},
+        h('div',{style:{flex:1,textAlign:'center',padding:10,background:'rgba(224,80,80,0.06)',borderRadius:8}},
+          h('div',{style:{fontSize:20,fontWeight:700,color:'var(--red)'}},fmt(yearViewDrilldown.spent)),
+          h('div',{style:{fontSize:11,color:'var(--card-text2)'}},'Spent')
+        ),
+        yearViewDrilldown.budget>0 && h('div',{style:{flex:1,textAlign:'center',padding:10,background:'rgba(64,192,128,0.06)',borderRadius:8}},
+          h('div',{style:{fontSize:20,fontWeight:700,color:'var(--accent2)'}},fmt(yearViewDrilldown.budget)),
+          h('div',{style:{fontSize:11,color:'var(--card-text2)'}},'Budget')
+        ),
+        yearViewDrilldown.budget>0 && h('div',{style:{flex:1,textAlign:'center',padding:10,
+          background:(yearViewDrilldown.budget-yearViewDrilldown.spent)>=0?'rgba(64,192,128,0.06)':'rgba(224,80,80,0.06)',borderRadius:8}},
+          h('div',{style:{fontSize:20,fontWeight:700,
+            color:(yearViewDrilldown.budget-yearViewDrilldown.spent)>=0?'var(--green)':'var(--red)'}},
+            (yearViewDrilldown.budget-yearViewDrilldown.spent)>=0?'+':'\u2212',
+            fmt(Math.abs(yearViewDrilldown.budget-yearViewDrilldown.spent))
+          ),
+          h('div',{style:{fontSize:11,color:'var(--card-text2)'}},'Remaining')
+        )
+      ),
+      h('div',{style:{maxHeight:350,overflowY:'auto'}},
+        h('table',{className:'table'},
+          h('thead',null,h('tr',null,
+            h('th',null,'Date'), h('th',null,'Payee'), h('th',null,'Amount')
+          )),
+          h('tbody',null, yearViewDrilldown.txns.sort((a,b)=>safeDate(b.date)-safeDate(a.date)).map((t,i)=>
+            h('tr',{key:i},
+              h('td',{style:{fontSize:12,color:'var(--card-text2)'}},t.date),
+              h('td',{style:{fontWeight:500}},t.cleanName),
+              h('td',{style:{fontWeight:600}},fmt(t.amount))
+            )
+          ))
+        )
+      ),
+      h('div',{style:{textAlign:'right',marginTop:12}},
+        h('button',{className:'btn',onClick:()=>setYearViewDrilldown(null)},'Close')
+      )
+    ),
 
           // Drilldown modal
           drilldown && h(Modal,{onClose:()=>setDrilldown(null)},
@@ -3307,7 +4079,6 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
               h('button',{className:'btn primary',onClick:saveDueDay},'Save')
             )
           )
-        )
   );
 }
 

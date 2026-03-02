@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plus Plan — Ambit Budget Pro</title>
+<meta name="description" content="Ambit Budget Pro Plus — $19.99 one-time. Everything in Starter plus Balance Forecast, Monthly Budget Review, and up to 3 accounts.">
+<link rel="canonical" href="https://ambitbudget.com/plus.html">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cpath d='M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z' fill='%237ec8e3' stroke='%235ba8c8' stroke-width='2'/%3E%3Cg transform='translate(10,8) scale(0.8)'%3E%3Cpolygon points='50,2 56,40 50,47 44,40' fill='%23e87820'/%3E%3Cpolygon points='98,50 60,56 53,50 60,44' fill='%23e87820'/%3E%3Cpolygon points='50,98 44,60 50,53 56,60' fill='%23e87820'/%3E%3Cpolygon points='2,50 40,44 47,50 40,56' fill='%23e87820'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23e87820'/%3E%3C/g%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c1445; --bg2: #101850; --text: #eef0ff; --text2: #9da5d0;
+  --accent: #e8a020; --accent2: #f0c050; --blue: #7ec8e3;
+  --green: #40c080; --red: #e05050; --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+.nav { background: rgba(12,20,69,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 0; position: sticky; top: 0; z-index: 100; }
+.nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: var(--accent2); text-decoration: none; }
+.nav-logo span { font-size: 10px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; display: block; margin-top: 1px; }
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); }
+.nav-cta { background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s; }
+.nav-cta:hover { background: #d09018; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+.hero { padding: 80px 0 48px; text-align: center; }
+.hero .tier-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--accent2); margin-bottom: 8px; }
+.hero .popular-badge { display: inline-block; background: linear-gradient(135deg,#e8a020,#f0c050); color: #0c1445; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 99px; margin-bottom: 12px; letter-spacing: 0.5px; text-transform: uppercase; }
+.hero h1 { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 8px; }
+.hero .price { font-size: 56px; font-weight: 800; color: var(--accent2); letter-spacing: -2px; margin-bottom: 8px; }
+.hero .price sup { font-size: 22px; vertical-align: super; font-weight: 500; color: var(--text2); }
+.hero .price-note { font-size: 14px; color: var(--text2); margin-bottom: 16px; }
+.hero .tagline { font-size: 18px; color: var(--text2); max-width: 480px; margin: 0 auto; }
+
+.content { max-width: 640px; margin: 0 auto; padding: 0 24px 60px; }
+
+.card { background: var(--bg2); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 28px; margin-bottom: 24px; }
+.card h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+
+.feature-list { list-style: none; }
+.feature-list li { padding: 10px 0; font-size: 15px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.feature-list li:last-child { border-bottom: none; }
+.feature-list .check { color: var(--green); font-size: 15px; flex-shrink: 0; }
+.feature-list .cross { color: var(--red); font-size: 15px; flex-shrink: 0; opacity: 0.4; }
+.feature-list .excluded { opacity: 0.45; }
+.feature-list .upgrade-note { font-size: 11px; color: var(--accent2); margin-left: auto; }
+.feature-list .new-badge { display: inline-block; background: rgba(64,192,128,0.15); color: var(--green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: auto; letter-spacing: 0.3px; }
+
+.demo-card { background: rgba(126,200,227,0.06); border: 1px solid rgba(126,200,227,0.15); text-align: center; }
+.demo-card p { font-size: 14px; color: var(--text2); margin-bottom: 12px; }
+.demo-card .note { font-size: 12px; color: var(--text2); opacity: 0.7; margin-top: 10px; }
+
+.btn { padding: 14px 32px; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; border: none; cursor: pointer; font-family: inherit; }
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 20px rgba(232,160,32,0.3); }
+.btn-primary:hover { background: #d09018; transform: translateY(-2px); }
+.btn-disabled { background: var(--accent); color: #fff; opacity: 0.7; pointer-events: none; width: 100%; justify-content: center; }
+
+.upgrade-card { background: rgba(232,160,32,0.06); border: 1px dashed var(--accent2); text-align: center; }
+.upgrade-card p { font-size: 14px; color: var(--text2); margin-bottom: 12px; }
+.upgrade-card a { color: var(--accent2); font-weight: 600; text-decoration: none; font-size: 15px; }
+.upgrade-card a:hover { text-decoration: underline; }
+
+.footer { border-top: 1px solid rgba(255,255,255,0.08); padding: 40px 0; }
+.footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.footer-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--accent2); }
+.footer-logo span { color: var(--text2); font-weight: 400; font-size: 12px; }
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+.footer-links a { color: var(--text2); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+.footer-links a:hover { color: var(--text); }
+.footer-copy { color: var(--text2); font-size: 12px; opacity: 0.6; }
+
+@media (max-width: 768px) {
+  .hero h1 { font-size: 30px; }
+  .hero .price { font-size: 44px; }
+  .nav-links { display: none; }
+  .footer-inner { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="./index.html" class="nav-logo">
+      <svg width="28" height="32" viewBox="0 0 100 115"><path d="M4,12 Q4,4 12,4 L88,4 Q96,4 96,12 L96,60 Q96,85 50,112 Q4,85 4,60 Z" fill="#7ec8e3" stroke="#5ba8c8" stroke-width="2"/><g transform="translate(10,8) scale(0.8)"><polygon points="50,2 56,40 50,47 44,40" fill="#e87820"/><polygon points="98,50 60,56 53,50 60,44" fill="#e87820"/><polygon points="50,98 44,60 50,53 56,60" fill="#e87820"/><polygon points="2,50 40,44 47,50 40,56" fill="#e87820"/><circle cx="50" cy="50" r="4" fill="#e87820"/></g></svg>
+      <div>Ambit<span>Budget Pro</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="./features.html">Features</a>
+      <a href="./index.html#how-it-works">How It Works</a>
+      <a href="./index.html#pricing">Pricing</a>
+      <a href="./index.html#faq">FAQ</a>
+      <a href="./coming-soon.html">What's Next</a>
+      <a href="./app/index.html?mode=demo" class="nav-cta">Try Demo</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="popular-badge">Most Popular</div>
+    <div class="tier-label">Plus</div>
+    <div class="price"><sup>$</sup>19.99</div>
+    <div class="price-note">One-time purchase &middot; Lifetime access</div>
+    <h1>Forecasting and insights for smarter decisions.</h1>
+    <p class="tagline">Everything in Starter, plus balance forecasting, monthly budget reviews, and support for up to 3 bank accounts.</p>
+  </div>
+</section>
+
+<div class="content">
+  <div class="card">
+    <h2>What's Included</h2>
+    <ul class="feature-list">
+      <li><span class="check">✓</span> Smart Dashboard</li>
+      <li><span class="check">✓</span> CSV/Excel Import</li>
+      <li><span class="check">✓</span> Auto-Categorization</li>
+      <li><span class="check">✓</span> Budget Tracking</li>
+      <li><span class="check">✓</span> Bill Management</li>
+      <li><span class="check">✓</span> Balance Forecast <span class="new-badge">+ Plus</span></li>
+      <li><span class="check">✓</span> Monthly Budget Review <span class="new-badge">+ Plus</span></li>
+      <li><span class="check">✓</span> 3 Bank Accounts <span class="new-badge">+ Plus</span></li>
+      <li><span class="check">✓</span> Works Offline Forever</li>
+      <li><span class="check">✓</span> Lifetime Access</li>
+      <li class="excluded"><span class="cross">✗</span> Day-by-Day Projections <span class="upgrade-note">Pro</span></li>
+    </ul>
+  </div>
+
+  <div class="card demo-card">
+    <h2>Try Before You Buy</h2>
+    <p>The demo shows <strong>all features</strong> with sample data — including balance forecasting and monthly reviews.</p>
+    <a href="./app/index.html?mode=demo" class="btn btn-primary">Launch Free Demo →</a>
+    <div class="note">Your Plus plan includes the features marked ✓ above.</div>
+  </div>
+
+  <div style="text-align:center;margin-bottom:24px;">
+    <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/0cce8c89-2888-4c22-b7c6-030cb190b477 -->
+    <a href="#" class="btn btn-disabled">Coming Soon</a>
+  </div>
+
+  <div class="card upgrade-card">
+    <h2>Want the full toolkit?</h2>
+    <p>Upgrade to Pro for day-by-day projections and unlimited accounts.</p>
+    <a href="./pro.html">See what Pro includes →</a>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <svg width="20" height="23" viewBox="0 0 100 115"><path d="M4,12 Q4,4 12,4 L88,4 Q96,4 96,12 L96,60 Q96,85 50,112 Q4,85 4,60 Z" fill="#7ec8e3" stroke="#5ba8c8" stroke-width="2"/><g transform="translate(10,8) scale(0.8)"><polygon points="50,2 56,40 50,47 44,40" fill="#e87820"/><polygon points="98,50 60,56 53,50 60,44" fill="#e87820"/><polygon points="50,98 44,60 50,53 56,60" fill="#e87820"/><polygon points="2,50 40,44 47,50 40,56" fill="#e87820"/><circle cx="50" cy="50" r="4" fill="#e87820"/></g></svg>
+        Ambit <span>Budget Pro</span>
+      </div>
+      <div class="footer-links">
+        <a href="./features.html">Features</a>
+        <a href="./index.html#pricing">Pricing</a>
+        <a href="./starter.html">Starter</a>
+        <a href="./plus.html">Plus</a>
+        <a href="./pro.html">Pro</a>
+        <a href="./index.html#faq">FAQ</a>
+        <a href="./coming-soon.html">What's Next</a>
+        <a href="mailto:support@ambitbudget.com">Contact</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./terms.html">Terms</a>
+      </div>
+      <div class="footer-copy">&copy; 2026 Ambit Budget Pro. All rights reserved.</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

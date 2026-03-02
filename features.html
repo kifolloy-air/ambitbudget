@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Features — Ambit Budget Pro</title>
+<meta name="description" content="Explore all features in Ambit Budget Pro. Import transactions, auto-categorize, track budgets, forecast balances, and more. Compare Starter, Plus, and Pro plans.">
+<link rel="canonical" href="https://ambitbudget.com/features.html">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cpath d='M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z' fill='%237ec8e3' stroke='%235ba8c8' stroke-width='2'/%3E%3Cg transform='translate(10,8) scale(0.8)'%3E%3Cpolygon points='50,2 56,40 50,47 44,40' fill='%23e87820'/%3E%3Cpolygon points='98,50 60,56 53,50 60,44' fill='%23e87820'/%3E%3Cpolygon points='50,98 44,60 50,53 56,60' fill='%23e87820'/%3E%3Cpolygon points='2,50 40,44 47,50 40,56' fill='%23e87820'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23e87820'/%3E%3C/g%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c1445; --bg2: #101850; --surface: #fdf6e3; --border: #e8dbb8;
+  --text: #eef0ff; --text2: #9da5d0; --accent: #e8a020; --accent2: #f0c050;
+  --blue: #7ec8e3; --blue-dark: #5ba8c8; --orange: #e87820;
+  --green: #40c080; --red: #e05050; --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+.nav { background: rgba(12,20,69,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 0; position: sticky; top: 0; z-index: 100; }
+.nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: var(--accent2); text-decoration: none; }
+.nav-logo span { font-size: 10px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; display: block; margin-top: 1px; }
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); }
+.nav-cta { background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s; }
+.nav-cta:hover { background: #d09018; transform: translateY(-1px); }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+.hero { padding: 80px 0 60px; text-align: center; }
+.hero h1 { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 12px; }
+.hero h1 .accent { color: var(--accent2); }
+.hero p { font-size: 17px; color: var(--text2); max-width: 540px; margin: 0 auto; }
+
+.section { padding: 60px 0; }
+.section-header { text-align: center; margin-bottom: 48px; }
+.section-header h2 { font-size: 32px; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; }
+.section-header p { color: var(--text2); font-size: 15px; max-width: 500px; margin: 0 auto; }
+.section-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: 12px; }
+
+.features-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.feature-card { background: var(--bg2); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 24px; transition: all 0.25s; }
+.feature-card:hover { border-color: rgba(232,160,32,0.3); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.feature-icon { font-size: 28px; margin-bottom: 12px; }
+.feature-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.feature-card p { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.tier-badge { display: inline-block; background: linear-gradient(135deg,#e8a020,#f0c050); color: #0c1445; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 99px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.3px; }
+
+.compare-table { width: 100%; border-collapse: collapse; margin: 0 auto; max-width: 800px; }
+.compare-table th, .compare-table td { padding: 12px 16px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; }
+.compare-table th { font-weight: 700; color: var(--accent2); font-size: 15px; padding-bottom: 16px; }
+.compare-table th:first-child, .compare-table td:first-child { text-align: left; font-weight: 600; }
+.compare-table .check { color: var(--green); font-size: 16px; }
+.compare-table .cross { color: var(--red); opacity: 0.4; font-size: 16px; }
+.compare-table .price-row td { font-size: 18px; font-weight: 800; color: var(--accent2); border-bottom: none; padding-top: 20px; }
+.compare-table .price-row td:first-child { font-weight: 600; color: var(--text2); font-size: 14px; }
+.compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.cta-section { text-align: center; padding: 60px 0 80px; }
+.cta-section h2 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+.cta-section p { color: var(--text2); font-size: 15px; margin-bottom: 24px; }
+.btn-hero { padding: 14px 32px; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+.btn-hero.primary { background: var(--accent); color: #fff; box-shadow: 0 4px 20px rgba(232,160,32,0.3); }
+.btn-hero.primary:hover { background: #d09018; transform: translateY(-2px); }
+
+.footer { border-top: 1px solid rgba(255,255,255,0.08); padding: 40px 0; }
+.footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.footer-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--accent2); }
+.footer-logo span { color: var(--text2); font-weight: 400; font-size: 12px; }
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+.footer-links a { color: var(--text2); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+.footer-links a:hover { color: var(--text); }
+.footer-copy { color: var(--text2); font-size: 12px; opacity: 0.6; }
+
+@media (max-width: 768px) {
+  .hero h1 { font-size: 30px; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .compare-table th, .compare-table td { padding: 8px 10px; font-size: 12px; }
+  .nav-links { display: none; }
+  .footer-inner { flex-direction: column; text-align: center; }
+}
+@media (max-width: 480px) {
+  .hero { padding: 60px 0 40px; }
+  .features-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="./index.html" class="nav-logo">
+      <svg width="28" height="32" viewBox="0 0 100 115"><path d="M4,12 Q4,4 12,4 L88,4 Q96,4 96,12 L96,60 Q96,85 50,112 Q4,85 4,60 Z" fill="#7ec8e3" stroke="#5ba8c8" stroke-width="2"/><g transform="translate(10,8) scale(0.8)"><polygon points="50,2 56,40 50,47 44,40" fill="#e87820"/><polygon points="98,50 60,56 53,50 60,44" fill="#e87820"/><polygon points="50,98 44,60 50,53 56,60" fill="#e87820"/><polygon points="2,50 40,44 47,50 40,56" fill="#e87820"/><circle cx="50" cy="50" r="4" fill="#e87820"/></g></svg>
+      <div>Ambit<span>Budget Pro</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="./features.html" style="color:var(--text);">Features</a>
+      <a href="./index.html#how-it-works">How It Works</a>
+      <a href="./index.html#pricing">Pricing</a>
+      <a href="./index.html#faq">FAQ</a>
+      <a href="./coming-soon.html">What's Next</a>
+      <a href="./app/index.html?mode=demo" class="nav-cta">Try Demo</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <h1>Everything in <span class="accent">Ambit Budget Pro</span></h1>
+    <p>One app, every tool you need to take control of your money. Explore what each plan includes.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Feature Overview</div>
+      <h2>Powerful tools, beautifully simple.</h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Smart Dashboard</h3>
+        <p>Your complete financial picture at a glance — balances, spending trends, budget status, and upcoming bills.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📥</div>
+        <h3>Easy Import</h3>
+        <p>Paste from Excel or upload CSV files. Ambit auto-maps columns and handles different bank formats.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🏷️</div>
+        <h3>Auto-Categorize</h3>
+        <p>Create keyword rules once. Every future import gets categorized instantly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💰</div>
+        <h3>Budget Tracking</h3>
+        <p>Set monthly budgets per category. See what's on track and where you can save.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📄</div>
+        <h3>Bill Management</h3>
+        <p>Track due dates, billing frequency, and payment status. Never miss a bill again.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Balance Forecast <span class="tier-badge">Plus & Pro</span></h3>
+        <p>See where your balance is headed — end of month and next month projections based on your bills and income.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3>Monthly Review <span class="tier-badge">Plus & Pro</span></h3>
+        <p>Start each month by reviewing what you budgeted vs. what you spent. Adjust budgets in one click.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <h3>Day-by-Day Projections <span class="tier-badge">Pro</span></h3>
+        <p>A daily timeline of every bill, income, and budget event — showing your running balance through next month.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background: var(--bg2);">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Plan Comparison</div>
+      <h2>Find the right plan for you.</h2>
+      <p>All plans are a one-time purchase with lifetime access. No subscriptions.</p>
+    </div>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Starter</th>
+          <th>Plus</th>
+          <th>Pro</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bank Accounts</td>
+          <td>1</td>
+          <td>3</td>
+          <td>Unlimited</td>
+        </tr>
+        <tr>
+          <td>Smart Dashboard</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>CSV/Excel Import</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Auto-Categorization</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Budget Tracking</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Bill Management</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Balance Forecast</td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Monthly Budget Review</td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Day-by-Day Projections</td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Works Offline</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Lifetime Access</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr class="price-row">
+          <td>Price</td>
+          <td>$9.99</td>
+          <td>$19.99</td>
+          <td>$29.99</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="container">
+    <h2>Ready to take control?</h2>
+    <p>Try the full demo free, or pick the plan that fits your needs.</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+      <a href="./app/index.html?mode=demo" class="btn-hero primary">Try Free Demo →</a>
+      <a href="./index.html#pricing" class="btn-hero" style="background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.2);">Choose Your Plan</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <svg width="20" height="23" viewBox="0 0 100 115"><path d="M4,12 Q4,4 12,4 L88,4 Q96,4 96,12 L96,60 Q96,85 50,112 Q4,85 4,60 Z" fill="#7ec8e3" stroke="#5ba8c8" stroke-width="2"/><g transform="translate(10,8) scale(0.8)"><polygon points="50,2 56,40 50,47 44,40" fill="#e87820"/><polygon points="98,50 60,56 53,50 60,44" fill="#e87820"/><polygon points="50,98 44,60 50,53 56,60" fill="#e87820"/><polygon points="2,50 40,44 47,50 40,56" fill="#e87820"/><circle cx="50" cy="50" r="4" fill="#e87820"/></g></svg>
+        Ambit <span>Budget Pro</span>
+      </div>
+      <div class="footer-links">
+        <a href="./features.html">Features</a>
+        <a href="./index.html#pricing">Pricing</a>
+        <a href="./starter.html">Starter</a>
+        <a href="./plus.html">Plus</a>
+        <a href="./pro.html">Pro</a>
+        <a href="./index.html#faq">FAQ</a>
+        <a href="./coming-soon.html">What's Next</a>
+        <a href="mailto:support@ambitbudget.com">Contact</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./terms.html">Terms</a>
+      </div>
+      <div class="footer-copy">&copy; 2026 Ambit Budget Pro. All rights reserved.</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

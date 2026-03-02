@@ -93,6 +93,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .feature-icon { font-size: 32px; margin-bottom: 16px; }
 .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
 .feature-card p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+.feature-card .tier-badge { display:inline-block; background:linear-gradient(135deg,#e8a020,#f0c050); color:#0c1445; font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; margin-left:8px; vertical-align:middle; letter-spacing:0.3px; }
+.pricing-features .excluded { opacity:0.45; }
+.pricing-features .cross { color:var(--red); font-size:14px; flex-shrink:0; }
 
 /* ── How it works ── */
 .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; position: relative; }
@@ -215,10 +218,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div>Ambit<span>Budget Pro</span></div>
     </a>
     <div class="nav-links">
-      <a href="#features">Features</a>
+      <a href="./features.html">Features</a>
       <a href="#how-it-works">How It Works</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
+      <a href="./coming-soon.html">What's Next</a>
       <a href="./app/index.html?mode=demo" class="nav-cta">Try Demo</a>
     </div>
   </div>
@@ -302,13 +306,23 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       </div>
       <div class="feature-card">
         <div class="feature-icon">📈</div>
-        <h3>Balance Forecast</h3>
+        <h3>Balance Forecast <span class="tier-badge">Plus & Pro</span></h3>
         <p>Know where your money is going before it gets there. Ambit projects your balances based on bill schedules and spending patterns.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">🏦</div>
         <h3>Multi-Account</h3>
         <p>Track checking, savings, and more. Reconcile against bank statements, pair transfers between accounts, and see combined totals.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <h3>Day-by-Day Projections <span class="tier-badge">Pro</span></h3>
+        <p>See a daily breakdown of your balance through the end of next month. Every bill, income, and budget event mapped out on a timeline.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3>Monthly Budget Review <span class="tier-badge">Plus & Pro</span></h3>
+        <p>At the start of each month, review what you budgeted vs. what you actually spent. Adjust budgets in one click to stay on track.</p>
       </div>
     </div>
   </div>
@@ -432,14 +446,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="pricing-period">One-time purchase</div>
         <div class="pricing-highlight">1 Account</div>
         <ul class="pricing-features">
-          <li><span class="check">✓</span> All features included</li>
-          <li><span class="check">✓</span> Auto-categorization</li>
-          <li><span class="check">✓</span> Budget tracking & forecasting</li>
+          <li><span class="check">✓</span> Smart Dashboard</li>
+          <li><span class="check">✓</span> CSV/Excel Import</li>
+          <li><span class="check">✓</span> Auto-Categorization</li>
+          <li><span class="check">✓</span> Budget Tracking</li>
+          <li><span class="check">✓</span> Bill Management</li>
+          <li class="excluded"><span class="cross">✗</span> Balance Forecast</li>
+          <li class="excluded"><span class="cross">✗</span> Monthly Budget Review</li>
+          <li class="excluded"><span class="cross">✗</span> Day-by-Day Projections</li>
           <li><span class="check">✓</span> Works offline forever</li>
           <li><span class="check">✓</span> Lifetime access</li>
         </ul>
         <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/83990c64-8c99-430a-9885-02348f3afea0 -->
         <a href="#waitlist" class="btn-hero primary" style="width:100%;justify-content:center;opacity:0.7;pointer-events:none;">Coming Soon</a>
+        <a href="./starter.html" style="display:block;margin-top:10px;font-size:13px;color:var(--text2);text-decoration:none;transition:color 0.2s;">Learn more →</a>
       </div>
 
       <!-- Plus (Popular) -->
@@ -450,15 +470,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="pricing-period">One-time purchase</div>
         <div class="pricing-highlight">3 Accounts</div>
         <ul class="pricing-features">
-          <li><span class="check">✓</span> All features included</li>
-          <li><span class="check">✓</span> Auto-categorization</li>
-          <li><span class="check">✓</span> Budget tracking & forecasting</li>
+          <li><span class="check">✓</span> Everything in Starter</li>
+          <li><span class="check">✓</span> Balance Forecast</li>
+          <li><span class="check">✓</span> Monthly Budget Review</li>
+          <li class="excluded"><span class="cross">✗</span> Day-by-Day Projections</li>
+          <li><span class="check">✓</span> 3 Bank Accounts</li>
           <li><span class="check">✓</span> Works offline forever</li>
           <li><span class="check">✓</span> Lifetime access</li>
-          <li><span class="check">✓</span> Checking + savings + credit card</li>
         </ul>
         <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/0cce8c89-2888-4c22-b7c6-030cb190b477 -->
         <a href="#waitlist" class="btn-hero primary" style="width:100%;justify-content:center;opacity:0.7;pointer-events:none;">Coming Soon</a>
+        <a href="./plus.html" style="display:block;margin-top:10px;font-size:13px;color:var(--text2);text-decoration:none;transition:color 0.2s;">Learn more →</a>
       </div>
 
       <!-- Pro -->
@@ -468,15 +490,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="pricing-period">One-time purchase</div>
         <div class="pricing-highlight">Unlimited Accounts</div>
         <ul class="pricing-features">
-          <li><span class="check">✓</span> All features included</li>
-          <li><span class="check">✓</span> Auto-categorization</li>
-          <li><span class="check">✓</span> Budget tracking & forecasting</li>
+          <li><span class="check">✓</span> Everything in Plus</li>
+          <li><span class="check">✓</span> Day-by-Day Projections</li>
+          <li><span class="check">✓</span> Unlimited Accounts</li>
+          <li><span class="check">✓</span> All current & future features</li>
           <li><span class="check">✓</span> Works offline forever</li>
           <li><span class="check">✓</span> Lifetime access</li>
-          <li><span class="check">✓</span> Unlimited accounts for families</li>
         </ul>
         <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/abd7c8e0-d5ea-437f-8f7b-2e357d2e99ce -->
         <a href="#waitlist" class="btn-hero primary" style="width:100%;justify-content:center;opacity:0.7;pointer-events:none;">Coming Soon</a>
+        <a href="./pro.html" style="display:block;margin-top:10px;font-size:13px;color:var(--text2);text-decoration:none;transition:color 0.2s;">Learn more →</a>
       </div>
 
     </div>
@@ -534,7 +557,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           What's the difference between plans?
           <span class="arrow">▼</span>
         </div>
-        <div class="faq-a">All plans include every feature. The only difference is the number of bank accounts you can track: Starter supports 1 account, Plus supports 3, and Pro gives you unlimited accounts. You can upgrade anytime by purchasing a higher tier.</div>
+        <div class="faq-a">Each tier unlocks more features and accounts. <strong>Starter</strong> ($9.99) includes the core dashboard, import, budgeting, and bills for 1 account. <strong>Plus</strong> ($19.99) adds Balance Forecast, Monthly Budget Review, and up to 3 accounts. <strong>Pro</strong> ($29.99) adds Day-by-Day Projections with unlimited accounts. <a href="./features.html" style="color:var(--accent2);">See the full comparison →</a></div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
@@ -620,9 +643,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         Ambit <span>Budget Pro</span>
       </div>
       <div class="footer-links">
-        <a href="#features">Features</a>
+        <a href="./features.html">Features</a>
         <a href="#pricing">Pricing</a>
+        <a href="./starter.html">Starter</a>
+        <a href="./plus.html">Plus</a>
+        <a href="./pro.html">Pro</a>
         <a href="#faq">FAQ</a>
+        <a href="./coming-soon.html">What's Next</a>
         <a href="mailto:support@ambitbudget.com">Contact</a>
         <a href="./privacy.html">Privacy</a>
         <a href="./terms.html">Terms</a>

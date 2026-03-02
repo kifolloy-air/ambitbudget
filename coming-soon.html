@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What's Next — Ambit Financial Tools</title>
+<meta name="description" content="Upcoming products from Ambit: Investment Tracker and Business Accounting. Local-first, privacy-focused financial tools. Join the waitlist.">
+<link rel="canonical" href="https://ambitbudget.com/coming-soon.html">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cpath d='M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z' fill='%237ec8e3' stroke='%235ba8c8' stroke-width='2'/%3E%3Cg transform='translate(10,8) scale(0.8)'%3E%3Cpolygon points='50,2 56,40 50,47 44,40' fill='%23e87820'/%3E%3Cpolygon points='98,50 60,56 53,50 60,44' fill='%23e87820'/%3E%3Cpolygon points='50,98 44,60 50,53 56,60' fill='%23e87820'/%3E%3Cpolygon points='2,50 40,44 47,50 40,56' fill='%23e87820'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23e87820'/%3E%3C/g%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c1445; --bg2: #101850; --text: #eef0ff; --text2: #9da5d0;
+  --accent: #e8a020; --accent2: #f0c050; --blue: #7ec8e3;
+  --green: #40c080; --red: #e05050; --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+.nav { background: rgba(12,20,69,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 0; position: sticky; top: 0; z-index: 100; }
+.nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: var(--accent2); text-decoration: none; }
+.nav-logo span { font-size: 10px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; display: block; margin-top: 1px; }
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); }
+.nav-cta { background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s; }
+.nav-cta:hover { background: #d09018; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+.hero { padding: 80px 0 48px; text-align: center; }
+.hero h1 { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 12px; }
+.hero h1 .accent { color: var(--accent2); }
+.hero p { font-size: 17px; color: var(--text2); max-width: 540px; margin: 0 auto; }
+
+.products { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; max-width: 800px; margin: 0 auto; padding: 0 24px 60px; }
+.product-card { background: var(--bg2); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 32px; position: relative; overflow: hidden; transition: all 0.25s; }
+.product-card:hover { border-color: rgba(126,200,227,0.3); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.product-card .icon { font-size: 40px; margin-bottom: 16px; }
+.product-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.product-card p { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 16px; }
+.product-card .features { list-style: none; margin-bottom: 20px; }
+.product-card .features li { font-size: 13px; color: var(--text2); padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+.product-card .features li::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
+.coming-badge { display: inline-block; background: rgba(126,200,227,0.12); color: var(--blue); font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 99px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+.waitlist-section { text-align: center; padding: 40px 0 80px; }
+.waitlist-section h2 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.waitlist-section p { color: var(--text2); font-size: 15px; margin-bottom: 20px; }
+.waitlist-form { display: flex; gap: 10px; max-width: 460px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+.waitlist-form input { flex: 1; min-width: 220px; padding: 14px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: var(--text); font-size: 15px; font-family: inherit; outline: none; }
+.waitlist-form input:focus { border-color: rgba(126,200,227,0.4); }
+.btn { padding: 14px 32px; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; border: none; cursor: pointer; font-family: inherit; }
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 20px rgba(232,160,32,0.3); }
+.btn-primary:hover { background: #d09018; transform: translateY(-2px); }
+
+.existing { text-align: center; padding: 0 24px 60px; }
+.existing-card { background: var(--bg2); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 28px; max-width: 500px; margin: 0 auto; }
+.existing-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.existing-card p { font-size: 14px; color: var(--text2); margin-bottom: 12px; }
+.existing-card a { color: var(--accent2); font-weight: 600; text-decoration: none; font-size: 14px; }
+.existing-card a:hover { text-decoration: underline; }
+
+.footer { border-top: 1px solid rgba(255,255,255,0.08); padding: 40px 0; }
+.footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.footer-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--accent2); }
+.footer-logo span { color: var(--text2); font-weight: 400; font-size: 12px; }
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+.footer-links a { color: var(--text2); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+.footer-links a:hover { color: var(--text); }
+.footer-copy { color: var(--text2); font-size: 12px; opacity: 0.6; }
+
+@media (max-width: 768px) {
+  .hero h1 { font-size: 30px; }
+  .products { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .footer-inner { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="./index.html" class="nav-logo">
+      <svg width="28" height="32" viewBox="0 0 100 115"><path d="M4,12 Q4,4 12,4 L88,4 Q96,4 96,12 L96,60 Q96,85 50,112 Q4,85 4,60 Z" fill="#7ec8e3" stroke="#5ba8c8" stroke-width="2"/><g transform="translate(10,8) scale(0.8)"><polygon points="50,2 56,40 50,47 44,40" fill="#e87820"/><polygon points="98,50 60,56 53,50 60,44" fill="#e87820"/><polygon points="50,98 44,60 50,53 56,60" fill="#e87820"/><polygon points="2,50 40,44 47,50 40,56" fill="#e87820"/><circle cx="50" cy="50" r="4" fill="#e87820"/></g></svg>
+      <div>Ambit<span>Budget Pro</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="./features.html">Features</a>
+      <a href="./index.html#how-it-works">How It Works</a>
+      <a href="./index.html#pricing">Pricing</a>
+      <a href="./index.html#faq">FAQ</a>
+      <a href="./coming-soon.html" style="color:var(--text);">What's Next</a>
+      <a href="./app/index.html?mode=demo" class="nav-cta">Try Demo</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <h1>What's Next from <span class="accent">Ambit</span></h1>
+    <p>We're building a suite of local-first financial tools — private, offline-capable, and yours forever. Here's what's coming.</p>
+  </div>
+</section>
+
+<div class="products">
+  <div class="product-card">
+    <div class="icon">📈</div>
+    <h2>Investment Tracker</h2>
+    <p>Track your portfolio with local-first privacy. Real-time pricing, offline access, and no account linking required.</p>
+    <ul class="features">
+      <li>Stock, ETF, and mutual fund tracking</li>
+      <li>Real-time and historical price data</li>
+      <li>Dividend tracking and income summary</li>
+      <li>Performance charts and allocation breakdown</li>
+      <li>100% offline after initial price sync</li>
+    </ul>
+    <span class="coming-badge">Coming Soon</span>
+  </div>
+
+  <div class="product-card">
+    <div class="icon">📒</div>
+    <h2>Business Accounting</h2>
+    <p>P&L, invoicing, and expense tracking for small businesses and freelancers. Simple, private, and powerful.</p>
+    <ul class="features">
+      <li>Profit & loss statements</li>
+      <li>Invoice creation and tracking</li>
+      <li>Expense categorization by client/project</li>
+      <li>Tax-ready reports</li>
+      <li>Same local-first, no-cloud approach</li>
+    </ul>
+    <span class="coming-badge">Coming Soon</span>
+  </div>
+</div>
+
+<section class="waitlist-section">
+  <div class="container">
+    <h2>Get notified when new products launch.</h2>
+    <p>Drop your email and we'll let you know when these tools are ready.</p>
+    <form id="waitlist-form" action="https://formspree.io/f/xojnbyek" method="POST" class="waitlist-form">
+      <input type="email" name="email" required placeholder="you@example.com">
+      <input type="hidden" name="source" value="coming-soon">
+      <button type="submit" class="btn btn-primary" style="white-space:nowrap;">Notify Me →</button>
+    </form>
+    <div id="waitlist-thanks" style="display:none;margin-top:20px;color:var(--green);font-weight:600;">You're on the list! We'll email you when new products launch.</div>
+    <p style="margin-top:12px;font-size:13px;color:var(--text2);opacity:0.6;">No spam. Just product launch announcements.</p>
+  </div>
+</section>
+
+<div class="existing">
+  <div class="existing-card">
+    <h3>Looking for Ambit Budget Pro?</h3>
+    <p>Our budgeting app is available now. Track spending, manage bills, and forecast your balance.</p>
+    <a href="./index.html">Learn more about Ambit Budget Pro →</a>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <svg width="20" height="23" viewBox="0 0 100 115"><path d="M4,12 Q4,4 12,4 L88,4 Q96,4 96,12 L96,60 Q96,85 50,112 Q4,85 4,60 Z" fill="#7ec8e3" stroke="#5ba8c8" stroke-width="2"/><g transform="translate(10,8) scale(0.8)"><polygon points="50,2 56,40 50,47 44,40" fill="#e87820"/><polygon points="98,50 60,56 53,50 60,44" fill="#e87820"/><polygon points="50,98 44,60 50,53 56,60" fill="#e87820"/><polygon points="2,50 40,44 47,50 40,56" fill="#e87820"/><circle cx="50" cy="50" r="4" fill="#e87820"/></g></svg>
+        Ambit <span>Budget Pro</span>
+      </div>
+      <div class="footer-links">
+        <a href="./features.html">Features</a>
+        <a href="./index.html#pricing">Pricing</a>
+        <a href="./starter.html">Starter</a>
+        <a href="./plus.html">Plus</a>
+        <a href="./pro.html">Pro</a>
+        <a href="./index.html#faq">FAQ</a>
+        <a href="./coming-soon.html">What's Next</a>
+        <a href="mailto:support@ambitbudget.com">Contact</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./terms.html">Terms</a>
+      </div>
+      <div class="footer-copy">&copy; 2026 Ambit Budget Pro. All rights reserved.</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+var wf = document.getElementById('waitlist-form');
+if(wf) {
+  wf.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var data = new FormData(wf);
+    fetch(wf.action, { method:'POST', body:data, headers:{'Accept':'application/json'} })
+      .then(function(r) {
+        if(r.ok) {
+          wf.style.display='none';
+          document.getElementById('waitlist-thanks').style.display='block';
+        }
+      });
+  });
+}
+</script>
+
+</body>
+</html>
