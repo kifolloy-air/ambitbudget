@@ -54,63 +54,75 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 
 /* ── Hero ── */
-.hero { padding: 140px 0 60px; text-align: center; position: relative; overflow: hidden; }
+.hero { padding: 130px 0 40px; text-align: center; position: relative; overflow: hidden; }
 .hero::before { content: ''; position: absolute; top: 50%; left: 50%; width: 600px; height: 600px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(126,200,227,0.08) 0%, transparent 70%); pointer-events: none; }
-.hero h1 { font-size: 52px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.15; margin-bottom: 16px; }
+.hero h1 { font-size: 48px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.15; margin-bottom: 14px; }
 .hero h1 .accent { color: var(--accent2); }
-.hero .summary { font-size: 17px; color: var(--text2); max-width: 620px; margin: 0 auto 28px; line-height: 1.7; }
-.hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(64,192,128,0.12); border: 1px solid rgba(64,192,128,0.25); border-radius: 99px; padding: 6px 16px; font-size: 13px; color: var(--green); margin-bottom: 24px; font-weight: 500; }
-.hero-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-.btn-hero { padding: 14px 32px; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer; }
-.btn-hero.primary { background: var(--accent); color: #fff; box-shadow: 0 4px 20px rgba(232,160,32,0.3); }
-.btn-hero.primary:hover { background: #d09018; transform: translateY(-2px); box-shadow: 0 6px 28px rgba(232,160,32,0.4); }
-.btn-hero.secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.2); }
-.btn-hero.secondary:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.05); }
+.hero .summary { font-size: 16px; color: var(--text2); max-width: 600px; margin: 0 auto 0; line-height: 1.7; }
+.hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(64,192,128,0.12); border: 1px solid rgba(64,192,128,0.25); border-radius: 99px; padding: 6px 16px; font-size: 13px; color: var(--green); margin-bottom: 20px; font-weight: 500; }
 
 /* ── Trust bar ── */
-.trust { padding: 32px 0; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); }
-.trust-inner { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; }
-.trust-item { display: flex; align-items: center; gap: 8px; color: var(--text2); font-size: 14px; font-weight: 500; }
-.trust-item .icon { font-size: 20px; }
+.trust { padding: 24px 0; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); }
+.trust-inner { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
+.trust-item { display: flex; align-items: center; gap: 8px; color: var(--text2); font-size: 13px; font-weight: 500; }
+.trust-item .icon { font-size: 18px; }
 
-/* ── Demo section ── */
-.demo-section { padding: 60px 0; text-align: center; }
-.demo-section h2 { font-size: 32px; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; }
-.demo-section p { color: var(--text2); font-size: 15px; margin-bottom: 24px; max-width: 480px; margin-left: auto; margin-right: auto; }
-.demo-box { max-width: 600px; margin: 0 auto; padding: 32px; background: var(--bg2); border: 1px solid rgba(126,200,227,0.2); border-radius: 16px; }
-.demo-box .demo-icon { font-size: 48px; margin-bottom: 12px; }
-.demo-box h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-.demo-box .demo-desc { font-size: 14px; color: var(--text2); margin-bottom: 20px; line-height: 1.6; }
-.demo-features { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
-.demo-features span { font-size: 12px; color: var(--text2); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 99px; }
+/* ── Main split: demo + pricing ── */
+.main-split { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 48px 0 0; align-items: start; }
 
-/* ── Section ── */
-.section { padding: 60px 0; }
-.section-header { text-align: center; margin-bottom: 40px; }
-.section-header h2 { font-size: 32px; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; }
-.section-header p { color: var(--text2); font-size: 15px; max-width: 480px; margin: 0 auto; }
-.section-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: 12px; }
+/* Demo column */
+.demo-col { background: var(--bg2); border: 1px solid rgba(126,200,227,0.2); border-radius: 16px; padding: 36px 32px; }
+.demo-col .demo-icon { font-size: 44px; margin-bottom: 10px; }
+.demo-col h2 { font-size: 24px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+.demo-col .demo-desc { font-size: 14px; color: var(--text2); margin-bottom: 20px; line-height: 1.7; }
+.demo-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+.demo-pills span { font-size: 12px; color: var(--text2); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 5px 14px; border-radius: 99px; }
+.btn-demo { display: block; width: 100%; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 600; text-align: center; text-decoration: none; background: var(--accent); color: #fff; box-shadow: 0 4px 20px rgba(232,160,32,0.3); transition: all 0.2s; border: none; cursor: pointer; font-family: inherit; }
+.btn-demo:hover { background: #d09018; transform: translateY(-2px); box-shadow: 0 6px 28px rgba(232,160,32,0.4); }
+.demo-col .see-all { display: inline-block; margin-top: 14px; font-size: 13px; color: var(--accent2); text-decoration: none; font-weight: 600; }
+.demo-col .see-all:hover { text-decoration: underline; }
 
-/* ── Pricing ── */
-.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 960px; margin: 0 auto; align-items: stretch; }
-.pricing-card { background: var(--bg2); border: 2px solid rgba(232,160,32,0.15); border-radius: 16px; padding: 32px 28px; text-align: center; position: relative; overflow: hidden; display: flex; flex-direction: column; }
-.pricing-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: rgba(232,160,32,0.3); }
-.pricing-card.popular { border-color: var(--accent2); transform: scale(1.04); }
-.pricing-card.popular::before { background: linear-gradient(90deg, var(--accent), var(--blue)); height: 3px; }
-.pricing-badge { position: absolute; top: 12px; right: -28px; background: var(--accent2); color: var(--bg); font-size: 10px; font-weight: 700; padding: 4px 32px; transform: rotate(45deg); text-transform: uppercase; letter-spacing: 0.5px; }
-.pricing-tier { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent2); margin-bottom: 8px; }
-.pricing-amount { font-size: 48px; font-weight: 800; color: var(--accent2); letter-spacing: -2px; }
-.pricing-amount span { font-size: 18px; font-weight: 500; color: var(--text2); vertical-align: super; }
-.pricing-period { color: var(--text2); font-size: 14px; margin-bottom: 20px; }
-.pricing-highlight { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
-.pricing-features { list-style: none; text-align: left; margin-bottom: 24px; flex-grow: 1; }
-.pricing-features li { padding: 7px 0; font-size: 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.pricing-features li .check { color: var(--green); font-size: 14px; flex-shrink: 0; }
-.pricing-features .excluded { opacity: 0.45; }
-.pricing-features .cross { color: var(--red); font-size: 14px; flex-shrink: 0; }
-.pricing-compare { margin-top: 20px; padding: 14px; background: rgba(64,192,128,0.08); border-radius: 10px; border: 1px solid rgba(64,192,128,0.15); }
-.pricing-compare p { font-size: 13px; color: var(--green); }
-.pricing-compare strong { font-weight: 700; }
+/* Pricing column */
+.pricing-col { display: flex; flex-direction: column; gap: 14px; }
+.pricing-col h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 2px; }
+.pricing-col .pricing-sub { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+.p-card { background: var(--bg2); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 20px 22px; display: flex; align-items: center; gap: 18px; position: relative; transition: border-color 0.2s; }
+.p-card:hover { border-color: rgba(232,160,32,0.3); }
+.p-card.popular { border-color: var(--accent2); }
+.p-card .pop-tag { position: absolute; top: -10px; right: 16px; background: var(--accent2); color: var(--bg); font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.5px; }
+.p-card-info { flex: 1; min-width: 0; }
+.p-card-tier { font-size: 15px; font-weight: 700; color: var(--accent2); }
+.p-card-price { font-size: 28px; font-weight: 800; color: var(--accent2); letter-spacing: -1px; }
+.p-card-price sup { font-size: 13px; font-weight: 500; color: var(--text2); vertical-align: super; }
+.p-card-note { font-size: 12px; color: var(--text2); }
+.p-card-highlight { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 2px; }
+.p-card-cta { flex-shrink: 0; }
+.p-card-cta a { display: block; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center; white-space: nowrap; transition: all 0.2s; }
+.p-card-cta .btn-soon { background: rgba(232,160,32,0.15); color: var(--accent2); opacity: 0.7; pointer-events: none; }
+.p-card-cta .btn-more { background: none; color: var(--text2); border: 1px solid rgba(255,255,255,0.12); padding: 8px 16px; font-size: 12px; margin-top: 6px; }
+.p-card-cta .btn-more:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+
+/* ── Tier features ── */
+.tiers-section { padding: 48px 0 0; }
+.tiers-section h2 { font-size: 24px; font-weight: 800; text-align: center; letter-spacing: -0.5px; margin-bottom: 8px; }
+.tiers-section .tiers-sub { text-align: center; font-size: 14px; color: var(--text2); margin-bottom: 32px; }
+.tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.tier-col { background: var(--bg2); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 24px; }
+.tier-col.popular { border-color: var(--accent2); }
+.tier-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.tier-header h3 { font-size: 17px; font-weight: 700; color: var(--accent2); }
+.tier-header .tier-price { font-size: 14px; color: var(--text2); font-weight: 500; }
+.tier-includes { font-size: 12px; color: var(--text2); margin-bottom: 12px; font-style: italic; }
+.tier-list { list-style: none; }
+.tier-list li { padding: 6px 0; font-size: 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.tier-list li:last-child { border-bottom: none; }
+.tier-list .check { color: var(--green); font-size: 13px; flex-shrink: 0; }
+.tier-compare { text-align: center; margin-top: 24px; }
+.tier-compare a { font-size: 13px; color: var(--accent2); text-decoration: none; font-weight: 600; }
+.tier-compare a:hover { text-decoration: underline; }
+.pricing-save { margin-top: 20px; padding: 12px; background: rgba(64,192,128,0.08); border-radius: 10px; border: 1px solid rgba(64,192,128,0.15); text-align: center; }
+.pricing-save p { font-size: 13px; color: var(--green); }
+.pricing-save strong { font-weight: 700; }
 
 /* ── Footer ── */
 .footer { border-top: 1px solid rgba(255,255,255,0.08); padding: 40px 0; }
@@ -123,22 +135,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .footer-copy { color: var(--text2); font-size: 12px; opacity: 0.6; }
 
 /* ── Responsive ── */
+@media (max-width: 900px) {
+  .main-split { grid-template-columns: 1fr; gap: 24px; }
+  .tiers-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+}
 @media (max-width: 768px) {
   .hero h1 { font-size: 32px; }
   .hero .summary { font-size: 15px; }
   .nav-links { display: none; }
-  .section-header h2 { font-size: 28px; }
-  .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
-  .pricing-card.popular { transform: none; }
-  .pricing-amount { font-size: 44px; }
   .footer-inner { flex-direction: column; text-align: center; }
 }
 @media (max-width: 480px) {
-  .hero { padding: 120px 0 50px; }
+  .hero { padding: 110px 0 36px; }
   .hero h1 { font-size: 28px; }
-  .hero-ctas { flex-direction: column; align-items: center; }
-  .btn-hero { width: 100%; justify-content: center; }
-  .trust-inner { flex-direction: column; align-items: center; gap: 16px; }
+  .trust-inner { flex-direction: column; align-items: center; gap: 12px; }
+  .p-card { flex-direction: column; text-align: center; gap: 12px; }
 }
 </style>
 <script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
@@ -147,7 +158,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 <!-- Coming Soon Banner -->
 <div id="coming-soon-banner" style="background:linear-gradient(90deg,var(--accent),var(--orange));color:#fff;text-align:center;padding:10px 24px;font-size:14px;font-weight:600;letter-spacing:0.3px;position:relative;z-index:101;">
-  🚀 Coming Soon — Join the waitlist below to get notified at launch!
+  Coming Soon — Join the waitlist below to get notified at launch!
 </div>
 
 <!-- Nav -->
@@ -179,13 +190,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <!-- Hero -->
 <section class="hero">
   <div class="container">
-    <div class="hero-badge">🔒 Your data never leaves your device</div>
+    <div class="hero-badge">Your data never leaves your device</div>
     <h1>Personal finance,<br><span class="accent">your way.</span></h1>
     <p class="summary">Import transactions from your bank, auto-categorize spending, set budgets, track bills, and forecast your balance — all from a single file that runs in your browser. No subscriptions. No cloud. No account required.</p>
-    <div class="hero-ctas">
-      <a href="./app/index.html?mode=demo" class="btn-hero primary">Try Free Demo →</a>
-      <a href="#pricing" class="btn-hero secondary">View Pricing</a>
-    </div>
   </div>
 </section>
 
@@ -193,142 +200,174 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <div class="trust">
   <div class="container">
     <div class="trust-inner">
-      <div class="trust-item"><span class="icon">🔐</span> 100% Private</div>
-      <div class="trust-item"><span class="icon">💳</span> One-Time Purchase</div>
-      <div class="trust-item"><span class="icon">📱</span> Works on Any Device</div>
-      <div class="trust-item"><span class="icon">⚡</span> No Account Required</div>
+      <div class="trust-item"><span class="icon">&#x1F512;</span> 100% Private</div>
+      <div class="trust-item"><span class="icon">&#x1F4B3;</span> One-Time Purchase</div>
+      <div class="trust-item"><span class="icon">&#x1F4F1;</span> Works on Any Device</div>
+      <div class="trust-item"><span class="icon">&#x26A1;</span> No Account Required</div>
     </div>
   </div>
 </div>
 
-<!-- Demo -->
-<section class="demo-section">
-  <div class="container">
-    <div class="demo-box">
-      <div class="demo-icon">📊</div>
-      <h3>See it in action</h3>
+<!-- Demo + Pricing split -->
+<div class="container">
+  <div class="main-split">
+
+    <!-- Left: Demo -->
+    <div class="demo-col">
+      <div class="demo-icon">&#x1F4CA;</div>
+      <h2>See it in action</h2>
       <p class="demo-desc">Explore the full app with sample data — dashboards, budgets, bill tracking, forecasts, and more. No sign-up needed.</p>
-      <div class="demo-features">
+      <div class="demo-pills">
         <span>Dashboard</span>
         <span>Budgets</span>
         <span>Bill Tracking</span>
         <span>Forecasting</span>
         <span>CSV Import</span>
       </div>
-      <a href="./app/index.html?mode=demo" class="btn-hero primary" style="width:100%;justify-content:center;">Launch Demo →</a>
+      <a href="./app/index.html?mode=demo" class="btn-demo">Launch Free Demo &#x2192;</a>
+      <a href="./features.html" class="see-all">See all features &#x2192;</a>
     </div>
-    <a href="./features.html" style="display:inline-block;margin-top:16px;font-size:14px;color:var(--accent2);text-decoration:none;font-weight:600;">See all features →</a>
-  </div>
-</section>
 
-<!-- Pricing -->
-<section class="section" id="pricing" style="background: var(--bg2);">
-  <div class="container">
-    <div class="section-header">
-      <div class="section-label">Pricing</div>
-      <h2>Simple. Honest. No subscriptions.</h2>
-      <p>One-time purchase. Yours forever. Pick the plan that fits your needs.</p>
-    </div>
-    <div class="pricing-grid">
+    <!-- Right: Compact pricing cards -->
+    <div class="pricing-col" id="pricing">
+      <h2>Pick your plan</h2>
+      <p class="pricing-sub">One-time purchase. Yours forever.</p>
 
       <!-- Starter -->
-      <div class="pricing-card">
-        <div class="pricing-tier">Starter</div>
-        <div class="pricing-amount"><span>$</span>9<span style="font-size:28px;vertical-align:baseline;color:var(--accent2)">.99</span></div>
-        <div class="pricing-period">One-time purchase</div>
-        <div class="pricing-highlight">1 Account</div>
-        <ul class="pricing-features">
-          <li><span class="check">✓</span> Smart Dashboard</li>
-          <li><span class="check">✓</span> CSV/Excel Import</li>
-          <li><span class="check">✓</span> Auto-Categorization</li>
-          <li><span class="check">✓</span> Budget Tracking</li>
-          <li><span class="check">✓</span> Bill Management</li>
-          <li class="excluded"><span class="cross">✗</span> Balance Forecast</li>
-          <li class="excluded"><span class="cross">✗</span> Monthly Budget Review</li>
-          <li class="excluded"><span class="cross">✗</span> Calendar Year View</li>
-          <li class="excluded"><span class="cross">✗</span> Day-by-Day Projections</li>
-          <li><span class="check">✓</span> Works offline forever</li>
-          <li><span class="check">✓</span> Lifetime access</li>
-        </ul>
-        <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/83990c64-8c99-430a-9885-02348f3afea0 -->
-        <a href="#waitlist" class="btn-hero primary" style="width:100%;justify-content:center;opacity:0.7;pointer-events:none;">Coming Soon</a>
-        <a href="./starter.html" style="display:block;margin-top:10px;font-size:13px;color:var(--text2);text-decoration:none;transition:color 0.2s;">Learn more →</a>
+      <div class="p-card">
+        <div class="p-card-info">
+          <div class="p-card-tier">Starter</div>
+          <div class="p-card-price"><sup>$</sup>9.99</div>
+          <div class="p-card-highlight">1 Bank Account</div>
+        </div>
+        <div class="p-card-cta">
+          <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/83990c64-8c99-430a-9885-02348f3afea0 -->
+          <a href="#" class="btn-soon">Coming Soon</a>
+          <a href="./starter.html" class="btn-more">Learn more</a>
+        </div>
       </div>
 
-      <!-- Plus (Popular) -->
-      <div class="pricing-card popular">
-        <div class="pricing-badge">Popular</div>
-        <div class="pricing-tier">Plus</div>
-        <div class="pricing-amount"><span>$</span>19<span style="font-size:28px;vertical-align:baseline;color:var(--accent2)">.99</span></div>
-        <div class="pricing-period">One-time purchase</div>
-        <div class="pricing-highlight">3 Accounts</div>
-        <ul class="pricing-features">
-          <li><span class="check">✓</span> Everything in Starter</li>
-          <li><span class="check">✓</span> Balance Forecast</li>
-          <li><span class="check">✓</span> Monthly Budget Review</li>
-          <li><span class="check">✓</span> Calendar Year View</li>
-          <li class="excluded"><span class="cross">✗</span> Day-by-Day Projections</li>
-          <li><span class="check">✓</span> 3 Bank Accounts</li>
-          <li><span class="check">✓</span> Works offline forever</li>
-          <li><span class="check">✓</span> Lifetime access</li>
-        </ul>
-        <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/0cce8c89-2888-4c22-b7c6-030cb190b477 -->
-        <a href="#waitlist" class="btn-hero primary" style="width:100%;justify-content:center;opacity:0.7;pointer-events:none;">Coming Soon</a>
-        <a href="./plus.html" style="display:block;margin-top:10px;font-size:13px;color:var(--text2);text-decoration:none;transition:color 0.2s;">Learn more →</a>
+      <!-- Plus -->
+      <div class="p-card popular">
+        <div class="pop-tag">Popular</div>
+        <div class="p-card-info">
+          <div class="p-card-tier">Plus</div>
+          <div class="p-card-price"><sup>$</sup>19.99</div>
+          <div class="p-card-highlight">3 Bank Accounts</div>
+        </div>
+        <div class="p-card-cta">
+          <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/0cce8c89-2888-4c22-b7c6-030cb190b477 -->
+          <a href="#" class="btn-soon">Coming Soon</a>
+          <a href="./plus.html" class="btn-more">Learn more</a>
+        </div>
       </div>
 
       <!-- Pro -->
-      <div class="pricing-card">
-        <div class="pricing-tier">Pro</div>
-        <div class="pricing-amount"><span>$</span>29<span style="font-size:28px;vertical-align:baseline;color:var(--accent2)">.99</span></div>
-        <div class="pricing-period">One-time purchase</div>
-        <div class="pricing-highlight">Unlimited Accounts</div>
-        <ul class="pricing-features">
-          <li><span class="check">✓</span> Everything in Plus</li>
-          <li><span class="check">✓</span> Calendar Year View</li>
-          <li><span class="check">✓</span> Day-by-Day Projections</li>
-          <li><span class="check">✓</span> Unlimited Accounts</li>
-          <li><span class="check">✓</span> All current & future features</li>
-          <li><span class="check">✓</span> Works offline forever</li>
-          <li><span class="check">✓</span> Lifetime access</li>
+      <div class="p-card">
+        <div class="p-card-info">
+          <div class="p-card-tier">Pro</div>
+          <div class="p-card-price"><sup>$</sup>29.99</div>
+          <div class="p-card-highlight">Unlimited Accounts</div>
+        </div>
+        <div class="p-card-cta">
+          <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/abd7c8e0-d5ea-437f-8f7b-2e357d2e99ce -->
+          <a href="#" class="btn-soon">Coming Soon</a>
+          <a href="./pro.html" class="btn-more">Learn more</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Tier features breakdown -->
+<div class="container">
+  <div class="tiers-section">
+    <h2>What's in each plan</h2>
+    <p class="tiers-sub">All plans are one-time purchases with lifetime access and offline support.</p>
+
+    <div class="tiers-grid">
+
+      <!-- Starter -->
+      <div class="tier-col">
+        <div class="tier-header">
+          <h3>Starter</h3>
+          <span class="tier-price">$9.99</span>
+        </div>
+        <ul class="tier-list">
+          <li><span class="check">&#x2713;</span> Smart Dashboard</li>
+          <li><span class="check">&#x2713;</span> CSV/Excel Import</li>
+          <li><span class="check">&#x2713;</span> Auto-Categorization</li>
+          <li><span class="check">&#x2713;</span> Budget Tracking</li>
+          <li><span class="check">&#x2713;</span> Bill Management</li>
+          <li><span class="check">&#x2713;</span> 1 Bank Account</li>
+          <li><span class="check">&#x2713;</span> Works Offline Forever</li>
+          <li><span class="check">&#x2713;</span> Lifetime Access</li>
         </ul>
-        <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/abd7c8e0-d5ea-437f-8f7b-2e357d2e99ce -->
-        <a href="#waitlist" class="btn-hero primary" style="width:100%;justify-content:center;opacity:0.7;pointer-events:none;">Coming Soon</a>
-        <a href="./pro.html" style="display:block;margin-top:10px;font-size:13px;color:var(--text2);text-decoration:none;transition:color 0.2s;">Learn more →</a>
+      </div>
+
+      <!-- Plus -->
+      <div class="tier-col popular">
+        <div class="tier-header">
+          <h3>Plus</h3>
+          <span class="tier-price">$19.99</span>
+        </div>
+        <div class="tier-includes">Everything in Starter, plus:</div>
+        <ul class="tier-list">
+          <li><span class="check">&#x2713;</span> Balance Forecast</li>
+          <li><span class="check">&#x2713;</span> Monthly Budget Review</li>
+          <li><span class="check">&#x2713;</span> Calendar Year View</li>
+          <li><span class="check">&#x2713;</span> Up to 3 Bank Accounts</li>
+        </ul>
+      </div>
+
+      <!-- Pro -->
+      <div class="tier-col">
+        <div class="tier-header">
+          <h3>Pro</h3>
+          <span class="tier-price">$29.99</span>
+        </div>
+        <div class="tier-includes">Everything in Plus, plus:</div>
+        <ul class="tier-list">
+          <li><span class="check">&#x2713;</span> Day-by-Day Projections</li>
+          <li><span class="check">&#x2713;</span> Unlimited Bank Accounts</li>
+          <li><span class="check">&#x2713;</span> All Current &amp; Future Features</li>
+        </ul>
       </div>
 
     </div>
-    <div class="pricing-compare" style="max-width:600px;margin:24px auto 0;text-align:center;">
-      <p>Most budget apps charge <strong>$5–15/month</strong>. That's $60–180/year.<br>Ambit pays for itself in <strong>weeks, not months</strong>.</p>
+
+    <div class="pricing-save">
+      <p>Most budget apps charge <strong>$5&#x2013;15/month</strong>. That's $60&#x2013;180/year. Ambit pays for itself in <strong>weeks, not months</strong>.</p>
     </div>
-    <div style="text-align:center;margin-top:16px;">
-      <a href="./features.html" style="font-size:14px;color:var(--accent2);text-decoration:none;font-weight:600;">Compare all features →</a>
+    <div class="tier-compare">
+      <a href="./features.html">Compare all features &#x2192;</a>
     </div>
   </div>
-</section>
+</div>
 
 <!-- Waitlist -->
-<section id="waitlist" style="text-align:center;padding:60px 0 20px;">
+<section id="waitlist" style="text-align:center;padding:48px 0 20px;">
   <div class="container">
-    <h2 style="font-size:28px;font-weight:800;margin-bottom:10px;letter-spacing:-1px;">Be the first to know.</h2>
-    <p style="color:var(--text2);font-size:15px;margin-bottom:20px;">Drop your email and we'll notify you when Ambit Budget Pro is available.</p>
-    <form id="waitlist-form" action="https://formspree.io/f/xojnbyek" method="POST" style="display:flex;gap:10px;max-width:460px;margin:0 auto;flex-wrap:wrap;justify-content:center;">
-      <input type="email" name="email" required placeholder="you@example.com" style="flex:1;min-width:220px;padding:14px 18px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:15px;font-family:inherit;outline:none;">
-      <button type="submit" class="btn-hero primary" style="white-space:nowrap;">Notify Me →</button>
+    <h2 style="font-size:24px;font-weight:800;margin-bottom:8px;letter-spacing:-0.5px;">Be the first to know.</h2>
+    <p style="color:var(--text2);font-size:14px;margin-bottom:18px;">Drop your email and we'll notify you when Ambit Budget Pro is available.</p>
+    <form id="waitlist-form" action="https://formspree.io/f/xojnbyek" method="POST" style="display:flex;gap:10px;max-width:440px;margin:0 auto;flex-wrap:wrap;justify-content:center;">
+      <input type="email" name="email" required placeholder="you@example.com" style="flex:1;min-width:200px;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:14px;font-family:inherit;outline:none;">
+      <button type="submit" style="padding:12px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.2s;">Notify Me &#x2192;</button>
     </form>
-    <div id="waitlist-thanks" style="display:none;margin-top:20px;color:var(--green);font-weight:600;">✅ You're on the list! We'll email you at launch.</div>
-    <p style="margin-top:12px;font-size:13px;color:var(--text2);opacity:0.6;">No spam. Just one email when we go live.</p>
+    <div id="waitlist-thanks" style="display:none;margin-top:16px;color:var(--green);font-weight:600;">You're on the list! We'll email you at launch.</div>
+    <p style="margin-top:10px;font-size:12px;color:var(--text2);opacity:0.6;">No spam. Just one email when we go live.</p>
   </div>
 </section>
 
 <!-- Beta Download -->
-<div id="download" style="text-align:center;padding:20px 0 40px;">
-  <div style="max-width:360px;margin:0 auto;padding:24px;border:1px solid rgba(255,255,255,0.08);border-radius:12px;background:rgba(16,24,80,0.5);">
-    <div style="font-size:20px;margin-bottom:4px;">🔒</div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text2);">Already have access?</div>
-    <div style="font-size:12px;color:var(--text2);opacity:0.6;margin-bottom:16px;">Enter your download password</div>
+<div id="download" style="text-align:center;padding:12px 0 40px;">
+  <div style="max-width:340px;margin:0 auto;padding:20px;border:1px solid rgba(255,255,255,0.08);border-radius:12px;background:rgba(16,24,80,0.5);">
+    <div style="font-size:18px;margin-bottom:4px;">&#x1F512;</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--text2);">Already have access?</div>
+    <div style="font-size:11px;color:var(--text2);opacity:0.6;margin-bottom:14px;">Enter your download password</div>
     <div style="display:flex;gap:8px;">
-      <input id="dl-pass" type="password" placeholder="Password" style="flex:1;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:var(--text);font-size:14px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')document.getElementById('dl-btn').click()">
+      <input id="dl-pass" type="password" placeholder="Password" style="flex:1;padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:var(--text);font-size:13px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')document.getElementById('dl-btn').click()">
       <button id="dl-btn" onclick="
         var p=document.getElementById('dl-pass').value;
         var e=document.getElementById('dl-err');
@@ -341,9 +380,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         } else {
           e.style.display='block';
         }
-      " style="padding:10px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap;">Download</button>
+      " style="padding:9px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;">Download</button>
     </div>
-    <div id="dl-err" style="display:none;color:var(--red);font-size:12px;margin-top:8px;">Invalid password</div>
+    <div id="dl-err" style="display:none;color:var(--red);font-size:11px;margin-top:8px;">Invalid password</div>
   </div>
 </div>
 
