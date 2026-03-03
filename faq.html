@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAQ — Ambit Budget Pro</title>
+<meta name="description" content="Frequently asked questions about Ambit Budget Pro. Learn about data privacy, supported banks, pricing plans, license keys, and more.">
+<link rel="canonical" href="https://ambitbudget.com/faq.html">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cpath d='M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z' fill='%237ec8e3' stroke='%235ba8c8' stroke-width='2'/%3E%3Cg transform='translate(10,8) scale(0.8)'%3E%3Cpolygon points='50,2 56,40 50,47 44,40' fill='%23e87820'/%3E%3Cpolygon points='98,50 60,56 53,50 60,44' fill='%23e87820'/%3E%3Cpolygon points='50,98 44,60 50,53 56,60' fill='%23e87820'/%3E%3Cpolygon points='2,50 40,44 47,50 40,56' fill='%23e87820'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23e87820'/%3E%3C/g%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c1445; --bg2: #101850; --text: #eef0ff; --text2: #9da5d0;
+  --accent: #e8a020; --accent2: #f0c050; --blue: #7ec8e3;
+  --green: #40c080; --red: #e05050; --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+.nav { background: rgba(12,20,69,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 0; position: sticky; top: 0; z-index: 100; }
+.nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: var(--accent2); text-decoration: none; }
+.nav-logo span { font-size: 10px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; display: block; margin-top: 1px; }
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); }
+.nav-cta { background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s; }
+.nav-cta:hover { background: #d09018; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+.hero { padding: 80px 0 48px; text-align: center; }
+.hero h1 { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 12px; }
+.hero p { font-size: 17px; color: var(--text2); max-width: 540px; margin: 0 auto; }
+
+.faq-list { max-width: 700px; margin: 0 auto; padding: 0 24px 60px; }
+.faq-item { border-bottom: 1px solid rgba(255,255,255,0.08); }
+.faq-item:first-child { border-top: 1px solid rgba(255,255,255,0.08); }
+.faq-q { width: 100%; background: none; border: none; color: var(--text); font-family: inherit; font-size: 16px; font-weight: 600; padding: 20px 0; text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 16px; transition: color 0.2s; }
+.faq-q:hover { color: var(--accent2); }
+.faq-q .arrow { font-size: 14px; color: var(--text2); transition: transform 0.2s; flex-shrink: 0; }
+.faq-item.open .faq-q .arrow { transform: rotate(180deg); }
+.faq-a { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.faq-a-inner { padding: 0 0 20px; font-size: 15px; color: var(--text2); line-height: 1.7; }
+.faq-a-inner a { color: var(--accent2); text-decoration: none; }
+.faq-a-inner a:hover { text-decoration: underline; }
+
+.footer { border-top: 1px solid rgba(255,255,255,0.08); padding: 40px 0; }
+.footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.footer-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--accent2); }
+.footer-logo span { color: var(--text2); font-weight: 400; font-size: 12px; }
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+.footer-links a { color: var(--text2); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+.footer-links a:hover { color: var(--text); }
+.footer-copy { color: var(--text2); font-size: 12px; opacity: 0.6; }
+
+@media (max-width: 768px) {
+  .hero h1 { font-size: 30px; }
+  .nav-links { display: none; }
+  .footer-inner { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="./index.html" class="nav-logo">
+      <svg width="28" height="32" viewBox="0 0 100 115"><path d="M4,12 Q4,4 12,4 L88,4 Q96,4 96,12 L96,60 Q96,85 50,112 Q4,85 4,60 Z" fill="#7ec8e3" stroke="#5ba8c8" stroke-width="2"/><g transform="translate(10,8) scale(0.8)"><polygon points="50,2 56,40 50,47 44,40" fill="#e87820"/><polygon points="98,50 60,56 53,50 60,44" fill="#e87820"/><polygon points="50,98 44,60 50,53 56,60" fill="#e87820"/><polygon points="2,50 40,44 47,50 40,56" fill="#e87820"/><circle cx="50" cy="50" r="4" fill="#e87820"/></g></svg>
+      <div>Ambit<span>Budget Pro</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="./features.html">Features</a>
+      <a href="./index.html#pricing">Pricing</a>
+      <a href="./faq.html" style="color:var(--text);">FAQ</a>
+      <a href="./coming-soon.html">What's Next</a>
+      <a href="./app/index.html?mode=demo" class="nav-cta">Try Demo</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <h1>Frequently Asked Questions</h1>
+    <p>Everything you need to know about Ambit Budget Pro.</p>
+  </div>
+</section>
+
+<div class="faq-list">
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="this.parentElement.classList.toggle('open');var a=this.nextElementSibling;a.style.maxHeight=a.style.maxHeight?null:a.scrollHeight+'px';">
+      Where is my data stored?
+      <span class="arrow">▼</span>
+    </button>
+    <div class="faq-a"><div class="faq-a-inner">
+      Everything stays in your browser's localStorage on your device. Ambit Budget Pro never uploads your data anywhere — no servers, no cloud, no tracking. Your financial information is 100% private.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="this.parentElement.classList.toggle('open');var a=this.nextElementSibling;a.style.maxHeight=a.style.maxHeight?null:a.scrollHeight+'px';">
+      Does Ambit connect to my bank?
+      <span class="arrow">▼</span>
+    </button>
+    <div class="faq-a"><div class="faq-a-inner">
+      No. Ambit uses CSV/Excel import instead of bank connections. You download a transaction file from your bank's website and import it into the app. This is more private, more reliable, and doesn't require sharing your bank login.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="this.parentElement.classList.toggle('open');var a=this.nextElementSibling;a.style.maxHeight=a.style.maxHeight?null:a.scrollHeight+'px';">
+      Which banks are supported?
+      <span class="arrow">▼</span>
+    </button>
+    <div class="faq-a"><div class="faq-a-inner">
+      Any bank that lets you export transactions as CSV or Excel — which is virtually all of them. Ambit auto-detects column formats from most major banks.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="this.parentElement.classList.toggle('open');var a=this.nextElementSibling;a.style.maxHeight=a.style.maxHeight?null:a.scrollHeight+'px';">
+      Does it work on mobile?
+      <span class="arrow">▼</span>
+    </button>
+    <div class="faq-a"><div class="faq-a-inner">
+      Yes. Ambit Budget Pro is fully responsive and works in any modern browser — Chrome, Safari, Firefox, Edge — on desktop, tablet, or phone.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="this.parentElement.classList.toggle('open');var a=this.nextElementSibling;a.style.maxHeight=a.style.maxHeight?null:a.scrollHeight+'px';">
+      Is there a free trial?
+      <span class="arrow">▼</span>
+    </button>
+    <div class="faq-a"><div class="faq-a-inner">
+      The <a href="./app/index.html?mode=demo">free demo</a> gives you full access to explore every feature with sample data. No sign-up required. When you're ready, purchase a plan and use your own data.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="this.parentElement.classList.toggle('open');var a=this.nextElementSibling;a.style.maxHeight=a.style.maxHeight?null:a.scrollHeight+'px';">
+      What's the difference between plans?
+      <span class="arrow">▼</span>
+    </button>
+    <div class="faq-a"><div class="faq-a-inner">
+      <strong>Starter ($9.99)</strong> — Dashboard, CSV import, auto-categorization, budgets, and bill tracking for 1 account.<br>
+      <strong>Plus ($19.99)</strong> — Everything in Starter plus balance forecast, monthly budget review, calendar year view, and up to 3 accounts.<br>
+      <strong>Pro ($29.99)</strong> — Everything in Plus plus day-by-day projections, unlimited accounts, and all future features.<br><br>
+      All plans are one-time purchases with lifetime access. <a href="./features.html">Compare all features →</a>
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="this.parentElement.classList.toggle('open');var a=this.nextElementSibling;a.style.maxHeight=a.style.maxHeight?null:a.scrollHeight+'px';">
+      How do license keys work?
+      <span class="arrow">▼</span>
+    </button>
+    <div class="faq-a"><div class="faq-a-inner">
+      After purchase, you receive an HTML file and a license key. Open the file in your browser, enter your key on first launch, and your plan is activated. The key is stored locally — no internet connection needed after activation.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="this.parentElement.classList.toggle('open');var a=this.nextElementSibling;a.style.maxHeight=a.style.maxHeight?null:a.scrollHeight+'px';">
+      What if I clear my browser data?
+      <span class="arrow">▼</span>
+    </button>
+    <div class="faq-a"><div class="faq-a-inner">
+      If you clear localStorage, your data will be lost. You can re-import your CSV files to restore transactions. Your license key will still work — just re-enter it to reactivate your plan.
+    </div></div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-q" onclick="this.parentElement.classList.toggle('open');var a=this.nextElementSibling;a.style.maxHeight=a.style.maxHeight?null:a.scrollHeight+'px';">
+      Do I get future updates?
+      <span class="arrow">▼</span>
+    </button>
+    <div class="faq-a"><div class="faq-a-inner">
+      Yes. All plans include lifetime updates. When a new version is available, you can re-download the latest file from your purchase receipt. Pro plan users automatically get every new feature we build.
+    </div></div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <svg width="20" height="23" viewBox="0 0 100 115"><path d="M4,12 Q4,4 12,4 L88,4 Q96,4 96,12 L96,60 Q96,85 50,112 Q4,85 4,60 Z" fill="#7ec8e3" stroke="#5ba8c8" stroke-width="2"/><g transform="translate(10,8) scale(0.8)"><polygon points="50,2 56,40 50,47 44,40" fill="#e87820"/><polygon points="98,50 60,56 53,50 60,44" fill="#e87820"/><polygon points="50,98 44,60 50,53 56,60" fill="#e87820"/><polygon points="2,50 40,44 47,50 40,56" fill="#e87820"/><circle cx="50" cy="50" r="4" fill="#e87820"/></g></svg>
+        Ambit <span>Budget Pro</span>
+      </div>
+      <div class="footer-links">
+        <a href="./features.html">Features</a>
+        <a href="./index.html#pricing">Pricing</a>
+        <a href="./starter.html">Starter</a>
+        <a href="./plus.html">Plus</a>
+        <a href="./pro.html">Pro</a>
+        <a href="./faq.html">FAQ</a>
+        <a href="./coming-soon.html">What's Next</a>
+        <a href="mailto:support@ambitbudget.com">Contact</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./terms.html">Terms</a>
+      </div>
+      <div class="footer-copy">&copy; 2026 Ambit Budget Pro. All rights reserved.</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
