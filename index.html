@@ -68,19 +68,31 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .trust-item .icon { font-size: 18px; }
 
 /* ── Main split: demo + pricing ── */
-.main-split { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 48px 0 0; align-items: start; }
+.main-split { display: grid; grid-template-columns: 7fr 3fr; gap: 24px; padding: 48px 0 0; align-items: start; }
 
-/* Demo column */
-.demo-col { background: var(--bg2); border: 1px solid rgba(126,200,227,0.2); border-radius: 16px; padding: 36px 32px; }
-.demo-col .demo-icon { font-size: 44px; margin-bottom: 10px; }
-.demo-col h2 { font-size: 24px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
-.demo-col .demo-desc { font-size: 14px; color: var(--text2); margin-bottom: 20px; line-height: 1.7; }
-.demo-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
-.demo-pills span { font-size: 12px; color: var(--text2); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 5px 14px; border-radius: 99px; }
-.btn-demo { display: block; width: 100%; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 600; text-align: center; text-decoration: none; background: var(--accent); color: #fff; box-shadow: 0 4px 20px rgba(232,160,32,0.3); transition: all 0.2s; border: none; cursor: pointer; font-family: inherit; }
-.btn-demo:hover { background: #d09018; transform: translateY(-2px); box-shadow: 0 6px 28px rgba(232,160,32,0.4); }
-.demo-col .see-all { display: inline-block; margin-top: 14px; font-size: 13px; color: var(--accent2); text-decoration: none; font-weight: 600; }
-.demo-col .see-all:hover { text-decoration: underline; }
+/* Demo column — embedded iframe */
+.demo-col { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid rgba(126,200,227,0.25); background: var(--bg2); }
+.demo-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: rgba(16,24,80,0.9); border-bottom: 1px solid rgba(255,255,255,0.08); }
+.demo-bar-left { display: flex; align-items: center; gap: 8px; }
+.demo-bar-left span { font-size: 13px; font-weight: 600; color: var(--text2); }
+.demo-bar-dots { display: flex; gap: 5px; }
+.demo-bar-dots i { width: 8px; height: 8px; border-radius: 50%; }
+.demo-bar-dots i:nth-child(1) { background: #e05050; }
+.demo-bar-dots i:nth-child(2) { background: #f0c050; }
+.demo-bar-dots i:nth-child(3) { background: #40c080; }
+.demo-expand { background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--text2); font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-family: inherit; transition: all 0.2s; display: flex; align-items: center; gap: 5px; }
+.demo-expand:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+.demo-iframe-wrap { width: 100%; height: 520px; }
+.demo-iframe-wrap iframe { width: 100%; height: 100%; border: none; background: var(--bg); }
+.demo-col .see-all { display: block; text-align: center; padding: 8px; font-size: 12px; color: var(--accent2); text-decoration: none; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.06); }
+.demo-col .see-all:hover { text-decoration: underline; background: rgba(255,255,255,0.02); }
+
+/* Fullscreen demo overlay */
+.demo-fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200; background: var(--bg); display: none; flex-direction: column; }
+.demo-fullscreen.active { display: flex; }
+.demo-fullscreen .demo-bar { flex-shrink: 0; }
+.demo-fullscreen .demo-iframe-wrap { flex: 1; height: auto; }
+.demo-fullscreen .demo-iframe-wrap iframe { height: 100%; }
 
 /* Pricing column */
 .pricing-col { display: flex; flex-direction: column; gap: 14px; }
@@ -137,6 +149,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .main-split { grid-template-columns: 1fr; gap: 24px; }
+  .demo-iframe-wrap { height: 400px; }
   .tiers-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
 }
 @media (max-width: 768px) {
@@ -212,20 +225,39 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <div class="container">
   <div class="main-split">
 
-    <!-- Left: Demo -->
-    <div class="demo-col">
-      <div class="demo-icon">&#x1F4CA;</div>
-      <h2>See it in action</h2>
-      <p class="demo-desc">Explore the full app with sample data — dashboards, budgets, bill tracking, forecasts, and more. No sign-up needed.</p>
-      <div class="demo-pills">
-        <span>Dashboard</span>
-        <span>Budgets</span>
-        <span>Bill Tracking</span>
-        <span>Forecasting</span>
-        <span>CSV Import</span>
+    <!-- Left: Live Demo -->
+    <div class="demo-col" id="demo-inline">
+      <div class="demo-bar">
+        <div class="demo-bar-left">
+          <div class="demo-bar-dots"><i></i><i></i><i></i></div>
+          <span>Live Demo</span>
+        </div>
+        <button class="demo-expand" onclick="toggleDemo()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+          Expand
+        </button>
       </div>
-      <a href="./app/index.html?mode=demo" class="btn-demo">Launch Free Demo &#x2192;</a>
+      <div class="demo-iframe-wrap">
+        <iframe src="./app/index.html?mode=demo" loading="lazy" title="Ambit Budget Pro Demo"></iframe>
+      </div>
       <a href="./features.html" class="see-all">See all features &#x2192;</a>
+    </div>
+
+    <!-- Fullscreen overlay (hidden) -->
+    <div class="demo-fullscreen" id="demo-fs">
+      <div class="demo-bar">
+        <div class="demo-bar-left">
+          <div class="demo-bar-dots"><i></i><i></i><i></i></div>
+          <span>Live Demo</span>
+        </div>
+        <button class="demo-expand" onclick="toggleDemo()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h6v6m10-10h-6V4m0 16l7-7M14 4l-7 7"/></svg>
+          Close
+        </button>
+      </div>
+      <div class="demo-iframe-wrap">
+        <iframe id="demo-fs-iframe" title="Ambit Budget Pro Demo (Fullscreen)"></iframe>
+      </div>
     </div>
 
     <!-- Right: Compact pricing cards -->
@@ -421,6 +453,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 </footer>
 
 <script>
+// Demo expand/collapse
+function toggleDemo() {
+  var fs = document.getElementById('demo-fs');
+  var fsIframe = document.getElementById('demo-fs-iframe');
+  if (fs.classList.contains('active')) {
+    fs.classList.remove('active');
+    fsIframe.src = '';
+    document.body.style.overflow = '';
+  } else {
+    fsIframe.src = './app/index.html?mode=demo';
+    fs.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
 // Nav scroll effect
 window.addEventListener('scroll', () => {
   document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
