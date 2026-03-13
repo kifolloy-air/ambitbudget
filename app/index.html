@@ -281,7 +281,9 @@ const DEMO_DATA = (()=>{
 
   const accounts = [
     { id:'acct-1', name:'Main Checking', type:'checking', startingBalance:2450.00, reconciledThrough:null, last4:'4821' },
-    { id:'acct-2', name:'Savings', type:'savings', startingBalance:12800.00, reconciledThrough:null, last4:'9953' }
+    { id:'acct-2', name:'Savings', type:'savings', startingBalance:12800.00, reconciledThrough:null, last4:'9953' },
+    { id:'acct-3', name:'Visa Credit Card', type:'credit_card', startingBalance:-4200.00, interestRate:22.99, minimumPayment:105, creditLimit:8000, reconciledThrough:null, last4:'5432', plannedPayment:200, paymentFrequency:'monthly' },
+    { id:'acct-4', name:'Car Loan', type:'loan', startingBalance:-8500.00, interestRate:6.49, minimumPayment:285, reconciledThrough:null, last4:'7788', plannedPayment:350, paymentFrequency:'biweekly' }
   ];
 
   const categories = [
@@ -307,6 +309,7 @@ const DEMO_DATA = (()=>{
     { name:'Savings Transfer', group:'Savings', catType:'transfer', budget:500 },
     { name:'Subscriptions', group:'Entertainment', catType:'fixed', budget:30 },
     { name:'Home Maintenance', group:'Housing', catType:'discretionary', budget:100 },
+    { name:'Credit Card Payment', group:'Debt', catType:'transfer', budget:0 },
   ];
 
   const dictionary = [
@@ -340,6 +343,7 @@ const DEMO_DATA = (()=>{
     { keyword:'GREAT CLIPS', cleanName:'Great Clips', category:'Haircut' },
     { keyword:'TRANSFER TO SAVINGS', cleanName:'Savings Transfer', category:'Savings Transfer', dueDay:1, frequency:'monthly' },
     { keyword:'HOME DEPOT', cleanName:'Home Depot', category:'Home Maintenance' },
+    { keyword:'VISA PAYMENT', cleanName:'Visa Card Payment', category:'Credit Card Payment', dueDay:15, frequency:'monthly' },
   ];
 
   // Generate 3 months of transactions
@@ -405,6 +409,15 @@ const DEMO_DATA = (()=>{
     // Savings transfer
     addTxn(dtt(1), 'TRANSFER TO SAVINGS', 'Savings Transfer', 'Savings Transfer', -500);
     addTxn(dtt(1), 'TRANSFER FROM CHECKING', 'Savings Transfer', 'Savings Transfer', 500, 'acct-2');
+
+    // Credit card charges (on acct-3)
+    addTxn(dtt(5), 'AMAZON MARKETPLACE', 'Amazon', 'Subscriptions', -(45 + Math.round(Math.random()*30)), 'acct-3');
+    addTxn(dtt(12), 'TARGET STORE #789', 'Target', 'Clothing', -(35 + Math.round(Math.random()*40)), 'acct-3');
+    if(dayLimit > 20) addTxn(dtt(20), 'DOORDASH DELIVERY', 'DoorDash', 'Dining Out', -(22 + Math.round(Math.random()*15)), 'acct-3');
+
+    // Credit card payment (from checking to card)
+    addTxn(dtt(15), 'VISA PAYMENT ONLINE', 'Visa Card Payment', 'Credit Card Payment', -150);
+    addTxn(dtt(15), 'PAYMENT RECEIVED - THANK YOU', 'Visa Card Payment', 'Credit Card Payment', 150, 'acct-3');
   }
 
   // Add some pending (uncleared) transactions for demo
@@ -421,7 +434,7 @@ const DEMO_DATA = (()=>{
 // ── Default groups & their colors ───────────────────────
 const DEFAULT_GROUPS = [
   {name:'Housing',color:'#f0c050'},{name:'Food',color:'#40c080'},{name:'Transport',color:'#e07828'},
-  {name:'Utilities',color:'#5090e8'},{name:'Personal',color:'#d060a0'},{name:'Health',color:'#e05050'},
+  {name:'Utilities',color:'#5090e8'},{name:'Personal',color:'#d060a0'},{name:'Health',color:'#e05050'},{name:'Debt',color:'#c04040'},
   {name:'Entertainment',color:'#e8a020'},{name:'Savings',color:'#40c080'},{name:'Income',color:'#50c8a0'},
   {name:'Other',color:'#9da5d0'}
 ];
@@ -794,9 +807,9 @@ function App() {
 
   // ── License / Tier system ──
   const TIERS = useMemo(()=>({
-    Starter: { limit:1, label:'Starter', forecast:false, dayByDay:false, review:false, yearView:false },
-    Plus:    { limit:3, label:'Plus',    forecast:true,  dayByDay:false, review:true,  yearView:true  },
-    Pro:     { limit:Infinity, label:'Pro', forecast:true, dayByDay:true, review:true, yearView:true }
+    Starter: { limit:1, label:'Starter', forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false },
+    Plus:    { limit:3, label:'Plus',    forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false },
+    Pro:     { limit:Infinity, label:'Pro', forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true }
   }),[]);
   const [license, setLicense] = useState(()=>{ try { return JSON.parse(localStorage.getItem('ambit_license'))||null; } catch{ return null; } });
   const [showLicenseGate, setShowLicenseGate] = useState(false);
@@ -952,6 +965,7 @@ function App() {
     { id:'import', icon:'📥', label:'Import' },
     { id:'transactions', icon:'📋', label:'Transactions' },
     { id:'budget', icon:'💰', label:'Budget' },
+    { id:'debt', icon:'💳', label:'Debt Planner' },
     { id:'accounts', icon:'🏦', label:'Accounts' },
     { id:'categories', icon:'📂', label:'Categories' },
     { id:'dictionary', icon:'📖', label:'Payee Rules' },
@@ -1086,7 +1100,8 @@ function App() {
     moreOpen && h('div',{className:'more-menu-overlay', onClick:()=>setMoreOpen(false)},
       h('div',{className:'more-menu', onClick:e=>e.stopPropagation()},
         h('div',{style:{width:40,height:4,borderRadius:2,background:'rgba(255,255,255,0.3)',margin:'0 auto 12px'}}),
-        [{id:'accounts',icon:'🏦',label:'Accounts'},
+        [{id:'debt',icon:'💳',label:'Debt Planner'},
+         {id:'accounts',icon:'🏦',label:'Accounts'},
          {id:'categories',icon:'📂',label:'Categories'},
          {id:'dictionary',icon:'📖',label:'Payee Rules'}
         ].map(t => h('div',{
@@ -1170,9 +1185,10 @@ function App() {
         )
       ),
       page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, groupColors}),
-      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, setDictionary, categories, setCategories, catMap, categorize, showToast, accounts, groupList, groups, setGroups}),
+      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, setDictionary, categories, setCategories, catMap, categorize, showToast, accounts, groupList, groups, setGroups, groupColors}),
       page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts}),
       page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns, dictionary, groupColors}),
+      page==='debt' && h(DebtPlannerPage, {accounts, setAccounts, transactions:liveTxns, tier, isDemo, showToast}),
       page==='accounts' && h(AccountsPage, {accounts, setAccounts, transactions:liveTxns, setTransactions, catMap, showToast, accountLimit, tier, isDemo}),
       page==='categories' && h(CategoriesPage, {categories, setCategories, dictionary, showToast, groups, setGroups, groupList, groupColors}),
       page==='dictionary' && h(DictionaryPage, {dictionary, setDictionary, categories, showToast, groupColors}),
@@ -1887,7 +1903,7 @@ function UnmatchedRow({txn, index, categories, setCategories, showToast, onResol
 }
 
 // ── Import Page ─────────────────────────────────────────
-function ImportPage({transactions, setTransactions, dictionary, setDictionary, categories, setCategories, catMap, categorize, showToast, accounts, groupList, groups, setGroups}) {
+function ImportPage({transactions, setTransactions, dictionary, setDictionary, categories, setCategories, catMap, categorize, showToast, accounts, groupList, groups, setGroups, groupColors}) {
   const [csv, setCsv] = useState('');
   const [preview, setPreview] = useState(null);
   const [parsedData, setParsedData] = useState(null);
@@ -2470,10 +2486,14 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     const {date,description,amount,category,accountId,pending,checkNumber} = newTxn;
     if(!date||!description||!amount||!accountId) return;
     const cat = catMap[category];
+    // Auto-set sign based on category: expenses negative, income positive, transfers as-entered
+    let amt = +amount;
+    if(cat && cat.group !== 'Income' && cat.catType !== 'transfer' && amt > 0) amt = -Math.abs(amt);
+    if(cat && cat.group === 'Income' && amt < 0) amt = Math.abs(amt);
     const txn = {
       id: Date.now()+'_'+Math.random().toString(36).slice(2,8),
       date, description: description.trim(),
-      amount: +amount,
+      amount: amt,
       cleanName: description.trim(),
       category: category || 'Uncategorized',
       group: cat?.group || 'Other',
@@ -2511,6 +2531,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   },[accounts]);
 
   // Compute running balance for all transactions sorted by date (oldest first), per account
+  // Also track processing order for consistent same-date sorting
   const runningBalMap = useMemo(()=>{
     const dateSorted = [...transactions].sort((a,b)=>safeDate(a.date)-safeDate(b.date));
     const accBal = {};
@@ -2522,6 +2543,12 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     });
     return balMap;
   },[transactions, startBalMap]);
+  const txnOrder = useMemo(()=>{
+    const dateSorted = [...transactions].sort((a,b)=>safeDate(a.date)-safeDate(b.date));
+    const m = {};
+    dateSorted.forEach((t,i)=>{m[t.id]=i;});
+    return m;
+  },[transactions]);
 
   const pendingCount = useMemo(()=>transactions.filter(t=>t.pending).length,[transactions]);
 
@@ -2535,12 +2562,20 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       arr = arr.filter(t=>t.cleanName.toLowerCase().includes(f)||t.description.toLowerCase().includes(f)||t.category.toLowerCase().includes(f));
     }
     arr.sort((a,b)=>{
-      if(sortCol==='date') return (safeDate(a.date)-safeDate(b.date))*sortDir;
+      // Pending transactions always on top
+      if(a.pending && !b.pending) return -1;
+      if(!a.pending && b.pending) return 1;
+      if(sortCol==='date') {
+        const d = safeDate(a.date)-safeDate(b.date);
+        if(d!==0) return d*sortDir;
+        // Same date: sort by processing order so the balance column is monotonic
+        return ((txnOrder[a.id]||0)-(txnOrder[b.id]||0))*sortDir;
+      }
       if(sortCol==='amount') return (a.amount-b.amount)*sortDir;
       return (a[sortCol]||'').localeCompare(b[sortCol]||'')*sortDir;
     });
     return arr;
-  },[transactions,filter,acctFilter,statusFilter,sortCol,sortDir]);
+  },[transactions,filter,acctFilter,statusFilter,sortCol,sortDir,txnOrder]);
 
   const toggleSort = (col) => {
     if(sortCol===col) setSortDir(d=>d*-1);
@@ -2729,7 +2764,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
           h('div',{style:{flex:1}},
             h('label',{htmlFor:'txn-amount',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Amount'),
             h('input',{id:'txn-amount',className:'input',type:'number',value:newTxn.amount,onChange:e=>setNewTxn(p=>({...p,amount:e.target.value})),placeholder:'e.g. 0.01 or -50.00',style:{width:'100%'},step:'0.01'}),
-            h('div',{style:{fontSize:10,color:'var(--card-text2)',marginTop:2}},'Positive = income, Negative = expense')
+            h('div',{style:{fontSize:10,color:'var(--card-text2)',marginTop:2}},'Sign auto-set by category (enter as positive)')
           )
         ),
         h('div',null,
@@ -3113,12 +3148,13 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
     const monthLabel = monthNames[tMonth-1]+' '+tYear;
     const curMonth = tMonth; // alias for backward compat within bbWindow
 
-    const currentMonthTxns = transactions.filter(t=>getYearMonth(t.date)===targetYM);
+    const currentMonthTxns = transactions.filter(t=>getYearMonth(t.date)===targetYM && (selectedAcct==='all' || t.accountId===selectedAcct));
 
     // Historical data by payee
     const historyByPayee = {};
     transactions.forEach(t=>{
       if(!t.cleanName) return;
+      if(selectedAcct!=='all' && t.accountId!==selectedAcct) return;
       const p = parseDateParts(t.date);
       if(!p) return;
       if(!historyByPayee[t.cleanName]) historyByPayee[t.cleanName]=[];
@@ -3251,8 +3287,10 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
     }).filter(c=>c.payees.length>0||c.catActual>0);
 
     // ── Forecast ──
-    const currentBalance = accounts.reduce((s,a)=>s+(a.startingBalance||0),0)
-      + transactions.reduce((s,t)=>s+t.amount,0);
+    const currentBalance = (selectedAcct==='all'
+      ? accounts.reduce((s,a)=>s+(a.startingBalance||0),0)
+      : (accounts.find(a=>a.id===selectedAcct)?.startingBalance||0))
+      + transactions.filter(t=>selectedAcct==='all' || t.accountId===selectedAcct).reduce((s,t)=>s+t.amount,0);
 
     const remainingIncome = incomeData.reduce((s,cat)=>
       s + cat.payees.filter(p=>!p.received).reduce((s2,p)=>s2+p.expectedAmount,0), 0);
@@ -3273,7 +3311,7 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
     return {monthLabel, curMonth, isCurrentMonth, incomeData, billsData, discretionaryData,
       currentBalance, remainingIncome, remainingBills, remainingDiscBudget,
       endOfMonthBalance, nextMonthBalance, totalDiscBudget};
-  },[transactions, categories, dictionary, accounts, selectedMonth]);
+  },[transactions, categories, dictionary, accounts, selectedMonth, selectedAcct]);
 
   // ── Day-by-Day Forecast ──
   const forecastRows = useMemo(()=>{
@@ -3431,6 +3469,32 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
   const spendingCats = categories.filter(c=>c.catType!=='transfer' && c.group!=='Income');
   const totalBudget = spendingCats.reduce((s,c)=>s+(c.budget||0),0) * numMonths;
 
+  // Budget comparison: current month vs previous month
+  const prevMonthBudget = useMemo(()=>{
+    const now = new Date();
+    const realYM = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const targetYM = (selectedMonth!=='all') ? selectedMonth : realYM;
+    const [tYear,tMonth] = targetYM.split('-').map(Number);
+    const prevMonth = tMonth===1 ? 12 : tMonth-1;
+    const prevYear = tMonth===1 ? tYear-1 : tYear;
+    const prevYM = prevYear+'-'+String(prevMonth).padStart(2,'0');
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const budgetPerMonth = spendingCats.reduce((s,c)=>s+(c.budget||0),0);
+    const filterAcct = arr => selectedAcct!=='all' ? arr.filter(t=>t.accountId===selectedAcct) : arr;
+    const curTxns = filterAcct(transactions.filter(t=>getYearMonth(t.date)===targetYM));
+    const prevTxns = filterAcct(transactions.filter(t=>getYearMonth(t.date)===prevYM));
+    const curSpent = curTxns.filter(t=>t.amount<0&&t.catType!=='transfer').reduce((s,t)=>s+Math.abs(t.amount),0);
+    const prevSpent = prevTxns.filter(t=>t.amount<0&&t.catType!=='transfer').reduce((s,t)=>s+Math.abs(t.amount),0);
+    return {
+      curLabel:monthNames[tMonth-1], prevLabel:monthNames[prevMonth-1],
+      budget:budgetPerMonth, curSpent, prevSpent,
+      curDiff:budgetPerMonth-curSpent, prevDiff:budgetPerMonth-prevSpent,
+      curPct:budgetPerMonth>0?Math.round(curSpent/budgetPerMonth*100):0,
+      prevPct:budgetPerMonth>0?Math.round(prevSpent/budgetPerMonth*100):0,
+      hasPrevData:prevTxns.length>0
+    };
+  },[transactions,categories,selectedMonth,selectedAcct]);
+
   // Category analysis (exclude transfers)
   const catAnalysis = useMemo(()=>{
     const byCategory = {};
@@ -3489,7 +3553,16 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
     const rowTotals = {};
     cats.forEach(c=>{rowTotals[c.name]=monthKeys.reduce((s,ym)=>s+(spendMap[c.name+'|'+ym]||0),0);});
     const grandTotal = Object.values(rowTotals).reduce((s,v)=>s+v,0);
-    return {monthKeys,cats,grouped:grpd,spendMap,txnMap,colTotals,rowTotals,grandTotal};
+    // Yearly income/expenses/transfers for annual stats
+    let yearIncome=0, yearExpenses=0, yearTransfers=0;
+    transactions.forEach(t=>{
+      const ym=getYearMonth(t.date);
+      if(!ym||!ym.startsWith(yearViewYear+'-')) return;
+      if(t.catType==='transfer'){if(t.amount<0) yearTransfers+=Math.abs(t.amount);}
+      else if(t.amount>=0) yearIncome+=t.amount;
+      else yearExpenses+=Math.abs(t.amount);
+    });
+    return {monthKeys,cats,grouped:grpd,spendMap,txnMap,colTotals,rowTotals,grandTotal,yearIncome,yearExpenses,yearTransfers};
   },[dashView,yearViewYear,categories,transactions]);
 
   const availableYears = useMemo(()=>{
@@ -3524,13 +3597,100 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
 
     // ── Overview View ──
     dashView==='overview' && h('div',null,
-    // Top stats
-    h('div',{className:'stats'},
-      h(Stat,{label:'Income', value:fmt(totalInc), color:'var(--green)'}),
-      h(Stat,{label:'Expenses', value:fmt(totalExp), color:'var(--red)'}),
-      h(Stat,{label:'Transfers', value:fmt(totalXfer), color:'var(--pink)'}),
-      h(Stat,{label:'Net', value:fmt(totalInc-totalExp), color:totalInc-totalExp>=0?'var(--green)':'var(--red)'}),
-      h(Stat,{label:'Budget', value:totalBudget>0?fmt(totalBudget):'—', sub:totalBudget>0?(totalExp<=totalBudget?'Under ✅':'Over ⚠️'):'Not set', color:'var(--accent2)'})
+
+    // ── Balance Forecast (hero, top of page) ──
+    bbWindow.isCurrentMonth && accounts.length>0 && (isDemo || tier?.forecast
+    ? h('div',{className:'card',style:{padding:'10px 16px',marginBottom:14}},
+        h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}},
+          h('h3',{style:{margin:0,fontSize:13}}, h('span',{className:'icon'},'🔮'), 'Balance Forecast', h(InfoPill,{text:'End of Month = Current Balance + Remaining Income \u2212 Unpaid Bills \u2212 Remaining Discretionary Budget. \"Remaining Disc\" = your total discretionary budget minus what you have already spent this month. Next Month projects a full month of income, bills, and discretionary spending. Red means projected negative.'})),
+          h('span',{style:{fontSize:10,color:'var(--card-text2)'}},'budget + expected bills')
+        ),
+        h('div',{style:{display:'flex',gap:0,alignItems:'center'}},
+          h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px'}},
+            h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'Current'),
+            h('div',{style:{fontSize:22,fontWeight:700,color:bbWindow.currentBalance>=0?'var(--green)':'var(--red)'}},
+              (bbWindow.currentBalance<0?'-':'')+fmt(bbWindow.currentBalance))
+          ),
+          h('div',{style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
+          h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px',
+            background:bbWindow.endOfMonthBalance<0?'rgba(224,80,80,0.08)':'transparent',borderRadius:6}},
+            h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'End of Month'),
+            h('div',{style:{fontSize:22,fontWeight:700,color:bbWindow.endOfMonthBalance>=0?'var(--green)':'var(--red)'}},
+              (bbWindow.endOfMonthBalance<0?'-':'')+fmt(bbWindow.endOfMonthBalance),
+              bbWindow.endOfMonthBalance<0&&h('span',{style:{fontSize:10,marginLeft:4}},'⚠️'))
+          ),
+          h('div',{style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
+          h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px',
+            background:bbWindow.nextMonthBalance<0?'rgba(224,80,80,0.08)':'transparent',borderRadius:6}},
+            h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'Next Month'),
+            h('div',{style:{fontSize:22,fontWeight:700,color:bbWindow.nextMonthBalance>=0?'var(--green)':'var(--red)'}},
+              (bbWindow.nextMonthBalance<0?'-':'')+fmt(bbWindow.nextMonthBalance),
+              bbWindow.nextMonthBalance<0&&h('span',{style:{fontSize:10,marginLeft:4}},'⚠️'))
+          )
+        ),
+        h('div',{style:{display:'flex',gap:12,marginTop:6,paddingTop:6,borderTop:'1px solid var(--border)',flexWrap:'wrap',justifyContent:'center'}},
+          h('span',{style:{fontSize:10,color:'var(--green)'}}, '+Income: ',h('strong',null,fmt(bbWindow.remainingIncome)), bbWindow.remainingIncome===0 && h('span',{style:{fontSize:9,color:'var(--card-text2)',marginLeft:2}},'(received)')),
+          h('span',{style:{fontSize:10,color:'var(--red)'}}, '-Bills: ',h('strong',null,fmt(bbWindow.remainingBills))),
+          h('span',{style:{fontSize:10,color:'var(--yellow)'}}, '-Disc: ',h('strong',null,fmt(bbWindow.remainingDiscBudget)))
+        )
+      )
+    : h('div',{style:{textAlign:'center',padding:'16px 20px',marginBottom:14,background:'rgba(232,160,32,0.06)',border:'1px dashed var(--accent2)',borderRadius:8}},
+        h('div',{style:{fontSize:24,marginBottom:6}},'🔮'),
+        h('div',{style:{fontSize:13,fontWeight:600,color:'var(--accent2)',marginBottom:4}},'Balance Forecast'),
+        h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:8}},'See where your balance is headed — end of month and next month projections.'),
+        h('a',{href:'https://ambitbudget.com/#pricing',style:{fontSize:11,fontWeight:600,color:'var(--accent2)',textDecoration:'none'}},'Upgrade to Plus →')
+    )),
+
+    // ── Budget Comparison: Current vs Previous Month ──
+    prevMonthBudget.budget > 0 && h('div',{style:{display:'flex',gap:12,marginBottom:14,flexWrap:'wrap'}},
+      // Current month
+      h('div',{className:'card',style:{flex:1,minWidth:200,padding:'12px 16px'}},
+        h('div',{style:{fontSize:11,fontWeight:600,color:'var(--accent2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}},
+          prevMonthBudget.curLabel+' Budget'),
+        h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}},
+          h('div',null,
+            h('div',{style:{fontSize:10,color:'var(--card-text2)'}},'Budget'),
+            h('div',{style:{fontSize:18,fontWeight:700}},fmt(prevMonthBudget.budget))
+          ),
+          h('div',{style:{textAlign:'right'}},
+            h('div',{style:{fontSize:10,color:'var(--card-text2)'}},'Spent'),
+            h('div',{style:{fontSize:18,fontWeight:700,color:'var(--red)'}},fmt(prevMonthBudget.curSpent))
+          )
+        ),
+        h('div',{className:'progress',style:{marginBottom:4}},
+          h('div',{className:'progress-fill',style:{width:Math.min(prevMonthBudget.curPct,100)+'%',
+            background:prevMonthBudget.curPct>100?'var(--red)':prevMonthBudget.curPct>80?'var(--yellow)':'var(--green)'}})
+        ),
+        h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:11}},
+          h('span',{style:{color:prevMonthBudget.curDiff>=0?'var(--green)':'var(--red)',fontWeight:600}},
+            prevMonthBudget.curDiff>=0?'Under '+fmt(prevMonthBudget.curDiff)+' ✅':'Over '+fmt(Math.abs(prevMonthBudget.curDiff))+' ⚠️'),
+          h('span',{style:{color:'var(--card-text2)'}},prevMonthBudget.curPct+'%')
+        )
+      ),
+      // Previous month
+      prevMonthBudget.hasPrevData && h('div',{className:'card',style:{flex:1,minWidth:200,padding:'12px 16px',opacity:0.85}},
+        h('div',{style:{fontSize:11,fontWeight:600,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}},
+          prevMonthBudget.prevLabel+' Budget'),
+        h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}},
+          h('div',null,
+            h('div',{style:{fontSize:10,color:'var(--card-text2)'}},'Budget'),
+            h('div',{style:{fontSize:18,fontWeight:700}},fmt(prevMonthBudget.budget))
+          ),
+          h('div',{style:{textAlign:'right'}},
+            h('div',{style:{fontSize:10,color:'var(--card-text2)'}},'Spent'),
+            h('div',{style:{fontSize:18,fontWeight:700,color:'var(--red)'}},fmt(prevMonthBudget.prevSpent))
+          )
+        ),
+        h('div',{className:'progress',style:{marginBottom:4}},
+          h('div',{className:'progress-fill',style:{width:Math.min(prevMonthBudget.prevPct,100)+'%',
+            background:prevMonthBudget.prevPct>100?'var(--red)':prevMonthBudget.prevPct>80?'var(--yellow)':'var(--green)'}})
+        ),
+        h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:11}},
+          h('span',{style:{color:prevMonthBudget.prevDiff>=0?'var(--green)':'var(--red)',fontWeight:600}},
+            prevMonthBudget.prevDiff>=0?'Under '+fmt(prevMonthBudget.prevDiff)+' ✅':'Over '+fmt(Math.abs(prevMonthBudget.prevDiff))+' ⚠️'),
+          h('span',{style:{color:'var(--card-text2)'}},prevMonthBudget.prevPct+'%')
+        )
+      )
     ),
 
     // ── Day-by-Day Forecast (collapsible, current month only) ──
@@ -3689,53 +3849,8 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
               )
             ),
 
-            // Right column: Balance Forecast + This Month's Bills
+            // Right column: This Month's Bills
             h('div',{className:'dash-right',style:{flex:1,minWidth:300,display:'flex',flexDirection:'column',gap:16}},
-
-              // Balance Forecast (only for current month)
-              bbWindow.isCurrentMonth && accounts.length>0 && (isDemo || tier?.forecast
-              ? h('div',{className:'card',style:{padding:'10px 16px'}},
-                h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}},
-                  h('h3',{style:{margin:0,fontSize:13}}, h('span',{className:'icon'},'🔮'), 'Balance Forecast', h(InfoPill,{text:'End of Month = Current Balance + Remaining Income \u2212 Unpaid Bills \u2212 Remaining Discretionary Budget. \"Remaining Disc\" = your total discretionary budget minus what you have already spent this month. Next Month projects a full month of income, bills, and discretionary spending. Red means projected negative.'})),
-                  h('span',{style:{fontSize:10,color:'var(--card-text2)'}},'budget + expected bills')
-                ),
-                h('div',{style:{display:'flex',gap:0,alignItems:'center'}},
-                  h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px'}},
-                    h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'Current'),
-                    h('div',{style:{fontSize:18,fontWeight:700,color:bbWindow.currentBalance>=0?'var(--green)':'var(--red)'}},
-                      (bbWindow.currentBalance<0?'-':'')+fmt(bbWindow.currentBalance))
-                  ),
-                  h('div',{style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
-                  h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px',
-                    background:bbWindow.endOfMonthBalance<0?'rgba(224,80,80,0.08)':'transparent',
-                    borderRadius:6}},
-                    h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'End of Month'),
-                    h('div',{style:{fontSize:18,fontWeight:700,color:bbWindow.endOfMonthBalance>=0?'var(--green)':'var(--red)'}},
-                      (bbWindow.endOfMonthBalance<0?'-':'')+fmt(bbWindow.endOfMonthBalance),
-                      bbWindow.endOfMonthBalance<0&&h('span',{style:{fontSize:10,marginLeft:4}},'⚠️'))
-                  ),
-                  h('div',{style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
-                  h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px',
-                    background:bbWindow.nextMonthBalance<0?'rgba(224,80,80,0.08)':'transparent',
-                    borderRadius:6}},
-                    h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'Next Month'),
-                    h('div',{style:{fontSize:18,fontWeight:700,color:bbWindow.nextMonthBalance>=0?'var(--green)':'var(--red)'}},
-                      (bbWindow.nextMonthBalance<0?'-':'')+fmt(bbWindow.nextMonthBalance),
-                      bbWindow.nextMonthBalance<0&&h('span',{style:{fontSize:10,marginLeft:4}},'⚠️'))
-                  )
-                ),
-                h('div',{style:{display:'flex',gap:12,marginTop:6,paddingTop:6,borderTop:'1px solid var(--border)',flexWrap:'wrap',justifyContent:'center'}},
-                  h('span',{style:{fontSize:10,color:'var(--green)'}}, '+Income: ',h('strong',null,fmt(bbWindow.remainingIncome)), bbWindow.remainingIncome===0 && h('span',{style:{fontSize:9,color:'var(--card-text2)',marginLeft:2}},'(received)')),
-                  h('span',{style:{fontSize:10,color:'var(--red)'}}, '-Bills: ',h('strong',null,fmt(bbWindow.remainingBills))),
-                  h('span',{style:{fontSize:10,color:'var(--yellow)'}}, '-Disc: ',h('strong',null,fmt(bbWindow.remainingDiscBudget)))
-                )
-              )
-              : h('div',{style:{textAlign:'center',padding:'16px 20px',background:'rgba(232,160,32,0.06)',border:'1px dashed var(--accent2)',borderRadius:8}},
-                  h('div',{style:{fontSize:24,marginBottom:6}},'🔮'),
-                  h('div',{style:{fontSize:13,fontWeight:600,color:'var(--accent2)',marginBottom:4}},'Balance Forecast'),
-                  h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:8}},'See where your balance is headed — end of month and next month projections.'),
-                  h('a',{href:'https://ambitbudget.com/#pricing',style:{fontSize:11,fontWeight:600,color:'var(--accent2)',textDecoration:'none'}},'Upgrade to Plus →')
-              )),
 
               // Bills
               h('div',{className:'card'},
@@ -3913,10 +4028,14 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
             h('button',{className:'btn sm',onClick:()=>setYearViewYear(y=>y+1),disabled:availableYears.length>0&&yearViewYear>=availableYears[availableYears.length-1],'aria-label':'Next year',style:{padding:'6px 12px',fontSize:16}}, '\u2192')
           ),
           yearViewData && h('div',{className:'stats'},
-            h(Stat,{label:'Year', value:String(yearViewYear), color:'var(--blue)'}),
+            h(Stat,{label:'Income', value:fmt(yearViewData.yearIncome), color:'var(--green)'}),
+            h(Stat,{label:'Expenses', value:fmt(yearViewData.yearExpenses), color:'var(--red)'}),
+            h(Stat,{label:'Transfers', value:fmt(yearViewData.yearTransfers), color:'var(--pink)'}),
+            h(Stat,{label:'Net', value:fmt(yearViewData.yearIncome-yearViewData.yearExpenses), color:(yearViewData.yearIncome-yearViewData.yearExpenses)>=0?'var(--green)':'var(--red)'})
+          ),
+          yearViewData && h('div',{className:'stats',style:{marginTop:0}},
             h(Stat,{label:'Total Spent', value:fmt(yearViewData.grandTotal), color:'var(--red)'}),
             h(Stat,{label:'Monthly Avg', value:fmt(yearViewData.grandTotal/12), sub:'/mo', color:'var(--accent2)'}),
-            h(Stat,{label:'Categories', value:String(yearViewData.cats.length), color:'var(--text)'}),
             h(Stat,{label:'Expense Budget', value:fmt(expenseBudgetPerMonth), sub:'/month', color:'var(--accent2)'})
           ),
           yearViewData && h('div',{className:'card',style:{marginTop:16,overflow:'hidden'}},
@@ -4082,6 +4201,461 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
   );
 }
 
+// ── Debt Planner Page ─────────────────────────────────
+function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, showToast}) {
+  const [strategy, setStrategy] = useState('avalanche');
+  const [extraPayment, setExtraPayment] = useState(0);
+  const [editDebt, setEditDebt] = useState(null);
+  const [modalPayment, setModalPayment] = useState('');
+  const [modalFreq, setModalFreq] = useState('monthly');
+
+  // Compute current balance per account
+  const acctBalances = useMemo(()=>{
+    const m = {};
+    accounts.forEach(a=>{ m[a.id] = a.startingBalance||0; });
+    transactions.forEach(t=>{ if(m[t.accountId]!==undefined) m[t.accountId]+=t.amount; });
+    return m;
+  },[accounts,transactions]);
+
+  // Get debt accounts with current balances + effective monthly
+  const debtAccounts = useMemo(()=>{
+    return accounts
+      .filter(a=>a.type==='credit_card'||a.type==='loan')
+      .map(a=>{
+        const minPay = a.minimumPayment||0;
+        const planned = a.plannedPayment||0;
+        const freq = a.paymentFrequency||'monthly';
+        const effectiveMonthly = planned>0
+          ? (freq==='biweekly' ? planned*26/12 : planned)
+          : minPay;
+        return {
+          id:a.id, name:a.name, type:a.type,
+          balance:Math.abs(acctBalances[a.id]||0),
+          rate:a.interestRate||0,
+          minPayment:minPay,
+          plannedPayment:planned,
+          paymentFrequency:freq,
+          effectiveMonthly,
+          creditLimit:a.creditLimit||0,
+          last4:a.last4||''
+        };
+      })
+      .filter(a=>a.balance>0);
+  },[accounts,acctBalances]);
+
+  // Open edit modal for a debt
+  const openModal = (d) => {
+    setEditDebt(d.id);
+    const acct = accounts.find(a=>a.id===d.id);
+    setModalPayment(acct?.plannedPayment || acct?.minimumPayment || '');
+    setModalFreq(acct?.paymentFrequency || 'monthly');
+  };
+  const closeModal = () => { setEditDebt(null); setModalPayment(''); setModalFreq('monthly'); };
+  const saveModal = () => {
+    setAccounts(prev=>prev.map(a=>a.id===editDebt?{...a, plannedPayment:+modalPayment||0, paymentFrequency:modalFreq}:a));
+    if(showToast) showToast('✅ Payment plan saved');
+    closeModal();
+  };
+  const resetPlan = () => {
+    setAccounts(prev=>prev.map(a=>a.id===editDebt?{...a, plannedPayment:undefined, paymentFrequency:undefined}:a));
+    if(showToast) showToast('✅ Reset to minimum payment');
+    closeModal();
+  };
+  const modalEffective = +modalPayment>0 ? (modalFreq==='biweekly'? +modalPayment*26/12 : +modalPayment) : 0;
+  const editAcct = editDebt ? debtAccounts.find(d=>d.id===editDebt) : null;
+
+  // Payoff simulation — useMinOnly forces minimums (for baseline comparison)
+  const simulate = (debts, extra, useMinOnly) => {
+    if(debts.length===0) return {months:0,totalInterest:0,snapshots:[],debtFreeDate:null,perDebt:{}};
+    let balances = debts.map(d=>({...d, bal:d.balance, monthlyPay: useMinOnly ? d.minPayment : d.effectiveMonthly}));
+    let totalInterest = 0;
+    let months = 0;
+    const maxMonths = 600;
+    const snapshots = [];
+    const perDebt = {};
+    debts.forEach(d=>{ perDebt[d.id]={interest:0,paidOff:null,months:0}; });
+
+    const sortDebts = (arr) => {
+      if(strategy==='snowball') return [...arr].sort((a,b)=>a.bal-b.bal);
+      return [...arr].sort((a,b)=>b.rate-a.rate);
+    };
+
+    while(balances.some(d=>d.bal>0.01) && months<maxMonths) {
+      months++;
+      let freedPayment = 0;
+
+      balances.forEach(d=>{
+        if(d.bal<=0) return;
+        const interest = d.bal * (d.rate/100/12);
+        d.bal += interest;
+        totalInterest += interest;
+        perDebt[d.id].interest += interest;
+      });
+
+      balances.forEach(d=>{
+        if(d.bal<=0) return;
+        const payment = Math.min(d.monthlyPay, d.bal);
+        d.bal -= payment;
+        if(d.bal<=0.01) { d.bal=0; freedPayment+=d.monthlyPay-payment; if(!perDebt[d.id].paidOff) perDebt[d.id].paidOff=months; }
+      });
+
+      let remaining = extra + freedPayment;
+      const sorted = sortDebts(balances.filter(d=>d.bal>0));
+      for(const target of sorted) {
+        if(remaining<=0) break;
+        const payment = Math.min(remaining, target.bal);
+        target.bal -= payment;
+        remaining -= payment;
+        if(target.bal<=0.01) { target.bal=0; if(!perDebt[target.id].paidOff) perDebt[target.id].paidOff=months; }
+      }
+
+      snapshots.push(balances.map(d=>({id:d.id,bal:d.bal})));
+    }
+
+    debts.forEach(d=>{ perDebt[d.id].months = perDebt[d.id].paidOff||months; });
+    const now = new Date();
+    const debtFreeDate = new Date(now.getFullYear(), now.getMonth()+months, 1);
+    return {months, totalInterest, snapshots, debtFreeDate, perDebt};
+  };
+
+  const result = useMemo(()=>simulate(debtAccounts, +extraPayment||0, false),[debtAccounts,strategy,extraPayment]);
+  const baseline = useMemo(()=>simulate(debtAccounts, 0, true),[debtAccounts,strategy]);
+
+  const totalDebt = debtAccounts.reduce((s,d)=>s+d.balance,0);
+  const weightedRate = totalDebt>0 ? debtAccounts.reduce((s,d)=>s+d.rate*(d.balance/totalDebt),0) : 0;
+  const interestSaved = baseline.totalInterest - result.totalInterest;
+  const monthsSaved = baseline.months - result.months;
+  const totalPlannedMonthly = debtAccounts.reduce((s,d)=>s+d.effectiveMonthly,0);
+
+  const fmtMo = (d) => { if(!d) return '—'; const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return mo[d.getMonth()]+' '+d.getFullYear(); };
+
+  // Sorted debt list by strategy
+  const sortedDebts = useMemo(()=>{
+    const list = [...debtAccounts];
+    if(strategy==='snowball') list.sort((a,b)=>a.balance-b.balance);
+    else list.sort((a,b)=>b.rate-a.rate);
+    return list;
+  },[debtAccounts,strategy]);
+
+  // Plan vs Actual tracking
+  const planTracking = useMemo(()=>{
+    const now = new Date();
+    const currentYM = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const dayOfMonth = now.getDate();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+
+    return debtAccounts.map(d=>{
+      const monthTxns = transactions.filter(t=>t.accountId===d.id && t.amount>0 && getYearMonth(t.date)===currentYM);
+      const totalPaid = monthTxns.reduce((s,t)=>s+t.amount,0);
+      const expected = d.effectiveMonthly;
+      const pct = expected>0 ? Math.min(Math.round(totalPaid/expected*100),100) : 0;
+
+      let status, color;
+      if(totalPaid>=expected && expected>0) { status='✅ On Target'; color='var(--green)'; }
+      else if(totalPaid>=expected*0.5 && expected>0) { status='⏳ Partial'; color='var(--accent2)'; }
+      else if(dayOfMonth>daysInMonth*0.65 && expected>0) { status='⚠️ Behind'; color='var(--red)'; }
+      else { status='⏳ Pending'; color='var(--text2)'; }
+
+      return {id:d.id, totalPaid, expected, pct, status, color, txnCount:monthTxns.length};
+    });
+  },[debtAccounts,transactions]);
+
+  const trackMap = useMemo(()=>{ const m={}; planTracking.forEach(t=>{m[t.id]=t;}); return m; },[planTracking]);
+  const totalPaidThisMonth = planTracking.reduce((s,t)=>s+t.totalPaid,0);
+  const totalExpectedThisMonth = planTracking.reduce((s,t)=>s+t.expected,0);
+  const overallPct = totalExpectedThisMonth>0 ? Math.min(Math.round(totalPaidThisMonth/totalExpectedThisMonth*100),100) : 0;
+
+  // Gate check
+  if(!isDemo && !tier?.debtPlanner) {
+    return h('div',{className:'page'},
+      h('div',{className:'page-header'},h('h2',null,'💳 Debt Reduction Planner')),
+      h('div',{className:'card',style:{textAlign:'center',padding:'40px 20px'}},
+        h('div',{style:{fontSize:48,marginBottom:12}},'💳'),
+        h('h3',{style:{margin:'0 0 8px'}},'Debt Reduction Planner'),
+        h('p',{style:{color:'var(--text2)',marginBottom:16}},'Plan your path to becoming debt-free with Snowball or Avalanche strategies.'),
+        h('p',{style:{color:'var(--text2)',fontSize:13}},'This feature is available on the ',h('strong',null,'Pro'),' plan.'),
+        h('a',{href:'https://ambitbudget.com/#pricing',target:'_blank',rel:'noopener',
+          style:{display:'inline-block',marginTop:12,padding:'8px 20px',background:'var(--accent2)',color:'#fff',borderRadius:8,textDecoration:'none',fontWeight:600}}, 'Upgrade to Pro →')
+      )
+    );
+  }
+
+  // No debt accounts
+  if(debtAccounts.length===0) {
+    return h('div',{className:'page'},
+      h('div',{className:'page-header'},h('h2',null,'💳 Debt Reduction Planner')),
+      h('div',{className:'card',style:{textAlign:'center',padding:'40px 20px'}},
+        h('div',{className:'empty'},
+          h('div',{className:'icon'},'💳'),
+          h('p',null,'No debt accounts found.'),
+          h('p',{style:{fontSize:13,color:'var(--text2)'}},'Add a Credit Card or Loan account on the Accounts page to get started.')
+        )
+      )
+    );
+  }
+
+  return h('div',{className:'page'},
+    // Header
+    h('div',{className:'page-header',style:{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10}},
+      h('h2',{style:{margin:0}},'💳 Debt Reduction Planner'),
+      h('div',{style:{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}},
+        h('div',{style:{display:'flex',borderRadius:8,overflow:'hidden',border:'1px solid var(--border)'}},
+          h('button',{onClick:()=>setStrategy('avalanche'),
+            style:{padding:'6px 14px',fontSize:12,fontWeight:strategy==='avalanche'?700:400,cursor:'pointer',border:'none',
+              background:strategy==='avalanche'?'var(--accent2)':'var(--bg2)',color:strategy==='avalanche'?'#fff':'var(--text2)'
+          }},'⚡ Avalanche'),
+          h('button',{onClick:()=>setStrategy('snowball'),
+            style:{padding:'6px 14px',fontSize:12,fontWeight:strategy==='snowball'?700:400,cursor:'pointer',border:'none',
+              background:strategy==='snowball'?'var(--accent2)':'var(--bg2)',color:strategy==='snowball'?'#fff':'var(--text2)'
+          }},'❄️ Snowball')
+        ),
+        h('div',{style:{display:'flex',alignItems:'center',gap:6}},
+          h('label',{style:{fontSize:12,color:'var(--text2)',whiteSpace:'nowrap'}},'Extra $/mo:'),
+          h('input',{className:'input',type:'number',value:extraPayment,onChange:e=>setExtraPayment(e.target.value),
+            style:{width:80,textAlign:'right'},min:0,step:25,placeholder:'0'})
+        )
+      )
+    ),
+
+    // Strategy explanation
+    h('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:14,padding:'8px 12px',background:'var(--bg2)',borderRadius:8}},
+      strategy==='avalanche'
+        ? '⚡ Avalanche: Pay highest interest rate first. Saves the most money over time.'
+        : '❄️ Snowball: Pay smallest balance first. Quick wins to build momentum.'
+    ),
+
+    // Summary cards
+    h('div',{className:'stats',style:{marginBottom:16}},
+      h(Stat,{label:'Total Debt', value:'$'+Math.round(totalDebt).toLocaleString(), color:'var(--red)'}),
+      h(Stat,{label:'Avg APR', value:weightedRate.toFixed(1)+'%', color:'var(--accent2)'}),
+      h(Stat,{label:'Debt-Free', value:fmtMo(result.debtFreeDate), color:'var(--green)'}),
+      h(Stat,{label:'Total Interest', value:'$'+Math.round(result.totalInterest).toLocaleString(), color:'var(--pink)'})
+    ),
+
+    // This Month's Progress
+    totalExpectedThisMonth>0 && h('div',{className:'card',style:{padding:'14px 16px',marginBottom:14}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}},
+        h('h3',{style:{margin:0,fontSize:14}},'📅 This Month\'s Progress'),
+        h('span',{style:{fontSize:12,color:overallPct>=100?'var(--green)':'var(--text2)',fontWeight:600}},
+          '$'+Math.round(totalPaidThisMonth).toLocaleString()+' / $'+Math.round(totalExpectedThisMonth).toLocaleString())
+      ),
+      h('div',{style:{height:10,background:'var(--bg2)',borderRadius:6,overflow:'hidden',marginBottom:12}},
+        h('div',{style:{height:'100%',width:overallPct+'%',borderRadius:6,transition:'width 0.5s',
+          background:overallPct>=100?'var(--green)':overallPct>=50?'var(--accent2)':'var(--red)'}})
+      ),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:6}},
+        sortedDebts.map(d=>{
+          const t = trackMap[d.id]||{totalPaid:0,expected:0,pct:0,status:'—',color:'var(--text2)'};
+          return h('div',{key:d.id,style:{display:'flex',alignItems:'center',gap:10,fontSize:12}},
+            h('span',{style:{flex:'0 0 140px',fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},d.name),
+            h('div',{style:{flex:1,height:6,background:'var(--bg2)',borderRadius:4,overflow:'hidden'}},
+              h('div',{style:{height:'100%',width:t.pct+'%',borderRadius:4,background:t.color,transition:'width 0.3s'}})
+            ),
+            h('span',{style:{flex:'0 0 100px',textAlign:'right',color:'var(--text2)'}},
+              '$'+Math.round(t.totalPaid)+' / $'+Math.round(t.expected)),
+            h('span',{style:{flex:'0 0 90px',textAlign:'right',fontSize:11,color:t.color,fontWeight:600}},t.status)
+          );
+        })
+      )
+    ),
+
+    // Savings banner
+    (interestSaved>1) && h('div',{className:'card',style:{padding:'12px 16px',marginBottom:14,background:'rgba(72,187,120,0.08)',border:'1px solid rgba(72,187,120,0.2)'}},
+      h('div',{style:{display:'flex',justifyContent:'space-around',flexWrap:'wrap',gap:12,textAlign:'center'}},
+        h('div',null,
+          h('div',{style:{fontSize:11,color:'var(--text2)',textTransform:'uppercase'}},'Interest Saved'),
+          h('div',{style:{fontSize:20,fontWeight:700,color:'var(--green)'}},'+$'+Math.round(interestSaved).toLocaleString())
+        ),
+        h('div',null,
+          h('div',{style:{fontSize:11,color:'var(--text2)',textTransform:'uppercase'}},'Months Faster'),
+          h('div',{style:{fontSize:20,fontWeight:700,color:'var(--green)'}},monthsSaved>0?monthsSaved+' mo':'—')
+        ),
+        h('div',null,
+          h('div',{style:{fontSize:11,color:'var(--text2)',textTransform:'uppercase'}},'Monthly Payment'),
+          h('div',{style:{fontSize:20,fontWeight:700,color:'var(--accent2)'}},'$'+Math.round(totalPlannedMonthly+(+extraPayment||0)).toLocaleString())
+        )
+      )
+    ),
+
+    // Comparison: Minimums Only vs Your Plan
+    h('div',{style:{display:'flex',gap:14,marginBottom:16,flexWrap:'wrap'}},
+      h('div',{className:'card',style:{flex:1,minWidth:200,padding:'14px 16px'}},
+        h('h4',{style:{margin:'0 0 10px',fontSize:13,color:'var(--text2)'}},'📉 Minimums Only'),
+        h('div',{style:{display:'flex',gap:16,flexWrap:'wrap'}},
+          h('div',null,
+            h('div',{style:{fontSize:10,color:'var(--text2)',textTransform:'uppercase'}},'Months'),
+            h('div',{style:{fontSize:18,fontWeight:700}},baseline.months)
+          ),
+          h('div',null,
+            h('div',{style:{fontSize:10,color:'var(--text2)',textTransform:'uppercase'}},'Total Interest'),
+            h('div',{style:{fontSize:18,fontWeight:700,color:'var(--red)'}},'$'+Math.round(baseline.totalInterest).toLocaleString())
+          ),
+          h('div',null,
+            h('div',{style:{fontSize:10,color:'var(--text2)',textTransform:'uppercase'}},'Total Cost'),
+            h('div',{style:{fontSize:18,fontWeight:700}},'$'+Math.round(totalDebt+baseline.totalInterest).toLocaleString())
+          )
+        )
+      ),
+      h('div',{className:'card',style:{flex:1,minWidth:200,padding:'14px 16px',border:interestSaved>1?'1px solid rgba(72,187,120,0.3)':undefined}},
+        h('h4',{style:{margin:'0 0 10px',fontSize:13,color:'var(--green)'}},'🚀 Your Plan'),
+        h('div',{style:{display:'flex',gap:16,flexWrap:'wrap'}},
+          h('div',null,
+            h('div',{style:{fontSize:10,color:'var(--text2)',textTransform:'uppercase'}},'Months'),
+            h('div',{style:{fontSize:18,fontWeight:700,color:monthsSaved>0?'var(--green)':'inherit'}},result.months, monthsSaved>0&&h('span',{style:{fontSize:11,color:'var(--green)',marginLeft:4}},'-'+monthsSaved))
+          ),
+          h('div',null,
+            h('div',{style:{fontSize:10,color:'var(--text2)',textTransform:'uppercase'}},'Total Interest'),
+            h('div',{style:{fontSize:18,fontWeight:700,color:interestSaved>1?'var(--green)':'var(--red)'}},'$'+Math.round(result.totalInterest).toLocaleString())
+          ),
+          h('div',null,
+            h('div',{style:{fontSize:10,color:'var(--text2)',textTransform:'uppercase'}},'Total Cost'),
+            h('div',{style:{fontSize:18,fontWeight:700}},'$'+Math.round(totalDebt+result.totalInterest).toLocaleString())
+          )
+        )
+      )
+    ),
+
+    // Debt accounts table — clickable rows
+    h('div',{className:'card',style:{padding:'14px 16px',marginBottom:16}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}},
+        h('h3',{style:{margin:0,fontSize:14}},'📋 Payoff Order (',strategy==='avalanche'?'Highest Rate First':'Lowest Balance First',')'),
+        h('span',{style:{fontSize:11,color:'var(--text2)'}},'Click a row to edit payment plan')
+      ),
+      h('div',{style:{overflowX:'auto'}},
+        h('table',{className:'table',style:{width:'100%',fontSize:13}},
+          h('thead',null,
+            h('tr',null,
+              h('th',{style:{textAlign:'left',padding:'8px 10px'}},'#'),
+              h('th',{style:{textAlign:'left',padding:'8px 10px'}},'Account'),
+              h('th',{style:{textAlign:'right',padding:'8px 10px'}},'Balance'),
+              h('th',{style:{textAlign:'right',padding:'8px 10px'}},'APR'),
+              h('th',{style:{textAlign:'right',padding:'8px 10px'}},'Planned'),
+              h('th',{style:{textAlign:'center',padding:'8px 10px'}},'Status'),
+              h('th',{style:{textAlign:'right',padding:'8px 10px'}},'Payoff'),
+              h('th',{style:{textAlign:'right',padding:'8px 10px'}},'Interest')
+            )
+          ),
+          h('tbody',null,
+            sortedDebts.map((d,i)=>{
+              const pd = result.perDebt[d.id]||{};
+              const payoffDate = new Date(new Date().getFullYear(), new Date().getMonth()+(pd.paidOff||result.months), 1);
+              const t = trackMap[d.id]||{status:'—',color:'var(--text2)',totalPaid:0,expected:0};
+              const hasPlan = d.plannedPayment>0;
+              return h('tr',{key:d.id,
+                style:{background:i===0?'rgba(232,160,32,0.06)':'transparent',cursor:'pointer',transition:'background 0.15s'},
+                onClick:()=>openModal(d),
+                onMouseEnter:e=>{if(i!==0) e.currentTarget.style.background='var(--bg2)';},
+                onMouseLeave:e=>{if(i!==0) e.currentTarget.style.background='transparent';}
+              },
+                h('td',{style:{padding:'8px 10px',fontWeight:700,color:'var(--accent2)'}},i+1),
+                h('td',{style:{padding:'8px 10px'}},
+                  h('div',{style:{fontWeight:600}},d.name),
+                  h('div',{style:{fontSize:11,color:'var(--text2)'}},d.type==='credit_card'?'💳 Credit Card':'🏦 Loan', d.last4?' ••••'+d.last4:'')
+                ),
+                h('td',{style:{padding:'8px 10px',textAlign:'right',fontWeight:600,color:'var(--red)'}},'$'+d.balance.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})),
+                h('td',{style:{padding:'8px 10px',textAlign:'right'}},d.rate+'%'),
+                h('td',{style:{padding:'8px 10px',textAlign:'right'}},
+                  hasPlan
+                    ? h('div',null,
+                        h('div',{style:{fontWeight:600}},'$'+d.plannedPayment,
+                          h('span',{style:{fontSize:10,color:'var(--accent2)',marginLeft:3}},d.paymentFrequency==='biweekly'?'bi-wk':'/mo')),
+                        d.paymentFrequency==='biweekly' && h('div',{style:{fontSize:10,color:'var(--text2)'}},'≈$'+Math.round(d.effectiveMonthly)+'/mo')
+                      )
+                    : h('span',{style:{color:'var(--text2)'}},'$'+d.minPayment+' ',h('span',{style:{fontSize:10}},'(min)'))
+                ),
+                h('td',{style:{padding:'8px 10px',textAlign:'center'}},
+                  h('div',{style:{fontSize:11,fontWeight:600,color:t.color}},t.status),
+                  h('div',{style:{fontSize:10,color:'var(--text2)'}},'$'+Math.round(t.totalPaid)+' / $'+Math.round(t.expected))
+                ),
+                h('td',{style:{padding:'8px 10px',textAlign:'right',color:'var(--green)'}},fmtMo(payoffDate)),
+                h('td',{style:{padding:'8px 10px',textAlign:'right',color:'var(--pink)'}},'$'+Math.round(pd.interest||0).toLocaleString())
+              );
+            })
+          )
+        )
+      )
+    ),
+
+    // Payoff timeline visualization
+    h('div',{className:'card',style:{padding:'14px 16px'}},
+      h('h3',{style:{margin:'0 0 12px',fontSize:14}},'📊 Payoff Timeline'),
+      result.months > 0 && h('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+        sortedDebts.map(d=>{
+          const pd = result.perDebt[d.id]||{};
+          const paidMonth = pd.paidOff||result.months;
+          const pct = result.months>0 ? Math.round(paidMonth/result.months*100) : 100;
+          return h('div',{key:d.id},
+            h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}},
+              h('span',{style:{fontSize:12,fontWeight:600}},d.name),
+              h('span',{style:{fontSize:11,color:'var(--text2)'}},paidMonth+' months')
+            ),
+            h('div',{style:{height:20,background:'var(--bg2)',borderRadius:6,overflow:'hidden',position:'relative'}},
+              h('div',{style:{
+                height:'100%',width:pct+'%',borderRadius:6,
+                background:d.type==='credit_card'?'linear-gradient(90deg,var(--red),var(--pink))':'linear-gradient(90deg,var(--accent2),#f0c050)',
+                transition:'width 0.5s ease'
+              }}),
+              h('span',{style:{position:'absolute',left:8,top:2,fontSize:10,color:'#fff',fontWeight:600}},
+                '$'+d.balance.toLocaleString(undefined,{maximumFractionDigits:0}))
+            )
+          );
+        }),
+        h('div',{style:{marginTop:8,textAlign:'center',fontSize:12,color:'var(--text2)'}},
+          '🎉 Debt-free by ',h('strong',{style:{color:'var(--green)'}},fmtMo(result.debtFreeDate)),
+          monthsSaved>0 && h('span',null,' — ',h('strong',{style:{color:'var(--green)'}},monthsSaved+' months faster'),' than minimums!')
+        )
+      )
+    ),
+
+    // Edit Payment Plan Modal
+    editDebt && editAcct && h(Modal,{onClose:closeModal},
+      h('h3',{style:{margin:'0 0 16px'}},'📋 Edit Payment Plan'),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+        // Account context (read-only)
+        h('div',{style:{padding:'10px 14px',background:'var(--bg2)',borderRadius:8}},
+          h('div',{style:{fontWeight:700,fontSize:15,marginBottom:4}},editAcct.name),
+          h('div',{style:{display:'flex',gap:16,fontSize:12,color:'var(--text2)',flexWrap:'wrap'}},
+            h('span',null,'Balance: ',h('strong',{style:{color:'var(--red)'}},'$'+editAcct.balance.toLocaleString(undefined,{minimumFractionDigits:2}))),
+            h('span',null,'APR: ',h('strong',null,editAcct.rate+'%')),
+            h('span',null,'Minimum: ',h('strong',null,'$'+editAcct.minPayment))
+          )
+        ),
+        // Planned Payment
+        h('div',null,
+          h('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Planned Payment Amount ($)'),
+          h('input',{className:'input',type:'number',value:modalPayment,onChange:e=>setModalPayment(e.target.value),
+            placeholder:'e.g. 350',style:{width:'100%'},step:'25',min:'0',autoFocus:true}),
+          +modalPayment>0 && +modalPayment<editAcct.minPayment && h('div',{style:{fontSize:11,color:'var(--red)',marginTop:4}},'⚠️ Below minimum payment of $'+editAcct.minPayment)
+        ),
+        // Frequency
+        h('div',null,
+          h('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Payment Frequency'),
+          h('select',{className:'input',value:modalFreq,onChange:e=>setModalFreq(e.target.value),style:{width:'100%'}},
+            h('option',{value:'monthly'},'Monthly'),
+            h('option',{value:'biweekly'},'Bi-Weekly (every 2 weeks)')
+          )
+        ),
+        // Effective monthly display
+        modalEffective>0 && h('div',{style:{padding:'10px 14px',background:'rgba(72,187,120,0.08)',borderRadius:8,textAlign:'center'}},
+          h('div',{style:{fontSize:11,color:'var(--text2)',textTransform:'uppercase',marginBottom:2}},'Effective Monthly Payment'),
+          h('div',{style:{fontSize:22,fontWeight:700,color:'var(--green)'}},
+            '$'+Math.round(modalEffective).toLocaleString(),
+            modalFreq==='biweekly' && h('span',{style:{fontSize:12,color:'var(--text2)',marginLeft:6}},'($'+modalPayment+' × 26 ÷ 12)')
+          )
+        ),
+        // Buttons
+        h('div',{style:{display:'flex',gap:8,justifyContent:'space-between',marginTop:4}},
+          h('button',{className:'btn',onClick:resetPlan,style:{fontSize:12,color:'var(--text2)'}},'Reset to Minimum'),
+          h('div',{style:{display:'flex',gap:8}},
+            h('button',{className:'btn',onClick:closeModal},'Cancel'),
+            h('button',{className:'btn primary',onClick:saveModal,disabled:!+modalPayment},'Save Plan')
+          )
+        )
+      )
+    )
+  );
+}
+
 // ── Accounts Page ──────────────────────────────────────
 function AccountsPage({accounts, setAccounts, transactions, setTransactions, catMap, showToast, accountLimit, tier, isDemo}) {
   const [showAdd, setShowAdd] = useState(false);
@@ -4089,21 +4663,29 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
   const [type, setType] = useState('checking');
   const [startBal, setStartBal] = useState(0);
   const [last4, setLast4] = useState('');
+  const [interestRate, setInterestRate] = useState('');
+  const [minimumPayment, setMinimumPayment] = useState('');
+  const [creditLimit, setCreditLimit] = useState('');
+  const [plannedPay, setPlannedPay] = useState('');
+  const [payFreq, setPayFreq] = useState('monthly');
   const [editIdx, setEditIdx] = useState(null);
+  const isDebtType = type==='credit_card'||type==='loan';
 
-  const resetForm = () => { setName(''); setType('checking'); setStartBal(0); setLast4(''); setEditIdx(null); setShowAdd(false); };
+  const resetForm = () => { setName(''); setType('checking'); setStartBal(0); setLast4(''); setInterestRate(''); setMinimumPayment(''); setCreditLimit(''); setPlannedPay(''); setPayFreq('monthly'); setEditIdx(null); setShowAdd(false); };
 
   const save = () => {
     if(!name.trim()) return;
     if(editIdx !== null) {
-      setAccounts(prev=>prev.map((a,i)=>i===editIdx?{...a, name:name.trim(), type, startingBalance:+startBal, last4:last4.trim()}:a));
+      const debtFields = (type==='credit_card'||type==='loan') ? {interestRate:+interestRate||0, minimumPayment:+minimumPayment||0, creditLimit:type==='credit_card'?+creditLimit||0:undefined, plannedPayment:+plannedPay||undefined, paymentFrequency:payFreq!=='monthly'?payFreq:undefined} : {interestRate:undefined, minimumPayment:undefined, creditLimit:undefined, plannedPayment:undefined, paymentFrequency:undefined};
+      setAccounts(prev=>prev.map((a,i)=>i===editIdx?{...a, name:name.trim(), type, startingBalance:+startBal, last4:last4.trim(), ...debtFields}:a));
       showToast('✅ Updated: '+name.trim());
     } else {
       if(!isDemo && accountLimit !== undefined && accountLimit !== Infinity && accounts.length >= accountLimit) {
         showToast('⚡ Account limit reached. Upgrade your plan at ambitbudget.com');
         resetForm(); return;
       }
-      setAccounts(prev=>[...prev, {id:Date.now()+'_'+Math.random().toString(36).slice(2,6), name:name.trim(), type, startingBalance:+startBal, last4:last4.trim()}]);
+      const debtFields = (type==='credit_card'||type==='loan') ? {interestRate:+interestRate||0, minimumPayment:+minimumPayment||0, creditLimit:type==='credit_card'?+creditLimit||0:undefined, plannedPayment:+plannedPay||undefined, paymentFrequency:payFreq!=='monthly'?payFreq:undefined} : {};
+      setAccounts(prev=>[...prev, {id:Date.now()+'_'+Math.random().toString(36).slice(2,6), name:name.trim(), type, startingBalance:+startBal, last4:last4.trim(), ...debtFields}]);
       showToast('✅ Added: '+name.trim());
     }
     resetForm();
@@ -4122,6 +4704,11 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
     setType(accounts[idx].type);
     setStartBal(accounts[idx].startingBalance || 0);
     setLast4(accounts[idx].last4 || '');
+    setInterestRate(accounts[idx].interestRate || '');
+    setMinimumPayment(accounts[idx].minimumPayment || '');
+    setCreditLimit(accounts[idx].creditLimit || '');
+    setPlannedPay(accounts[idx].plannedPayment || '');
+    setPayFreq(accounts[idx].paymentFrequency || 'monthly');
     setEditIdx(idx);
     setShowAdd(true);
   };
@@ -4225,7 +4812,8 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
     h('div',{className:'stats'},
       h(Stat,{label:'Accounts', value:accounts.length, color:'var(--accent2)'}),
       h(Stat,{label:'Checking', value:accounts.filter(a=>a.type==='checking').length, color:'var(--blue)'}),
-      h(Stat,{label:'Savings', value:accounts.filter(a=>a.type==='savings').length, color:'var(--pink)'})
+      h(Stat,{label:'Savings', value:accounts.filter(a=>a.type==='savings').length, color:'var(--pink)'}),
+      accounts.some(a=>a.type==='credit_card'||a.type==='loan') && h(Stat,{label:'Debt', value:accounts.filter(a=>a.type==='credit_card'||a.type==='loan').length, color:'var(--red)'})
     ),
 
     accounts.length===0
@@ -4245,7 +4833,8 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
               h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}},
                 h('div',null,
                   h('div',{style:{fontSize:17,fontWeight:600}}, a.name),
-                  h('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}}, a.type==='checking'?'🏦 Checking':'💰 Savings', a.last4 ? ' ••••'+a.last4 : '')
+                  h('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}}, a.type==='checking'?'🏦 Checking':a.type==='savings'?'💰 Savings':a.type==='credit_card'?'💳 Credit Card':'🏦 Loan', a.last4 ? ' ••••'+a.last4 : '', a.interestRate ? ' • '+a.interestRate+'% APR' : ''),
+                  a.plannedPayment && h('div',{style:{fontSize:11,color:'var(--green)',marginTop:2}},'📋 Plan: $'+a.plannedPayment+(a.paymentFrequency==='biweekly'?' bi-weekly':'/mo'), a.paymentFrequency==='biweekly'?' (≈$'+Math.round(a.plannedPayment*26/12)+'/mo)':'')
                 ),
                 h('div',{style:{display:'flex',gap:4}},
                   h('button',{className:'btn sm',onClick:()=>startEdit(i)},'✎'),
@@ -4302,7 +4891,9 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
           h('label',{htmlFor:'acct-type',style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Account Type'),
           h('select',{id:'acct-type',className:'input',value:type,onChange:e=>setType(e.target.value),style:{width:'100%'}},
             h('option',{value:'checking'},'Checking'),
-            h('option',{value:'savings'},'Savings')
+            h('option',{value:'savings'},'Savings'),
+            h('option',{value:'credit_card'},'Credit Card'),
+            h('option',{value:'loan'},'Loan')
           )
         ),
         h('div',null,
@@ -4311,9 +4902,38 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
           h('div',{style:{fontSize:11,color:'var(--text2)',marginTop:4}},'Used to auto-detect transfers in bank descriptions (e.g. "ONLINE TRANSFER TO XXXXX3989").')
         ),
         h('div',null,
-          h('label',{htmlFor:'acct-balance',style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Starting Balance ($)'),
-          h('input',{id:'acct-balance',className:'input',type:'number',value:startBal,onChange:e=>setStartBal(e.target.value),placeholder:'e.g. 5000.00',style:{width:'100%'},step:'0.01'}),
-          h('div',{style:{fontSize:11,color:'var(--text2)',marginTop:4}},'Enter the account balance before your earliest imported transaction.')
+          h('label',{htmlFor:'acct-balance',style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}}, isDebtType?'Current Balance Owed ($)':'Starting Balance ($)'),
+          h('input',{id:'acct-balance',className:'input',type:'number',value:startBal,onChange:e=>setStartBal(e.target.value),placeholder:isDebtType?'e.g. -4200.00':'e.g. 5000.00',style:{width:'100%'},step:'0.01'}),
+          h('div',{style:{fontSize:11,color:'var(--text2)',marginTop:4}}, isDebtType?'Enter as negative (e.g. -4200 for $4,200 owed).':'Enter the account balance before your earliest imported transaction.')
+        ),
+        isDebtType && h('div',null,
+          h('label',{htmlFor:'acct-apr',style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Interest Rate (APR %)'),
+          h('input',{id:'acct-apr',className:'input',type:'number',value:interestRate,onChange:e=>setInterestRate(e.target.value),placeholder:'e.g. 22.99',style:{width:'100%'},step:'0.01',min:'0',max:'100'})
+        ),
+        isDebtType && h('div',null,
+          h('label',{htmlFor:'acct-minpay',style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Minimum Monthly Payment ($)'),
+          h('input',{id:'acct-minpay',className:'input',type:'number',value:minimumPayment,onChange:e=>setMinimumPayment(e.target.value),placeholder:'e.g. 105.00',style:{width:'100%'},step:'0.01',min:'0'})
+        ),
+        type==='credit_card' && h('div',null,
+          h('label',{htmlFor:'acct-limit',style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Credit Limit ($)'),
+          h('input',{id:'acct-limit',className:'input',type:'number',value:creditLimit,onChange:e=>setCreditLimit(e.target.value),placeholder:'e.g. 8000',style:{width:'100%'},step:'0.01',min:'0'})
+        ),
+        isDebtType && h('div',{style:{borderTop:'1px solid var(--border)',paddingTop:12,marginTop:4}},
+          h('div',{style:{fontSize:12,fontWeight:600,color:'var(--accent2)',marginBottom:8}},'📋 Payment Plan (optional)'),
+          h('div',{style:{display:'flex',gap:10,flexWrap:'wrap'}},
+            h('div',{style:{flex:1,minWidth:120}},
+              h('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Planned Payment ($)'),
+              h('input',{className:'input',type:'number',value:plannedPay,onChange:e=>setPlannedPay(e.target.value),placeholder:'e.g. 350',style:{width:'100%'},step:'25',min:'0'})
+            ),
+            h('div',{style:{flex:1,minWidth:120}},
+              h('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Frequency'),
+              h('select',{className:'input',value:payFreq,onChange:e=>setPayFreq(e.target.value),style:{width:'100%'}},
+                h('option',{value:'monthly'},'Monthly'),
+                h('option',{value:'biweekly'},'Bi-Weekly')
+              )
+            )
+          ),
+          +plannedPay>0 && payFreq==='biweekly' && h('div',{style:{fontSize:11,color:'var(--green)',marginTop:4}},'Effective: ~$'+Math.round(+plannedPay*26/12)+'/mo')
         ),
         h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}},
           h('button',{className:'btn',onClick:resetForm},'Cancel'),
