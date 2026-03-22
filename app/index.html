@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Ambit Budget Pro</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cpath d='M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z' fill='%237ec8e3' stroke='%235ba8c8' stroke-width='2'/%3E%3Cg transform='translate(10,8) scale(0.8)'%3E%3Cpolygon points='50,2 56,40 50,47 44,40' fill='%23e87820'/%3E%3Cpolygon points='98,50 60,56 53,50 60,44' fill='%23e87820'/%3E%3Cpolygon points='50,98 44,60 50,53 56,60' fill='%23e87820'/%3E%3Cpolygon points='2,50 40,44 47,50 40,56' fill='%23e87820'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23e87820'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0c1445">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ambit Budget">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -13,22 +19,45 @@
   --surface2: #f5ecd0;
   --border: #e8dbb8;
   --text: #eef0ff;
-  --text2: #9da5d0;
-  --card-text: #2a2520;
-  --card-text2: #6b6356;
+  --text2: #c0c8e8;
+  --card-text: #1a1510;
+  --card-text2: #504838;
   --accent: #e8a020;
   --accent2: #f0c050;
-  --green: #40c080;
-  --red: #e05050;
-  --yellow: #e8a020;
-  --orange: #e07828;
-  --blue: #5090e8;
-  --pink: #d060a0;
+  --green: #48d888;
+  --red: #f07070;
+  --yellow: #f0b030;
+  --orange: #f09040;
+  --blue: #70a8f0;
+  --pink: #e080b8;
   --radius: 10px;
   --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  font-size: 16px;
+}
+/* High Contrast Theme */
+:root.high-contrast {
+  --bg: #000000;
+  --surface: #ffffff;
+  --surface2: #f0f0f0;
+  --border: #666666;
+  --text: #ffffff;
+  --text2: #e0e0e0;
+  --card-text: #000000;
+  --card-text2: #333333;
+  --accent: #ffaa00;
+  --accent2: #ffcc44;
+  --green: #33ff88;
+  --red: #ff5555;
+  --yellow: #ffcc00;
+  --orange: #ffaa33;
+  --blue: #66aaff;
+  --pink: #ff66bb;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 1rem; }
+/* Skip link */
+.skip-link { position:absolute; top:-100px; left:0; background:var(--accent); color:#fff; padding:8px 16px; z-index:999; font-size:0.875rem; font-weight:600; border-radius:0 0 8px 0; transition:top 0.2s; }
+.skip-link:focus { top:0; }
 input, select, textarea, button { font-family: inherit; }
 code { font-family: 'JetBrains Mono', monospace; }
 
@@ -44,95 +73,95 @@ code { font-family: 'JetBrains Mono', monospace; }
 
 /* Mode tabs (Demo / My Budget) */
 .mode-tabs { display: flex; gap: 0; margin-bottom: 0; padding: 0 20px 16px; }
-.mode-tab { flex: 1; padding: 8px 0; text-align: center; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; border-radius: 8px; transition: all 0.15s; color: var(--text2); background: transparent; border: 1px solid transparent; }
+.mode-tab { flex: 1; padding: 8px 0; text-align: center; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; border-radius: 8px; transition: all 0.15s; color: var(--text2); background: transparent; border: 1px solid transparent; }
 .mode-tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
 .mode-tab.active { color: var(--accent2); background: rgba(232,160,32,0.12); border-color: rgba(232,160,32,0.25); }
 .mode-tab .mode-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 .mode-tab .mode-dot.demo { background: var(--blue); }
 .mode-tab .mode-dot.mine { background: var(--green); }
-.demo-banner { background: rgba(80,144,232,0.1); border: 1px solid rgba(80,144,232,0.2); border-radius: 8px; padding: 8px 14px; margin-bottom: 16px; font-size: 12px; color: var(--blue); display: flex; align-items: center; gap: 8px; }
-.demo-banner .dismiss { cursor: pointer; margin-left: auto; opacity: 0.6; font-size: 14px; }
+.demo-banner { background: rgba(80,144,232,0.1); border: 1px solid rgba(80,144,232,0.2); border-radius: 8px; padding: 8px 14px; margin-bottom: 16px; font-size: 0.75rem; color: var(--blue); display: flex; align-items: center; gap: 8px; }
+.demo-banner .dismiss { cursor: pointer; margin-left: auto; opacity: 0.6; font-size: 0.875rem; }
 
-.logo { padding: 0 20px 24px; font-size: 20px; font-weight: 700; color: var(--accent2); letter-spacing: -0.5px; }
-.logo span { color: var(--text2); font-weight: 400; font-size: 12px; display: block; margin-top: 2px; }
+.logo { padding: 0 20px 24px; font-size: 1.25rem; font-weight: 700; color: var(--accent2); letter-spacing: -0.5px; }
+.logo span { color: var(--text2); font-weight: 400; font-size: 0.75rem; display: block; margin-top: 2px; }
 
-.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; font-size: 14px; color: var(--text2); transition: all 0.15s; border-left: 3px solid transparent; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; font-size: 0.875rem; color: var(--text2); transition: all 0.15s; border-left: 3px solid transparent; }
 .nav-item:hover { color: var(--text); background: rgba(232,160,32,0.08); }
 .nav-item.active { color: var(--accent2); background: rgba(232,160,32,0.12); border-left-color: var(--accent); font-weight: 600; }
-.nav-item .icon { font-size: 16px; width: 22px; text-align: center; }
+.nav-item .icon { font-size: 1rem; width: 22px; text-align: center; }
 
 .nav-sep { height: 1px; background: var(--border); margin: 12px 20px; }
 
 /* Cards */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; color: var(--card-text); --text: var(--card-text); --text2: var(--card-text2); }
-.card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--card-text); }
-.card h3 .icon { font-size: 16px; }
+.card h3 { font-size: 0.9375rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--card-text); }
+.card h3 .icon { font-size: 1rem; }
 
 /* Stat cards */
 .stats { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; flex: 1; min-width: 120px; color: var(--card-text); --text: var(--card-text); --text2: var(--card-text2); }
-.stat .label { font-size: 10px; color: var(--card-text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-.stat .value { font-size: 18px; font-weight: 700; }
-.stat .sub { font-size: 10px; color: var(--card-text2); margin-top: 1px; }
+.stat .label { font-size: 0.6875rem; color: var(--card-text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.stat .value { font-size: 1.125rem; font-weight: 700; }
+.stat .sub { font-size: 0.6875rem; color: var(--card-text2); margin-top: 1px; }
 
 /* Buttons */
-.btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--card-text); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+.btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--card-text); font-size: 0.8125rem; font-weight: 500; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
 .btn:hover { background: var(--border); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn.primary:hover { background: #d09018; }
-.btn.green { background: #40c080; border-color: #40c080; color: #fff; }
-.btn.green:hover { background: #38a870; }
+.btn.green { background: #38b070; border-color: #38b070; color: #fff; }
+.btn.green:hover { background: #309860; }
 .btn.danger { background: transparent; border-color: var(--red); color: var(--red); }
 .btn.danger:hover { background: rgba(255,107,107,0.1); }
-.btn.sm { padding: 5px 10px; font-size: 12px; }
+.btn.sm { padding: 5px 10px; font-size: 0.75rem; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Inputs */
-.input { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--card-text); font-size: 13px; outline: none; transition: border-color 0.15s; }
-.input:focus { border-color: var(--accent); }
+.input { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--card-text); font-size: 0.8125rem; transition: border-color 0.15s; }
+.input:focus { border-color: var(--accent); outline: 3px solid var(--accent2); outline-offset: 1px; }
 .input::placeholder { color: var(--card-text2); }
-textarea.input { resize: vertical; min-height: 100px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+textarea.input { resize: vertical; min-height: 100px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
 select.input { cursor: pointer; }
 
 /* Tags */
-.tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
-.disc-tag { font-size: 10px; padding: 1px 6px; border-radius: 99px; font-weight: 600; }
+.tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 0.6875rem; font-weight: 600; }
+.disc-tag { font-size: 0.625rem; padding: 1px 6px; border-radius: 99px; font-weight: 600; }
 .disc-tag.disc { background: rgba(232,160,32,0.15); color: var(--yellow); }
 .disc-tag.fixed { background: rgba(80,144,232,0.15); color: var(--blue); }
 .disc-tag.transfer { background: rgba(208,96,160,0.15); color: var(--pink); }
 
 /* Table */
-.table { width: 100%; border-collapse: collapse; font-size: 13px; color: var(--card-text); }
-.table th { text-align: left; padding: 10px 12px; color: var(--card-text2); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); }
+.table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; color: var(--card-text); }
+.table th { text-align: left; padding: 10px 12px; color: var(--card-text2); font-weight: 600; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); }
 .table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .table tr:hover { background: rgba(232,160,32,0.05); }
-.table .del-btn { border: none; background: none; color: var(--red); cursor: pointer; font-size: 16px; opacity: 0.7; transition: opacity 0.15s; }
+.table .del-btn { border: none; background: none; color: var(--red); cursor: pointer; font-size: 1rem; opacity: 0.7; transition: opacity 0.15s; }
 .table .del-btn:hover { opacity: 1; }
 .table.compact-budget { width: 100%; }
 .table.compact-budget th, .table.compact-budget td { padding: 5px 8px; border-right: 1px solid var(--border); white-space: nowrap; }
 .table.compact-budget th:first-child, .table.compact-budget td:first-child { white-space: normal; }
 .table.compact-budget th:last-child, .table.compact-budget td:last-child { border-right: none; width: 24px; text-align: center; }
-.info-tooltip { position:absolute; top:100%; left:0; z-index:100; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 14px; font-size:12px; font-weight:400; color:var(--card-text); line-height:1.5; width:280px; margin-top:6px; box-shadow:0 4px 16px rgba(0,0,0,0.15); white-space:normal; }
+.info-tooltip { position:absolute; top:100%; left:0; z-index:100; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 14px; font-size:0.75rem; font-weight:400; color:var(--card-text); line-height:1.5; width:280px; margin-top:6px; box-shadow:0 4px 16px rgba(0,0,0,0.15); white-space:normal; }
 
 /* Empty state */
 .empty { text-align: center; padding: 48px 20px; color: var(--card-text2); }
-.empty .icon { font-size: 40px; margin-bottom: 12px; }
-.empty p { font-size: 13px; max-width: 320px; margin: 0 auto; line-height: 1.6; }
+.empty .icon { font-size: 2.5rem; margin-bottom: 12px; }
+.empty p { font-size: 0.8125rem; max-width: 320px; margin: 0 auto; line-height: 1.6; }
 
 /* Group colors */
 .grp-housing { background: rgba(232,160,32,0.15); color: #f0c050; }
-.grp-food { background: rgba(64,192,128,0.15); color: #40c080; }
-.grp-transport { background: rgba(224,120,40,0.15); color: #e07828; }
-.grp-utilities { background: rgba(80,144,232,0.15); color: #5090e8; }
-.grp-personal { background: rgba(208,96,160,0.15); color: #d060a0; }
-.grp-health { background: rgba(224,80,80,0.15); color: #e05050; }
-.grp-entertainment { background: rgba(232,160,32,0.15); color: #e8a020; }
-.grp-savings { background: rgba(64,192,128,0.15); color: #40c080; }
-.grp-income { background: rgba(80,200,160,0.15); color: #50c8a0; }
-.grp-other { background: rgba(157,165,208,0.15); color: #9da5d0; }
+.grp-food { background: rgba(72,216,136,0.15); color: #48d888; }
+.grp-transport { background: rgba(240,144,64,0.15); color: #f09040; }
+.grp-utilities { background: rgba(112,168,240,0.15); color: #70a8f0; }
+.grp-personal { background: rgba(224,128,184,0.15); color: #e080b8; }
+.grp-health { background: rgba(240,112,112,0.15); color: #f07070; }
+.grp-entertainment { background: rgba(240,176,48,0.15); color: #f0b030; }
+.grp-savings { background: rgba(72,216,136,0.15); color: #48d888; }
+.grp-income { background: rgba(80,200,160,0.15); color: #60d8b0; }
+.grp-other { background: rgba(192,200,232,0.15); color: #c0c8e8; }
 
 /* Badge */
-.badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; border-radius: 99px; font-size: 11px; font-weight: 700; padding: 0 6px; }
+.badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; border-radius: 99px; font-size: 0.6875rem; font-weight: 700; padding: 0 6px; }
 
 /* Animations */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -140,16 +169,16 @@ select.input { cursor: pointer; }
 
 /* Page header */
 .page-header { margin-bottom: 24px; }
-.page-header h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-.page-header p { color: var(--text2); font-size: 13px; margin-top: 4px; }
+.page-header h2 { font-size: 1.375rem; font-weight: 700; letter-spacing: -0.5px; }
+.page-header p { color: var(--text2); font-size: 0.8125rem; margin-top: 4px; }
 
 /* Compass watermark behind page content */
 .compass-watermark { position: fixed; top: 50%; left: calc(110px + 50vw); transform: translate(-50%, -50%); pointer-events: none; z-index: 0; opacity: 0.07; }
 
 /* ── Splash Screen ── */
 .splash-screen { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
-.splash-screen .splash-title { font-size: 36px; font-weight: 700; color: var(--accent2); letter-spacing: -1px; margin-top: 12px; }
-.splash-screen .splash-sub { font-size: 13px; color: var(--text2); text-transform: uppercase; letter-spacing: 2px; }
+.splash-screen .splash-title { font-size: 2.25rem; font-weight: 700; color: var(--accent2); letter-spacing: -1px; margin-top: 12px; }
+.splash-screen .splash-sub { font-size: 0.8125rem; color: var(--text2); text-transform: uppercase; letter-spacing: 2px; }
 @keyframes splashFadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
 .splash-fade { animation: splashFadeOut 0.5s ease-out forwards; }
 
@@ -157,24 +186,33 @@ select.input { cursor: pointer; }
 .tour-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; }
 .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.2s; }
 .tour-dot.active { background: var(--accent); transform: scale(1.25); }
-.tour-icon { font-size: 48px; text-align: center; margin-bottom: 12px; }
-.tour-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 8px; color: var(--card-text); }
-.tour-desc { font-size: 13px; line-height: 1.6; text-align: center; color: var(--card-text2); margin-bottom: 24px; }
+.tour-icon { font-size: 3rem; text-align: center; margin-bottom: 12px; }
+.tour-title { font-size: 1.25rem; font-weight: 700; text-align: center; margin-bottom: 8px; color: var(--card-text); }
+.tour-desc { font-size: 0.8125rem; line-height: 1.6; text-align: center; color: var(--card-text2); margin-bottom: 24px; }
 .tour-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.tour-skip { font-size: 12px; color: var(--card-text2); cursor: pointer; opacity: 0.7; }
+.tour-skip { font-size: 0.75rem; color: var(--card-text2); cursor: pointer; opacity: 0.7; }
 .tour-skip:hover { opacity: 1; }
-[role="button"]:focus, [role="tab"]:focus, [role="menuitem"]:focus, .nav-item:focus, .tab-item:focus, .mode-tab:focus { outline: 2px solid var(--accent2); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+[role="button"]:focus-visible, [role="tab"]:focus-visible, [role="menuitem"]:focus-visible, .nav-item:focus-visible, .tab-item:focus-visible, .mode-tab:focus-visible { outline: 3px solid var(--accent2); outline-offset: 2px; border-radius: 4px; }
+a:focus-visible, button:focus-visible, .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.budget-tab:focus-visible { outline: 3px solid var(--accent2); outline-offset: -3px; }
 
 /* ── Bottom Tab Bar ── */
 .bottom-tabs { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 56px; background: #101850; border-top: 1px solid #2a3580; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
-.bottom-tabs .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 10px; color: rgba(255,255,255,0.5); cursor: pointer; transition: color 0.15s; }
+.bottom-tabs .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.6875rem; color: rgba(255,255,255,0.75); cursor: pointer; transition: color 0.15s; }
 .bottom-tabs .tab-item.active { color: var(--accent2); }
-.bottom-tabs .tab-item .tab-icon { font-size: 20px; }
+.bottom-tabs .tab-item .tab-icon { font-size: 1.25rem; }
 .more-menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
 .more-menu { position: fixed; bottom: 56px; left: 0; right: 0; background: #101850; border-top: 1px solid #2a3580; border-radius: 16px 16px 0 0; padding: 16px 0 8px; z-index: 61; }
-.more-menu .more-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; color: rgba(255,255,255,0.7); font-size: 14px; cursor: pointer; }
+.more-menu .more-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; color: rgba(255,255,255,0.7); font-size: 0.875rem; cursor: pointer; }
 .more-menu .more-item:hover, .more-menu .more-item.active { color: var(--accent2); background: rgba(232,160,32,0.08); }
-.more-menu .more-item .icon { font-size: 18px; }
+.more-menu .more-item .icon { font-size: 1.125rem; }
+
+/* Budget page tabs */
+.budget-tabs { display: flex; gap: 0; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.budget-tab { flex: 1; padding: 10px 16px; text-align: center; font-size: 0.8125rem; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--card-text2); transition: all 0.15s; }
+.budget-tab:hover { background: var(--surface2); }
+.budget-tab.active { background: var(--accent); color: #fff; font-weight: 600; }
 
 /* ── Table scroll wrapper ── */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -197,8 +235,8 @@ select.input { cursor: pointer; }
   .stats { flex-direction: row; flex-wrap: wrap; }
   .stats .stat { min-width: calc(50% - 6px); flex: 0 0 calc(50% - 6px); }
   .card { padding: 14px; }
-  .page-header h2 { font-size: 18px; }
-  .page-header p { font-size: 12px; }
+  .page-header h2 { font-size: 1.125rem; }
+  .page-header p { font-size: 0.75rem; }
   .info-tooltip { width: calc(100vw - 48px); max-width: 280px; left: auto; right: -8px; }
   .modal { padding: 16px; width: 95%; max-width: none; }
   .toast { left: 12px; right: 12px; bottom: 72px; }
@@ -213,12 +251,12 @@ select.input { cursor: pointer; }
 @media (max-width: 480px) {
   .main { padding: 12px 8px 68px 8px; }
   .stats .stat { min-width: 100%; flex: 0 0 100%; }
-  .stat .value { font-size: 16px; }
-  .page-header h2 { font-size: 16px; }
+  .stat .value { font-size: 1rem; }
+  .page-header h2 { font-size: 1rem; }
   .card { padding: 10px; }
-  .btn { padding: 6px 12px; font-size: 12px; }
-  .table th, .table td { padding: 6px 8px; font-size: 12px; }
-  .compact-budget th, .compact-budget td { font-size: 11px; padding: 4px 6px; }
+  .btn { padding: 6px 12px; font-size: 0.75rem; }
+  .table th, .table td { padding: 6px 8px; font-size: 0.75rem; }
+  .compact-budget th, .compact-budget td { font-size: 0.6875rem; padding: 4px 6px; }
 }
 
 /* ── Print ── */
@@ -237,20 +275,69 @@ select.input { cursor: pointer; }
 /* Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.15s; }
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 90%; max-width: 480px; max-height: 80vh; overflow-y: auto; color: var(--card-text); --text: var(--card-text); --text2: var(--card-text2); }
-.modal h3 { margin-bottom: 16px; font-size: 17px; color: var(--card-text); }
+.modal h3 { margin-bottom: 16px; font-size: 1.0625rem; color: var(--card-text); }
 
 /* Progress bar */
 .progress { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
 .progress-fill { height: 100%; border-radius: 99px; transition: width 0.3s; }
 
 /* Toast */
-.toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 20px; font-size: 13px; z-index: 200; animation: fadeIn 0.2s; box-shadow: var(--shadow); color: var(--card-text); }
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 20px; font-size: 0.8125rem; z-index: 200; animation: fadeIn 0.2s; box-shadow: var(--shadow); color: var(--card-text); }
+
+/* AnimatedDemo */
+@keyframes helpPulse { 0%,100%{box-shadow:0 0 0 0 rgba(232,160,32,0.5);} 50%{box-shadow:0 0 0 8px rgba(232,160,32,0);} }
+@keyframes helpFadeIn { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
+.demo-container { position:relative; width:100%; max-width:480px; height:220px; background:#161d52; border-radius:10px; overflow:hidden; border:1px solid rgba(126,200,227,0.15); }
+.demo-step { position:absolute; inset:0; display:flex; flex-direction:column; opacity:0; transition:opacity 0.4s ease; pointer-events:none; }
+.demo-step.active { opacity:1; }
+.demo-mockup { flex:1; position:relative; padding:12px; }
+.demo-element { position:absolute; border-radius:6px; font-size:0.625rem; display:flex; align-items:center; justify-content:center; font-weight:500; color:rgba(255,255,255,0.85); transition:all 0.3s; }
+.demo-highlight { animation:helpPulse 1.5s ease infinite; border:2px solid var(--accent) !important; z-index:2; }
+.demo-arrow { position:absolute; z-index:3; }
+.demo-label { padding:8px 14px; background:rgba(12,20,69,0.9); border-top:1px solid rgba(126,200,227,0.1); font-size:0.75rem; color:rgba(255,255,255,0.8); text-align:center; min-height:36px; display:flex; align-items:center; justify-content:center; }
+.demo-dots { display:flex; gap:6px; justify-content:center; padding:6px 0 8px; }
+.demo-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.2); transition:background 0.3s; cursor:pointer; }
+.demo-dot.active { background:var(--accent); }
+.demo-controls { position:absolute; top:6px; right:8px; z-index:5; display:flex; gap:4px; }
+.demo-play-btn { background:rgba(255,255,255,0.1); border:none; border-radius:4px; width:22px; height:22px; cursor:pointer; color:rgba(255,255,255,0.6); font-size:0.6875rem; display:flex; align-items:center; justify-content:center; }
+.demo-play-btn:hover { background:rgba(255,255,255,0.2); color:white; }
+.demo-play-btn:focus-visible { outline:3px solid var(--accent2); outline-offset:1px; }
+.demo-dot:focus-visible { outline:3px solid var(--accent2); outline-offset:2px; }
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  .demo-highlight { animation: none !important; box-shadow: 0 0 0 3px var(--accent) !important; }
+}
+
+/* High Contrast overrides */
+:root.high-contrast .sidebar { background:#000; border-right:2px solid #666; }
+:root.high-contrast .card { border:2px solid #666; }
+:root.high-contrast .btn { border:2px solid; }
+:root.high-contrast .input { border:2px solid #666; }
+:root.high-contrast .input:focus { border-color:var(--accent); outline:3px solid var(--accent); }
+:root.high-contrast .bottom-tabs { background:#000; border-top:2px solid #666; }
+:root.high-contrast .demo-container { border:2px solid #666; }
+
+/* OS-level high contrast preference */
+@media (prefers-contrast: more) {
+  :root { --border: #888; --text2: #d8e0ff; --card-text2: #3a3020; }
+  .card, .stat { border-width: 2px; }
+  .btn { border-width: 2px; }
+  .input { border-width: 2px; }
+  .sidebar { border-right-width: 2px; }
+  .bottom-tabs { border-top-width: 2px; }
+  .nav-item.active { border-left-width: 4px; }
+  .tag, .disc-tag { border: 1px solid currentColor; }
+  .progress { border: 1px solid var(--border); }
+}
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="root"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="lib/react.min.js"></script>
+<script src="lib/react-dom.min.js"></script>
 <script>
 const { useState, useEffect, useMemo, useCallback, useRef } = React;
 const h = React.createElement;
@@ -340,6 +427,10 @@ function getForecastDates(category, accountId, year, month) {
   return [{day: Math.min(dueDay, daysInMonth), amount: amt}];
 }
 
+// ── Version ─────────────────────────────────────────────
+const APP_VERSION = '1.0.0';
+const VERSION_CHECK_URL = 'https://ambitbudget.com/api/version';
+
 // ── Persistence ─────────────────────────────────────────
 const STORE_KEY = 'budgetpro_v2';
 function loadState() {
@@ -352,6 +443,52 @@ function loadState() {
 function saveState(state) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e) {}
 }
+
+// IndexedDB wrapper — primary storage with localStorage fallback
+const AmbitDB = {
+  DB_NAME: 'AmbitBudget',
+  STORE: 'data',
+  KEY: 'main',
+  _dbPromise: null,
+
+  _open() {
+    if(!this._dbPromise) {
+      this._dbPromise = new Promise((resolve, reject) => {
+        try {
+          const req = indexedDB.open(this.DB_NAME, 1);
+          req.onupgradeneeded = (e) => e.target.result.createObjectStore(this.STORE);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => { this._dbPromise = null; reject(req.error); };
+        } catch(e) { this._dbPromise = null; reject(e); }
+      });
+    }
+    return this._dbPromise;
+  },
+
+  async load() {
+    try {
+      const db = await this._open();
+      return new Promise((resolve) => {
+        const tx = db.transaction(this.STORE, 'readonly');
+        const req = tx.objectStore(this.STORE).get(this.KEY);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    } catch(e) {
+      return null; // Will fall back to localStorage in App
+    }
+  },
+
+  async save(state) {
+    // Always mirror to localStorage as backup
+    saveState(state);
+    try {
+      const db = await this._open();
+      const tx = db.transaction(this.STORE, 'readwrite');
+      tx.objectStore(this.STORE).put(state, this.KEY);
+    } catch(e) {} // localStorage backup already saved
+  }
+};
 
 // ── Demo Data ───────────────────────────────────────────
 const DEMO_DATA = (()=>{
@@ -518,10 +655,10 @@ const DEMO_DATA = (()=>{
 
 // ── Default groups & their colors ───────────────────────
 const DEFAULT_GROUPS = [
-  {name:'Housing',color:'#f0c050'},{name:'Food',color:'#40c080'},{name:'Transport',color:'#e07828'},
-  {name:'Utilities',color:'#5090e8'},{name:'Personal',color:'#d060a0'},{name:'Health',color:'#e05050'},{name:'Debt',color:'#c04040'},
-  {name:'Entertainment',color:'#e8a020'},{name:'Savings',color:'#40c080'},{name:'Income',color:'#50c8a0'},
-  {name:'Other',color:'#9da5d0'}
+  {name:'Housing',color:'#f0c050'},{name:'Food',color:'#48d888'},{name:'Transport',color:'#f09040'},
+  {name:'Utilities',color:'#70a8f0'},{name:'Personal',color:'#e080b8'},{name:'Health',color:'#f07070'},{name:'Debt',color:'#f07070'},
+  {name:'Entertainment',color:'#f0b030'},{name:'Savings',color:'#48d888'},{name:'Income',color:'#60d8b0'},
+  {name:'Other',color:'#c0c8e8'}
 ];
 const GROUP_LIST = DEFAULT_GROUPS.map(g=>g.name);
 const GROUP_COLORS = Object.fromEntries(DEFAULT_GROUPS.map(g=>[g.name,g.color]));
@@ -586,6 +723,470 @@ function normCatType(cat) {
 
 // Accessibility helper: makes div/span act like a button for keyboard + screen readers
 const a11yClick = (fn, label) => ({tabIndex:0, role:'button', ...(label ? {'aria-label':label} : {}), onClick:fn, onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn(e);}}});
+
+// ── Animated Demo Component ─────────────────────────────
+function AnimatedDemo({steps}) {
+  const [current, setCurrent] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const timerRef = useRef(null);
+
+  useEffect(()=>{
+    if(playing && steps && steps.length>1) {
+      timerRef.current = setInterval(()=>setCurrent(c=>(c+1)%steps.length), 3500);
+      return ()=>clearInterval(timerRef.current);
+    }
+    return ()=>{ if(timerRef.current) clearInterval(timerRef.current); };
+  },[playing, steps]);
+
+  if(!steps || steps.length===0) return null;
+
+  const goTo = (i) => { setCurrent(i); setPlaying(false); };
+  const toggle = () => setPlaying(p=>!p);
+
+  return h('div',{className:'demo-container'},
+    // Controls
+    h('div',{className:'demo-controls'},
+      h('button',{className:'demo-play-btn', onClick:toggle, 'aria-label':playing?'Pause demo':'Play demo'}, h('span',{'aria-hidden':'true'},playing?'⏸':'▶')),
+      current>0 && h('button',{className:'demo-play-btn', onClick:()=>goTo((current-1+steps.length)%steps.length), 'aria-label':'Previous step'}, h('span',{'aria-hidden':'true'},'◀')),
+      h('button',{className:'demo-play-btn', onClick:()=>{setCurrent(c=>(c+1)%steps.length);setPlaying(false);}, 'aria-label':'Next step'}, h('span',{'aria-hidden':'true'},'▶'))
+    ),
+    // Steps
+    steps.map((step,i)=>
+      h('div',{key:i, className:'demo-step'+(i===current?' active':'')},
+        h('div',{className:'demo-mockup'},
+          // Render mockup elements
+          (step.elements||[]).map((el,j)=>
+            h('div',{key:j, className:'demo-element'+(el.highlight?' demo-highlight':''), style:{
+              left:el.x+'%', top:el.y+'%', width:el.w+'%', height:el.h+'%',
+              background:el.bg||'rgba(255,255,255,0.08)', border:el.highlight?undefined:'1px solid rgba(255,255,255,0.1)',
+              fontSize:el.fontSize||10, fontWeight:el.bold?700:400,
+              color:el.color||'rgba(255,255,255,0.7)', borderRadius:el.round?'99px':'6px',
+              ...(el.style||{})
+            }}, el.label||'')
+          ),
+          // Arrow overlay
+          step.arrow && h('svg',{className:'demo-arrow', style:{position:'absolute',left:0,top:0,width:'100%',height:'100%',pointerEvents:'none'}},
+            h('defs',null,h('marker',{id:'ah',markerWidth:8,markerHeight:6,refX:8,refY:3,orient:'auto'},
+              h('polygon',{points:'0 0, 8 3, 0 6',fill:'var(--accent)'})
+            )),
+            h('line',{x1:step.arrow.x1+'%',y1:step.arrow.y1+'%',x2:step.arrow.x2+'%',y2:step.arrow.y2+'%',
+              stroke:'var(--accent)',strokeWidth:2,markerEnd:'url(#ah)',strokeDasharray:'4,3'})
+          )
+        ),
+        // Label
+        h('div',{className:'demo-label'},
+          h('span',{style:{color:'var(--accent)',fontWeight:700,marginRight:8}}, 'Step '+(i+1)),
+          step.label
+        ),
+        // Dots
+        h('div',{className:'demo-dots'},
+          steps.map((_,di)=>h('div',{key:di, className:'demo-dot'+(di===current?' active':''), role:'button', tabIndex:0, 'aria-label':'Step '+(di+1)+' of '+steps.length, onClick:()=>goTo(di), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goTo(di);}}}))
+        )
+      )
+    )
+  );
+}
+
+// ── Help Bar Component ──────────────────────────────────
+function HelpBar({steps, diagram, bullets, title}) {
+  const [open, setOpen] = useState(false);
+  return h('div',{style:{marginBottom:16}},
+    h('div',{
+      style:{display:'flex',alignItems:'center',gap:8,padding:'8px 14px',background:'rgba(126,200,227,0.08)',border:'1px solid rgba(126,200,227,0.2)',borderRadius:open?'8px 8px 0 0':'8px',cursor:'pointer',transition:'all 0.15s'},
+      ...a11yClick(()=>setOpen(!open), 'Toggle help section')
+    },
+      h('span',{style:{fontSize:16}},'?'),
+      h('span',{style:{fontSize:13,fontWeight:500,color:'var(--text2)',flex:1}}, title||'How does this work?'),
+      h('span',{style:{fontSize:12,color:'var(--text2)',transition:'transform 0.2s',transform:open?'rotate(180deg)':'rotate(0)'}}, '▾')
+    ),
+    open && h('div',{style:{padding:'16px 18px',background:'rgba(126,200,227,0.04)',border:'1px solid rgba(126,200,227,0.2)',borderTop:'none',borderRadius:'0 0 8px 8px'}},
+      // Animated demo
+      steps && steps.length>0 && h('div',{style:{marginBottom:16}},
+        h(AnimatedDemo, {steps})
+      ),
+      // Visual diagram
+      diagram && h('div',{style:{marginBottom:14,padding:'12px 16px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:8,fontFamily:'JetBrains Mono, monospace',fontSize:12,lineHeight:1.8,color:'var(--card-text)',whiteSpace:'pre-wrap'}},
+        diagram
+      ),
+      // Bullet points
+      bullets && bullets.length>0 && h('ul',{style:{margin:0,paddingLeft:20,fontSize:13,color:'var(--text2)',lineHeight:1.9}},
+        bullets.map((b,i)=>h('li',{key:i},b))
+      )
+    )
+  );
+}
+
+// Help content definitions for each section
+const HELP_CONTENT = {
+  dashboard: {
+    title: 'How the Dashboard works',
+    diagram: 'Budget page \u2192 spending bars & budget status\nPayee Rules (due days) \u2192 Bills & income section\nTransactions \u2192 totals, forecast & calendar\nAccounts \u2192 balance & forecast starting point',
+    bullets: [
+      'Your bills section is driven by Payee Rules with due days set on the Budget page',
+      'Budget bars show actual spending vs. budgets you set on the Budget page',
+      'The forecast uses your account balances plus expected income and bills',
+      'Categorizing transactions on the Transactions screen updates all Dashboard sections'
+    ],
+    steps: [
+      { label: 'Bills section shows your recurring payments and due dates',
+        elements: [
+          {x:2,y:2,w:20,h:12,bg:'rgba(80,144,232,0.2)',label:'Dashboard',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:96,h:38,bg:'rgba(64,192,128,0.08)',label:'Bills & Income Window',highlight:true,style:{border:'1px solid rgba(64,192,128,0.3)'}},
+          {x:4,y:24,w:44,h:10,bg:'rgba(64,192,128,0.15)',label:'Rent \u2014 Due 1st \u2014 $1,500',fontSize:9},
+          {x:4,y:36,w:44,h:10,bg:'rgba(64,192,128,0.15)',label:'Electric \u2014 Due 15th \u2014 $120',fontSize:9},
+          {x:52,y:24,w:44,h:10,bg:'rgba(232,160,32,0.15)',label:'Paycheck \u2014 15th \u2014 +$3,500',fontSize:9},
+          {x:2,y:60,w:96,h:30,bg:'rgba(255,255,255,0.04)',label:'Forecast & Budget Bars'},
+        ],
+        arrow: {x1:50,y1:14,x2:50,y2:18}
+      },
+      { label: 'Budget bars track spending vs. your targets by category',
+        elements: [
+          {x:2,y:2,w:20,h:12,bg:'rgba(80,144,232,0.2)',label:'Dashboard',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:96,h:32,bg:'rgba(255,255,255,0.04)',label:'Bills & Income'},
+          {x:2,y:54,w:96,h:38,bg:'rgba(232,160,32,0.08)',label:'Budget vs. Actual',highlight:true,style:{border:'1px solid rgba(232,160,32,0.3)'}},
+          {x:4,y:62,w:60,h:8,bg:'rgba(232,160,32,0.3)',label:'Groceries: $420 / $600 (70%)',fontSize:9},
+          {x:4,y:72,w:40,h:8,bg:'rgba(64,192,128,0.3)',label:'Gas: $80 / $150 (53%)',fontSize:9},
+          {x:4,y:82,w:85,h:8,bg:'rgba(224,80,80,0.3)',label:'Dining: $280 / $200 (140%) OVER',fontSize:9,color:'var(--red)'},
+        ],
+        arrow: {x1:50,y1:50,x2:50,y2:54}
+      },
+      { label: 'The forecast projects your end-of-month balance',
+        elements: [
+          {x:2,y:2,w:20,h:12,bg:'rgba(80,144,232,0.2)',label:'Dashboard',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:47,h:28,bg:'rgba(64,192,128,0.12)',label:'Current Balance\n$4,230',style:{border:'1px solid rgba(64,192,128,0.3)'}},
+          {x:51,y:18,w:47,h:28,bg:'rgba(232,160,32,0.12)',label:'End of Month\n$2,180',highlight:true,style:{border:'1px solid rgba(232,160,32,0.3)'}},
+          {x:2,y:50,w:96,h:8,bg:'rgba(64,192,128,0.2)',label:'+ $1,200 remaining income',fontSize:9},
+          {x:2,y:60,w:96,h:8,bg:'rgba(224,80,80,0.2)',label:'\u2212 $2,450 remaining bills',fontSize:9},
+          {x:2,y:70,w:96,h:8,bg:'rgba(232,160,32,0.2)',label:'\u2212 $800 remaining discretionary',fontSize:9},
+        ],
+        arrow: {x1:72,y1:14,x2:72,y2:18}
+      }
+    ]
+  },
+  transactions: {
+    title: 'How Transactions connect to everything',
+    diagram: 'Import page \u2192 Transactions (raw data lands here)\nCategories (Budget page) \u2190 create new ones here too\nDashboard \u2190 updates when you categorize transactions\nAccounts \u2190 balances update from transaction amounts',
+    bullets: [
+      'Imported data arrives here \u2014 categorize unmatched transactions using the dropdown',
+      'Use "+ New Category" in the dropdown to create categories on the fly',
+      'Categorizing a transaction immediately updates your Dashboard bills and budget bars',
+      'Running balance is calculated from cleared (non-pending) transactions only'
+    ],
+    steps: [
+      { label: 'Filter transactions by account, date, status, or search text',
+        elements: [
+          {x:2,y:2,w:20,h:12,bg:'rgba(80,144,232,0.2)',label:'Transactions',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:96,h:18,bg:'rgba(126,200,227,0.1)',label:'Search | Account | Status | Date',highlight:true,style:{border:'1px solid rgba(126,200,227,0.3)'}},
+          {x:2,y:40,w:96,h:50,bg:'rgba(255,255,255,0.04)',label:'Transaction List'},
+          {x:4,y:46,w:92,h:10,bg:'rgba(255,255,255,0.06)',label:'02/01 \u2014 WALMART GROCERY \u2014 Groceries \u2014 -$87.43',fontSize:9},
+          {x:4,y:58,w:92,h:10,bg:'rgba(232,160,32,0.08)',label:'02/03 \u2014 UNKNOWN PAYEE \u2014 Uncategorized \u2014 -$42.00',fontSize:9,color:'var(--yellow)'},
+          {x:4,y:70,w:92,h:10,bg:'rgba(255,255,255,0.06)',label:'02/05 \u2014 PAYCHECK DEPOSIT \u2014 Income \u2014 +$3,500',fontSize:9},
+        ],
+        arrow: {x1:50,y1:14,x2:50,y2:18}
+      },
+      { label: 'Click a category to change it \u2014 use the dropdown to pick one',
+        elements: [
+          {x:2,y:2,w:20,h:12,bg:'rgba(80,144,232,0.2)',label:'Transactions',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:96,h:14,bg:'rgba(126,200,227,0.06)',label:'Filters'},
+          {x:4,y:36,w:92,h:12,bg:'rgba(255,255,255,0.06)',label:'02/03 \u2014 UNKNOWN PAYEE',fontSize:9},
+          {x:55,y:36,w:25,h:12,bg:'rgba(232,160,32,0.2)',label:'Uncategorized',highlight:true,fontSize:9,color:'var(--yellow)'},
+          {x:55,y:50,w:30,h:36,bg:'rgba(30,40,80,0.95)',label:'Groceries\nGas\nDining\nUtilities\n+ New Category',fontSize:9,style:{border:'1px solid var(--accent)',textAlign:'left',padding:'4px 8px',lineHeight:'1.6',alignItems:'flex-start'}},
+        ],
+        arrow: {x1:67,y1:34,x2:67,y2:36}
+      },
+      { label: 'Use "+ New Category" to create one on the fly',
+        elements: [
+          {x:2,y:2,w:20,h:12,bg:'rgba(80,144,232,0.2)',label:'Transactions',bold:true,color:'var(--accent2)'},
+          {x:10,y:20,w:80,h:70,bg:'rgba(30,40,80,0.95)',label:'',style:{border:'1px solid var(--accent)',borderRadius:'10px'}},
+          {x:14,y:24,w:30,h:8,bg:'transparent',label:'+ Quick Create Category',bold:true,color:'var(--accent)',fontSize:10},
+          {x:14,y:34,w:35,h:10,bg:'rgba(255,255,255,0.08)',label:'Name: Subscriptions',fontSize:9,highlight:true},
+          {x:52,y:34,w:20,h:10,bg:'rgba(255,255,255,0.08)',label:'Group: Bills',fontSize:9},
+          {x:75,y:34,w:12,h:10,bg:'rgba(255,255,255,0.08)',label:'Fixed',fontSize:9},
+          {x:14,y:50,w:16,h:10,bg:'rgba(64,192,128,0.3)',label:'Create',fontSize:9,round:true,color:'white'},
+          {x:14,y:66,w:60,h:8,bg:'transparent',label:'New category immediately available everywhere',fontSize:9,color:'var(--green)'},
+        ]
+      },
+      { label: 'Add manual transactions with the + button',
+        elements: [
+          {x:2,y:2,w:20,h:12,bg:'rgba(80,144,232,0.2)',label:'Transactions',bold:true,color:'var(--accent2)'},
+          {x:76,y:2,w:22,h:12,bg:'rgba(64,192,128,0.3)',label:'+ Add Txn',highlight:true,round:true,color:'white'},
+          {x:10,y:20,w:80,h:70,bg:'rgba(30,40,80,0.95)',label:'',style:{border:'1px solid rgba(126,200,227,0.2)',borderRadius:'10px'}},
+          {x:14,y:26,w:72,h:8,bg:'transparent',label:'Add Transaction',bold:true,fontSize:11,color:'white'},
+          {x:14,y:38,w:35,h:10,bg:'rgba(255,255,255,0.08)',label:'Date: 03/15/2026',fontSize:9},
+          {x:52,y:38,w:35,h:10,bg:'rgba(255,255,255,0.08)',label:'Amount: -45.00',fontSize:9},
+          {x:14,y:52,w:72,h:10,bg:'rgba(255,255,255,0.08)',label:'Description: Coffee Shop',fontSize:9},
+          {x:14,y:66,w:35,h:10,bg:'rgba(255,255,255,0.08)',label:'Category: Dining',fontSize:9},
+          {x:52,y:66,w:35,h:10,bg:'rgba(255,255,255,0.08)',label:'Account: Checking',fontSize:9},
+        ],
+        arrow: {x1:87,y1:14,x2:87,y2:2}
+      }
+    ]
+  },
+  import: {
+    title: 'How Import works',
+    diagram: 'Bank CSV/Excel \u2192 Import \u2192 Transactions (as raw data)\n                              \u2514\u2192 Matched by Payee Rules\n                              \u2514\u2192 Unmatched \u2192 "Uncategorized"\n\nAfter import: categorize on Transactions screen',
+    bullets: [
+      'Import is a data utility \u2014 it loads bank data into the system',
+      'Transactions matched by existing Payee Rules get auto-categorized',
+      'Unmatched transactions import as "Uncategorized" \u2014 fix them on the Transactions screen',
+      'Set up Payee Rules on the Budget page to improve future auto-matching'
+    ],
+    steps: [
+      { label: 'Paste bank data from Excel or upload a CSV file',
+        elements: [
+          {x:2,y:2,w:15,h:12,bg:'rgba(80,144,232,0.2)',label:'Import',bold:true,color:'var(--accent2)'},
+          {x:20,y:2,w:18,h:10,bg:'rgba(232,160,32,0.2)',label:'Paste Data',fontSize:9,round:true},
+          {x:40,y:2,w:18,h:10,bg:'rgba(255,255,255,0.08)',label:'Upload File',fontSize:9,round:true},
+          {x:2,y:18,w:65,h:72,bg:'rgba(126,200,227,0.06)',label:'',highlight:true,style:{border:'1px dashed rgba(126,200,227,0.3)'}},
+          {x:6,y:28,w:57,h:6,bg:'rgba(255,255,255,0.06)',label:'Date,Description,Amount',fontSize:9,style:{fontFamily:'monospace'}},
+          {x:6,y:36,w:57,h:6,bg:'rgba(255,255,255,0.06)',label:'02/01,WALMART GROCERY,-87.43',fontSize:9,style:{fontFamily:'monospace'}},
+          {x:6,y:44,w:57,h:6,bg:'rgba(255,255,255,0.06)',label:'02/03,SHELL GAS,-42.00',fontSize:9,style:{fontFamily:'monospace'}},
+          {x:6,y:56,w:15,h:10,bg:'rgba(232,160,32,0.3)',label:'Parse',fontSize:9,round:true,color:'white'},
+          {x:70,y:18,w:28,h:35,bg:'rgba(255,255,255,0.04)',label:'Import Stats\n\nTxns: 156\nRules: 42',fontSize:9},
+        ]
+      },
+      { label: 'Map columns: tell the system which column is Date, Description, Amount',
+        elements: [
+          {x:2,y:2,w:15,h:12,bg:'rgba(80,144,232,0.2)',label:'Import',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:96,h:40,bg:'rgba(232,160,32,0.08)',label:'',highlight:true,style:{border:'1px solid rgba(232,160,32,0.3)'}},
+          {x:4,y:20,w:25,h:8,bg:'transparent',label:'Column Mapping',bold:true,fontSize:10,color:'var(--accent2)'},
+          {x:4,y:30,w:28,h:10,bg:'rgba(232,160,32,0.15)',label:'Date: Column 1',fontSize:9},
+          {x:34,y:30,w:28,h:10,bg:'rgba(64,192,128,0.15)',label:'Desc: Column 2',fontSize:9},
+          {x:64,y:30,w:28,h:10,bg:'rgba(224,120,40,0.15)',label:'Amount: Column 3',fontSize:9},
+          {x:4,y:44,w:90,h:10,bg:'rgba(255,255,255,0.04)',label:'Preview: 02/01 | WALMART GROCERY | -$87.43',fontSize:9},
+          {x:2,y:64,w:96,h:26,bg:'rgba(255,255,255,0.04)',label:'Account: Checking (\u2022\u2022\u2022\u20223456)\n\nPreview Transactions'},
+        ]
+      },
+      { label: 'Preview matches, then confirm to import all transactions',
+        elements: [
+          {x:2,y:2,w:15,h:12,bg:'rgba(80,144,232,0.2)',label:'Import',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:96,h:72,bg:'rgba(64,192,128,0.06)',label:'',highlight:true,style:{border:'2px solid rgba(64,192,128,0.3)'}},
+          {x:4,y:20,w:30,h:8,bg:'transparent',label:'Preview \u2014 48 ready',bold:true,fontSize:10,color:'var(--green)'},
+          {x:70,y:20,w:26,h:10,bg:'rgba(64,192,128,0.3)',label:'Confirm Import',fontSize:9,round:true,color:'white'},
+          {x:4,y:32,w:22,h:16,bg:'rgba(64,192,128,0.12)',label:'42\nMatched',fontSize:10,color:'var(--green)',bold:true},
+          {x:28,y:32,w:22,h:16,bg:'rgba(232,160,32,0.12)',label:'6\nUnmatched',fontSize:10,color:'var(--yellow)',bold:true},
+          {x:52,y:32,w:22,h:16,bg:'rgba(255,255,255,0.06)',label:'3\nDuplicates',fontSize:10},
+          {x:4,y:54,w:90,h:8,bg:'rgba(232,160,32,0.08)',label:'Unmatched import as "Uncategorized" \u2014 fix on Transactions',fontSize:9,color:'var(--yellow)'},
+          {x:4,y:66,w:90,h:8,bg:'rgba(64,192,128,0.08)',label:'Matched transactions auto-categorized by Payee Rules',fontSize:9,color:'var(--green)'},
+        ]
+      }
+    ]
+  },
+  budgetMonthly: {
+    title: 'How Monthly Budget works',
+    diagram: 'Categories & Groups (tab) \u2192 defines what appears here\nPayee Rules (tab) \u2192 due days shown on fixed bills\nTransactions \u2192 actual spending fills the bars\nDashboard \u2190 budget vs. actual drives the overview',
+    bullets: [
+      'Set budget amounts here \u2014 they control the spending bars on the Dashboard',
+      'Due days come from Payee Rules (set on the Payee Rules tab)',
+      'Click any category row to drill down into its transactions',
+      'Use "All Months (Avg)" to see your average spending patterns'
+    ],
+    steps: [
+      { label: 'Set monthly budget amounts for each spending category',
+        elements: [
+          {x:2,y:2,w:22,h:12,bg:'rgba(80,144,232,0.2)',label:'Monthly Budget',bold:true,color:'var(--accent2)',fontSize:9},
+          {x:2,y:18,w:96,h:72,bg:'rgba(255,255,255,0.04)',label:''},
+          {x:4,y:20,w:20,h:8,bg:'rgba(232,160,32,0.15)',label:'Groceries',fontSize:9},
+          {x:26,y:20,w:12,h:8,bg:'rgba(255,255,255,0.1)',label:'$600',fontSize:9,highlight:true},
+          {x:42,y:20,w:30,h:8,bg:'rgba(64,192,128,0.3)',label:'$420 spent (70%)',fontSize:9},
+          {x:4,y:32,w:20,h:8,bg:'rgba(80,144,232,0.15)',label:'Rent',fontSize:9},
+          {x:26,y:32,w:12,h:8,bg:'rgba(255,255,255,0.1)',label:'$1,500',fontSize:9},
+          {x:42,y:32,w:35,h:8,bg:'rgba(64,192,128,0.3)',label:'$1,500 spent (100%)',fontSize:9},
+          {x:4,y:44,w:20,h:8,bg:'rgba(232,160,32,0.15)',label:'Dining',fontSize:9},
+          {x:26,y:44,w:12,h:8,bg:'rgba(255,255,255,0.1)',label:'$200',fontSize:9},
+          {x:42,y:44,w:38,h:8,bg:'rgba(224,80,80,0.3)',label:'$280 spent (140%) OVER',fontSize:9,color:'var(--red)'},
+          {x:4,y:60,w:50,h:8,bg:'transparent',label:'Click budget amount to edit inline',fontSize:9,color:'var(--text2)'},
+        ],
+        arrow: {x1:32,y1:16,x2:32,y2:20}
+      },
+      { label: 'Switch months to compare spending across time periods',
+        elements: [
+          {x:2,y:2,w:22,h:12,bg:'rgba(80,144,232,0.2)',label:'Monthly Budget',bold:true,color:'var(--accent2)',fontSize:9},
+          {x:30,y:2,w:8,h:12,bg:'rgba(255,255,255,0.1)',label:'<',fontSize:11},
+          {x:40,y:2,w:20,h:12,bg:'rgba(232,160,32,0.2)',label:'Mar 2026',highlight:true,fontSize:10,bold:true},
+          {x:62,y:2,w:8,h:12,bg:'rgba(255,255,255,0.1)',label:'>',fontSize:11},
+          {x:72,y:2,w:26,h:12,bg:'rgba(255,255,255,0.06)',label:'All Months (Avg)',fontSize:9},
+          {x:2,y:18,w:30,h:20,bg:'rgba(64,192,128,0.1)',label:'Income\n$7,000',fontSize:10},
+          {x:34,y:18,w:30,h:20,bg:'rgba(80,144,232,0.1)',label:'Fixed\n$3,200',fontSize:10},
+          {x:66,y:18,w:30,h:20,bg:'rgba(232,160,32,0.1)',label:'Discretionary\n$1,800',fontSize:10},
+          {x:2,y:44,w:96,h:46,bg:'rgba(255,255,255,0.03)',label:'Budget vs. Actual by Category'},
+        ],
+        arrow: {x1:50,y1:16,x2:50,y2:2}
+      },
+      { label: 'Click any category row to see its transactions for the month',
+        elements: [
+          {x:2,y:2,w:22,h:12,bg:'rgba(80,144,232,0.2)',label:'Monthly Budget',bold:true,color:'var(--accent2)',fontSize:9},
+          {x:2,y:18,w:96,h:30,bg:'rgba(255,255,255,0.04)',label:''},
+          {x:4,y:20,w:20,h:8,bg:'rgba(232,160,32,0.15)',label:'Groceries',fontSize:9,highlight:true,style:{cursor:'pointer'}},
+          {x:26,y:20,w:12,h:8,bg:'rgba(255,255,255,0.1)',label:'$600',fontSize:9},
+          {x:42,y:20,w:30,h:8,bg:'rgba(64,192,128,0.3)',label:'$420 (70%)',fontSize:9},
+          {x:2,y:52,w:96,h:38,bg:'rgba(30,40,80,0.95)',label:'',style:{border:'1px solid var(--accent)',borderRadius:'10px'}},
+          {x:4,y:54,w:35,h:6,bg:'transparent',label:'Groceries \u2014 March 2026',bold:true,fontSize:9,color:'var(--accent2)'},
+          {x:4,y:62,w:90,h:7,bg:'rgba(255,255,255,0.06)',label:'03/02 Walmart \u2014 -$87.43',fontSize:9},
+          {x:4,y:71,w:90,h:7,bg:'rgba(255,255,255,0.06)',label:'03/08 Costco \u2014 -$156.20',fontSize:9},
+          {x:4,y:80,w:90,h:7,bg:'rgba(255,255,255,0.06)',label:'03/15 Trader Joe\'s \u2014 -$64.18',fontSize:9},
+        ],
+        arrow: {x1:14,y1:30,x2:14,y2:52}
+      }
+    ]
+  },
+  categoriesGroups: {
+    title: 'How Categories & Groups affect the app',
+    diagram: 'Categories \u2192 Transaction dropdowns (everywhere)\n          \u2192 Dashboard sections (income/fixed/discretionary)\n          \u2192 Budget bars & tracking\nGroups \u2192 visual organization across all screens\n       \u2192 color-coded tags on transactions & budget',
+    bullets: [
+      'Categories you create here appear in every dropdown across the app',
+      'Category type (Fixed/Discretionary/Transfer) determines where it shows on the Dashboard',
+      'Groups organize categories visually \u2014 they show as color-coded sections',
+      'Deleting a category does not delete its transactions (they become "Uncategorized")'
+    ],
+    steps: [
+      { label: 'Create categories and assign them to groups for organization',
+        elements: [
+          {x:2,y:2,w:26,h:12,bg:'rgba(80,144,232,0.2)',label:'Categories & Groups',bold:true,color:'var(--accent2)',fontSize:9},
+          {x:72,y:2,w:26,h:12,bg:'rgba(64,192,128,0.3)',label:'+ New Category',highlight:true,round:true,color:'white',fontSize:9},
+          {x:2,y:18,w:96,h:72,bg:'rgba(255,255,255,0.04)',label:''},
+          {x:4,y:20,w:18,h:8,bg:'rgba(64,192,128,0.2)',label:'Food',fontSize:9,round:true,color:'var(--green)'},
+          {x:6,y:30,w:30,h:8,bg:'rgba(255,255,255,0.06)',label:'Groceries \u2014 Disc \u2014 $600',fontSize:9},
+          {x:6,y:40,w:30,h:8,bg:'rgba(255,255,255,0.06)',label:'Dining \u2014 Disc \u2014 $200',fontSize:9},
+          {x:4,y:54,w:18,h:8,bg:'rgba(80,144,232,0.2)',label:'Housing',fontSize:9,round:true,color:'var(--blue)'},
+          {x:6,y:64,w:30,h:8,bg:'rgba(255,255,255,0.06)',label:'Rent \u2014 Fixed \u2014 $1,500',fontSize:9},
+          {x:6,y:74,w:30,h:8,bg:'rgba(255,255,255,0.06)',label:'Electric \u2014 Fixed \u2014 $120',fontSize:9},
+        ],
+        arrow: {x1:85,y1:14,x2:85,y2:2}
+      },
+      { label: 'Set type: Fixed shows as bills, Discretionary shows as budget bars',
+        elements: [
+          {x:2,y:2,w:26,h:12,bg:'rgba(80,144,232,0.2)',label:'Categories & Groups',bold:true,color:'var(--accent2)',fontSize:9},
+          {x:10,y:20,w:80,h:65,bg:'rgba(30,40,80,0.95)',label:'',style:{border:'1px solid var(--accent)',borderRadius:'10px'}},
+          {x:14,y:24,w:30,h:8,bg:'transparent',label:'New Category',bold:true,fontSize:10,color:'white'},
+          {x:14,y:36,w:35,h:10,bg:'rgba(255,255,255,0.08)',label:'Name: Subscriptions',fontSize:9},
+          {x:52,y:36,w:35,h:10,bg:'rgba(255,255,255,0.08)',label:'Group: Bills',fontSize:9},
+          {x:14,y:52,w:20,h:10,bg:'rgba(232,160,32,0.2)',label:'Discretionary',fontSize:9},
+          {x:36,y:52,w:14,h:10,bg:'rgba(80,144,232,0.3)',label:'Fixed',fontSize:9,highlight:true},
+          {x:52,y:52,w:16,h:10,bg:'rgba(208,96,160,0.2)',label:'Transfer',fontSize:9},
+          {x:14,y:68,w:60,h:8,bg:'transparent',label:'Fixed = Dashboard bills | Disc = budget bars',fontSize:9,color:'var(--text2)'},
+        ]
+      },
+      { label: 'Manage Groups to organize categories with color-coded sections',
+        elements: [
+          {x:2,y:2,w:26,h:12,bg:'rgba(80,144,232,0.2)',label:'Categories & Groups',bold:true,color:'var(--accent2)',fontSize:9},
+          {x:72,y:2,w:26,h:12,bg:'rgba(232,160,32,0.2)',label:'Manage Groups',highlight:true,round:true,fontSize:9},
+          {x:2,y:18,w:96,h:72,bg:'rgba(255,255,255,0.04)',label:'',style:{border:'1px solid rgba(232,160,32,0.2)'}},
+          {x:4,y:20,w:20,h:6,bg:'transparent',label:'Manage Groups',bold:true,fontSize:9,color:'var(--accent2)'},
+          {x:4,y:28,w:8,h:8,bg:'#40c080',label:'',round:true,fontSize:8},
+          {x:14,y:28,w:20,h:8,bg:'rgba(255,255,255,0.06)',label:'Food',fontSize:9},
+          {x:36,y:28,w:14,h:8,bg:'rgba(255,255,255,0.06)',label:'3 cats',fontSize:9},
+          {x:4,y:40,w:8,h:8,bg:'#5090e8',label:'',round:true,fontSize:8},
+          {x:14,y:40,w:20,h:8,bg:'rgba(255,255,255,0.06)',label:'Housing',fontSize:9},
+          {x:36,y:40,w:14,h:8,bg:'rgba(255,255,255,0.06)',label:'2 cats',fontSize:9},
+          {x:4,y:56,w:8,h:8,bg:'#8b90a5',label:'',round:true,fontSize:8},
+          {x:14,y:56,w:30,h:8,bg:'rgba(255,255,255,0.08)',label:'New group name...',fontSize:9},
+          {x:46,y:56,w:8,h:8,bg:'rgba(64,192,128,0.3)',label:'+',fontSize:10,round:true,color:'white'},
+        ],
+        arrow: {x1:85,y1:14,x2:85,y2:2}
+      }
+    ]
+  },
+  payeeRules: {
+    title: 'How Auto-Match Rules work',
+    diagram: 'Auto-Match Rules \u2192 Import (auto-categorize matching transactions)\n                  \u2192 Dashboard bills (due days & frequency)\n                  \u2192 Display names (readable payee names)\nMatch Text: bank description text to match on\nDisplay Name: what you see instead of bank gibberish',
+    bullets: [
+      'Rules auto-match during Import \u2014 the keyword is searched in bank descriptions',
+      'Due days you set here control the bills section on the Dashboard',
+      'Frequency (Monthly/Quarterly/etc.) affects how the Dashboard tracks bill status',
+      'Clean Names replace messy bank descriptions with readable names everywhere'
+    ],
+    steps: [
+      { label: 'Add a keyword that matches your bank description text',
+        elements: [
+          {x:2,y:2,w:20,h:12,bg:'rgba(80,144,232,0.2)',label:'Payee Rules',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:96,h:36,bg:'rgba(255,255,255,0.04)',label:'',style:{border:'1px solid rgba(126,200,227,0.15)'}},
+          {x:4,y:20,w:25,h:8,bg:'transparent',label:'Add Payee Rule',bold:true,fontSize:9,color:'white'},
+          {x:4,y:30,w:22,h:12,bg:'rgba(255,255,255,0.08)',label:'WALMART',highlight:true,fontSize:10,style:{fontFamily:'monospace'}},
+          {x:28,y:30,w:22,h:12,bg:'rgba(255,255,255,0.08)',label:'Walmart',fontSize:10},
+          {x:52,y:30,w:22,h:12,bg:'rgba(255,255,255,0.08)',label:'Groceries',fontSize:10},
+          {x:76,y:30,w:18,h:12,bg:'rgba(64,192,128,0.3)',label:'+ Add',fontSize:9,round:true,color:'white'},
+          {x:4,y:44,w:90,h:6,bg:'transparent',label:'Keyword',fontSize:8,color:'var(--accent2)'},
+          {x:4,y:60,w:96,h:28,bg:'rgba(255,255,255,0.03)',label:'Existing Rules Table'},
+        ]
+      },
+      { label: 'Set a clean name and category for how it displays everywhere',
+        elements: [
+          {x:2,y:2,w:20,h:12,bg:'rgba(80,144,232,0.2)',label:'Payee Rules',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:96,h:36,bg:'rgba(255,255,255,0.04)',label:''},
+          {x:4,y:20,w:25,h:8,bg:'transparent',label:'Add Payee Rule',bold:true,fontSize:9,color:'white'},
+          {x:4,y:30,w:22,h:12,bg:'rgba(255,255,255,0.08)',label:'SHELL OIL',fontSize:10,style:{fontFamily:'monospace'}},
+          {x:28,y:30,w:22,h:12,bg:'rgba(232,160,32,0.15)',label:'Shell Gas',highlight:true,fontSize:10},
+          {x:52,y:30,w:22,h:12,bg:'rgba(232,160,32,0.15)',label:'Gas',highlight:true,fontSize:10},
+          {x:4,y:44,w:22,h:5,bg:'transparent',label:'Keyword',fontSize:8,color:'var(--text2)'},
+          {x:28,y:44,w:22,h:5,bg:'transparent',label:'Clean Name',fontSize:8,color:'var(--accent2)'},
+          {x:52,y:44,w:22,h:5,bg:'transparent',label:'Category',fontSize:8,color:'var(--accent2)'},
+          {x:4,y:56,w:90,h:8,bg:'transparent',label:'Bank shows: "POS SHELL OIL 42331" \u2192 You see: "Shell Gas"',fontSize:9,color:'var(--green)'},
+          {x:2,y:68,w:96,h:22,bg:'rgba(255,255,255,0.03)',label:'Rules Table'},
+        ]
+      },
+      { label: 'Set due day and frequency for recurring bills to show on Dashboard',
+        elements: [
+          {x:2,y:2,w:20,h:12,bg:'rgba(80,144,232,0.2)',label:'Payee Rules',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:96,h:36,bg:'rgba(255,255,255,0.04)',label:''},
+          {x:4,y:20,w:25,h:8,bg:'transparent',label:'Add Payee Rule',bold:true,fontSize:9,color:'white'},
+          {x:4,y:30,w:18,h:12,bg:'rgba(255,255,255,0.08)',label:'NETFLIX',fontSize:10,style:{fontFamily:'monospace'}},
+          {x:24,y:30,w:18,h:12,bg:'rgba(255,255,255,0.08)',label:'Netflix',fontSize:10},
+          {x:44,y:30,w:18,h:12,bg:'rgba(255,255,255,0.08)',label:'Streaming',fontSize:10},
+          {x:64,y:30,w:12,h:12,bg:'rgba(80,144,232,0.2)',label:'15',highlight:true,fontSize:11,bold:true},
+          {x:78,y:30,w:16,h:12,bg:'rgba(80,144,232,0.2)',label:'Monthly',highlight:true,fontSize:9},
+          {x:64,y:44,w:12,h:5,bg:'transparent',label:'Due Day',fontSize:8,color:'var(--accent2)'},
+          {x:78,y:44,w:16,h:5,bg:'transparent',label:'Frequency',fontSize:8,color:'var(--accent2)'},
+          {x:4,y:56,w:90,h:8,bg:'transparent',label:'Due day + frequency \u2192 Dashboard shows "Netflix due 15th"',fontSize:9,color:'var(--green)'},
+          {x:4,y:68,w:90,h:8,bg:'transparent',label:'Frequency options: Monthly, Quarterly, Biannual, Annual',fontSize:9,color:'var(--text2)'},
+        ]
+      }
+    ]
+  },
+  accounts: {
+    title: 'How Accounts work',
+    diagram: 'Accounts \u2192 Import (select target account)\n         \u2192 Transactions (filtered by account)\n         \u2192 Dashboard forecast (starting balance)\nStarting Balance + Transactions = Current Balance\nDebt accounts \u2192 Debt Payoff Planner below',
+    bullets: [
+      'Each import targets a specific account \u2014 create accounts before importing',
+      'Starting balance is the balance before your earliest imported transaction',
+      'Last 4 digits of account number are used to auto-detect transfers',
+      'Debt accounts (Credit Card/Loan) unlock the Debt Payoff Planner section'
+    ],
+    steps: [
+      { label: 'Create accounts with starting balances before importing',
+        elements: [
+          {x:2,y:2,w:18,h:12,bg:'rgba(80,144,232,0.2)',label:'Accounts',bold:true,color:'var(--accent2)'},
+          {x:76,y:2,w:22,h:12,bg:'rgba(64,192,128,0.3)',label:'+ New Account',highlight:true,round:true,color:'white',fontSize:9},
+          {x:2,y:18,w:47,h:40,bg:'rgba(64,192,128,0.08)',label:'Checking \u2022\u2022\u20223456\n\nBalance: $4,230\nStarting: $2,000',fontSize:9,style:{border:'1px solid rgba(64,192,128,0.2)',padding:'8px',alignItems:'flex-start',textAlign:'left'}},
+          {x:51,y:18,w:47,h:40,bg:'rgba(80,144,232,0.08)',label:'Savings \u2022\u2022\u20227890\n\nBalance: $12,500\nStarting: $10,000',fontSize:9,style:{border:'1px solid rgba(80,144,232,0.2)',padding:'8px',alignItems:'flex-start',textAlign:'left'}},
+          {x:2,y:64,w:96,h:26,bg:'rgba(255,255,255,0.03)',label:'Starting Balance + All Transactions = Current Balance'},
+        ],
+        arrow: {x1:87,y1:14,x2:87,y2:2}
+      },
+      { label: 'Last 4 digits auto-detect transfers between your accounts',
+        elements: [
+          {x:2,y:2,w:18,h:12,bg:'rgba(80,144,232,0.2)',label:'Accounts',bold:true,color:'var(--accent2)'},
+          {x:10,y:20,w:80,h:60,bg:'rgba(30,40,80,0.95)',label:'',style:{border:'1px solid rgba(126,200,227,0.2)',borderRadius:'10px'}},
+          {x:14,y:24,w:30,h:8,bg:'transparent',label:'New Account',bold:true,fontSize:10,color:'white'},
+          {x:14,y:36,w:35,h:10,bg:'rgba(255,255,255,0.08)',label:'Name: Checking',fontSize:9},
+          {x:52,y:36,w:35,h:10,bg:'rgba(255,255,255,0.08)',label:'Type: Checking',fontSize:9},
+          {x:14,y:50,w:35,h:10,bg:'rgba(255,255,255,0.08)',label:'Starting Balance: $2,000',fontSize:9},
+          {x:52,y:50,w:35,h:10,bg:'rgba(80,144,232,0.2)',label:'Last 4: 3456',highlight:true,fontSize:9},
+          {x:14,y:66,w:72,h:8,bg:'transparent',label:'Import detects "TRANSFER XXXXX3456" \u2192 auto-pairs',fontSize:9,color:'var(--green)'},
+        ]
+      },
+      { label: 'Debt accounts (Credit Card/Loan) unlock the payoff planner',
+        elements: [
+          {x:2,y:2,w:18,h:12,bg:'rgba(80,144,232,0.2)',label:'Accounts',bold:true,color:'var(--accent2)'},
+          {x:2,y:18,w:47,h:30,bg:'rgba(64,192,128,0.08)',label:'Checking \u2022\u2022\u20223456\nBalance: $4,230',fontSize:9,style:{border:'1px solid rgba(64,192,128,0.2)'}},
+          {x:51,y:18,w:47,h:30,bg:'rgba(224,80,80,0.08)',label:'Visa \u2022\u2022\u20221234\nBalance: -$2,800\nAPR: 19.99%',fontSize:9,style:{border:'1px solid rgba(224,80,80,0.2)'}},
+          {x:2,y:54,w:96,h:36,bg:'rgba(208,96,160,0.08)',label:'Debt Payoff Planner\n\nStrategy: Avalanche | Snowball\nMonths to payoff: 14\nInterest saved: $340',highlight:true,fontSize:9,style:{border:'1px solid rgba(208,96,160,0.2)',textAlign:'left',padding:'8px',alignItems:'flex-start'}},
+        ],
+        arrow: {x1:74,y1:48,x2:50,y2:54}
+      }
+    ]
+  }
+};
 
 // Compass Rose SVG – 8-point style (no circle – shield provides the frame)
 function CompassRose({size=24, color='currentColor', className='', style={}}) {
@@ -663,14 +1264,41 @@ function Stat({label,value,sub,color}) {
 }
 
 function Modal({onClose, children}) {
+  const modalRef = useRef(null);
+  const previousFocus = useRef(null);
+  useEffect(()=>{
+    previousFocus.current = document.activeElement;
+    const el = modalRef.current;
+    if(el) { const first = el.querySelector('input,select,textarea,button,[tabindex]'); if(first) first.focus(); }
+    const handleKey = (e) => {
+      if(e.key==='Escape') { onClose(); return; }
+      if(e.key==='Tab' && el) {
+        const focusable = el.querySelectorAll('input,select,textarea,button,[tabindex]:not([tabindex="-1"])');
+        if(focusable.length===0) return;
+        const first=focusable[0], last=focusable[focusable.length-1];
+        if(e.shiftKey && document.activeElement===first) { e.preventDefault(); last.focus(); }
+        else if(!e.shiftKey && document.activeElement===last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return ()=>{ document.removeEventListener('keydown', handleKey); if(previousFocus.current) previousFocus.current.focus(); };
+  },[]);
   return h('div',{className:'modal-overlay',onClick:e=>{if(e.target===e.currentTarget)onClose();}},
-    h('div',{className:'modal animate-in', role:'dialog', 'aria-modal':'true'}, children)
+    h('div',{ref:modalRef, className:'modal animate-in', role:'dialog', 'aria-modal':'true',
+      'aria-label':'Dialog'},
+      h('button',{onClick:onClose, 'aria-label':'Close dialog',
+        style:{position:'absolute',top:12,right:12,background:'none',border:'none',fontSize:18,cursor:'pointer',color:'var(--card-text2)',padding:4,borderRadius:4}},
+        '✕'),
+      children)
   );
 }
 
 function Toast({message, onDone}) {
-  useEffect(()=>{ const t=setTimeout(onDone,2500); return ()=>clearTimeout(t); },[]);
-  return h('div',{className:'toast', role:'status', 'aria-live':'polite'}, message);
+  useEffect(()=>{ const t=setTimeout(onDone,4000); return ()=>clearTimeout(t); },[]);
+  return h('div',{className:'toast', role:'alert', 'aria-live':'assertive', onClick:onDone, style:{cursor:'pointer'},title:'Click to dismiss'},
+    h('span',null,message),
+    h('button',{onClick:onDone,'aria-label':'Dismiss notification',style:{background:'none',border:'none',marginLeft:12,fontSize:14,cursor:'pointer',color:'var(--card-text2)',padding:2}},'✕')
+  );
 }
 
 // ── License Gate ──────────────────────────────────────
@@ -695,11 +1323,12 @@ function LicenseGate({onActivate, onCancel}) {
         h('input',{
           className:'input', value:key, onChange:e=>setKey(e.target.value),
           placeholder:'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX',
-          'aria-label':'License key',
+          'aria-label':'License key', 'aria-required':'true',
+          'aria-invalid':!!error, 'aria-describedby':error?'license-error':undefined,
           style:{width:'100%',fontFamily:'monospace',textAlign:'center',fontSize:13},
           onKeyDown:e=>{ if(e.key==='Enter'&&key.trim()) submit(); }
         }),
-        error && h('div',{style:{color:'var(--red)',fontSize:12},role:'alert'}, error),
+        error && h('div',{id:'license-error',style:{color:'var(--red)',fontSize:12},role:'alert'}, error),
         h('button',{className:'btn primary', onClick:submit, disabled:loading||!key.trim(), style:{width:'100%'}},
           loading ? 'Validating...' : '🔑 Activate License'),
         h('div',{style:{fontSize:12,color:'var(--text2)',marginTop:8}},
@@ -769,6 +1398,53 @@ function OnboardingTour({step, setStep, onClose}) {
           ? h('button',{className:'btn primary', onClick:()=>{ localStorage.setItem('ambit_tour_seen','1'); onClose(); }}, '✨ Start Exploring')
           : h('button',{className:'btn primary', onClick:()=>setStep(step+1)}, 'Next →'),
         h('span',{className:'tour-skip', ...a11yClick(()=>{ localStorage.setItem('ambit_tour_seen','1'); onClose(); }, 'Skip tour')}, 'Skip tour')
+      )
+    )
+  );
+}
+
+// ── First-Run Setup Wizard ──────────────────────────────
+function FirstRunWizard({setPage, onDismiss}) {
+  const [step, setStep] = useState(0);
+  const steps = [
+    { icon:'👋', title:'Welcome to Ambit Budget!',
+      desc:'Let\'s get you set up in 4 quick steps. Your data stays 100% on this device — nothing is sent to any server.',
+      action:null },
+    { icon:'🏦', title:'Step 1: Create an Account',
+      desc:'Start by adding your primary bank account. You\'ll need the account name, type (checking/savings/credit card), and your current balance.',
+      action:'accounts', actionLabel:'Go to Accounts →' },
+    { icon:'📥', title:'Step 2: Import Bank Data',
+      desc:'Export a CSV from your bank\'s website, then use Import Bank Data in the sidebar to load it. The system auto-detects columns.',
+      action:'import', actionLabel:'Go to Import →' },
+    { icon:'📖', title:'Step 3: Set Up Auto-Match Rules',
+      desc:'Create rules to auto-categorize transactions. For example: match "WALMART" → Groceries. Rules apply retroactively and to all future imports.',
+      action:'budget', actionLabel:'Go to Budget → Auto-Match Rules →' },
+    { icon:'💰', title:'Step 4: Set Your Budgets',
+      desc:'Set monthly budget targets for each spending category. The Dashboard will track your progress and forecast your balance.',
+      action:'budget', actionLabel:'Go to Budget →' },
+    { icon:'🎉', title:'You\'re All Set!',
+      desc:'Head to the Dashboard to see your budget overview, bills tracker, and spending analysis. You can always access help by clicking the "?" bar on any page.',
+      action:'dashboard', actionLabel:'Go to Dashboard →' }
+  ];
+  const s = steps[step];
+  const isLast = step === steps.length - 1;
+  return h('div',{className:'modal-overlay'},
+    h('div',{className:'modal animate-in', role:'dialog', 'aria-modal':'true', 'aria-label':'Setup wizard', style:{maxWidth:440}},
+      h('div',{style:{display:'flex',gap:4,justifyContent:'center',marginBottom:16}},
+        steps.map((_,i)=>h('div',{key:i,style:{width:i===step?24:8,height:4,borderRadius:2,background:i<=step?'var(--accent)':'rgba(255,255,255,0.15)',transition:'all 0.3s'}}))
+      ),
+      h('div',{style:{fontSize:48,textAlign:'center',marginBottom:8}},s.icon),
+      h('div',{style:{fontSize:17,fontWeight:700,textAlign:'center',marginBottom:8,color:'var(--card-text)'}},s.title),
+      h('div',{style:{fontSize:13,color:'var(--card-text2)',textAlign:'center',lineHeight:1.7,marginBottom:20}},s.desc),
+      s.action && h('button',{className:'btn primary',style:{width:'100%',marginBottom:8},onClick:()=>{
+        setPage(s.action);
+        onDismiss();
+      }}, s.actionLabel),
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+        step>0 ? h('button',{className:'btn',onClick:()=>setStep(step-1)},'← Back') : h('span'),
+        !isLast ? h('button',{className:'btn primary',onClick:()=>setStep(step+1)},'Next →')
+          : !s.action ? h('button',{className:'btn primary',onClick:()=>{setPage('dashboard');onDismiss();}},'Get Started →') : null,
+        h('span',{style:{fontSize:11,color:'var(--card-text2)',cursor:'pointer',opacity:0.6},...a11yClick(()=>onDismiss(),'Skip setup')},'Skip')
       )
     )
   );
@@ -880,8 +1556,8 @@ function MonthlyReviewModal({categories, transactions, onClose, onUpdateBudgets}
 }
 
 // ── Main App ────────────────────────────────────────────
-function App() {
-  const saved = useMemo(()=>loadState(),[]);
+function App({idbData}) {
+  const saved = useMemo(()=>idbData || loadState(),[]);
 
   // URL mode override (check first — used by tour & mode init)
   const urlMode = useMemo(()=> new URLSearchParams(window.location.search).get('mode'), []);
@@ -992,12 +1668,39 @@ function App() {
   const [page, setPage] = useState('dashboard');
   const defaultAcct = localStorage.getItem('ambit_default_account') || 'all';
   const [moreOpen, setMoreOpen] = useState(false);
+  const [highContrast, setHighContrast] = useState(()=>localStorage.getItem('ambit_high_contrast')==='1');
+  useEffect(()=>{
+    document.documentElement.classList.toggle('high-contrast', highContrast);
+    localStorage.setItem('ambit_high_contrast', highContrast?'1':'0');
+  },[highContrast]);
   const [toast, setToast] = useState(null);
   const [showReview, setShowReview] = useState(false);
+  const [showFirstRun, setShowFirstRun] = useState(false);
+  // Backup reminder
+  const [backupDismissed, setBackupDismissed] = useState(false);
+  const backupNeeded = useMemo(()=>{
+    if(backupDismissed) return null;
+    const last = localStorage.getItem('ambit_last_backup');
+    const snoozed = localStorage.getItem('ambit_backup_snoozed');
+    if(snoozed && (Date.now() - new Date(snoozed).getTime()) < 3*86400000) return null;
+    if(!last) return {days:null, never:true};
+    const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+    if(days >= 7) return {days, never:false};
+    return null;
+  },[backupDismissed, toast]); // re-check after toast (export triggers toast)
+
+  // Version update check
+  const [updateAvailable, setUpdateAvailable] = useState(null);
+  useEffect(()=>{
+    fetch(VERSION_CHECK_URL).then(r=>r.json()).then(d=>{
+      if(d.version && d.version !== APP_VERSION) setUpdateAvailable(d);
+    }).catch(()=>{}); // silent fail if offline or server down
+  },[]);
 
   // Save "My Budget" data on change (never save demo data)
   useEffect(()=>{
-    saveState({accounts: myAccounts, categories: myCategories, dictionary: myDictionary, transactions: myTransactions, groups: myGroups});
+    const state = {accounts: myAccounts, categories: myCategories, dictionary: myDictionary, transactions: myTransactions, groups: myGroups};
+    AmbitDB.save(state); // Saves to IndexedDB + mirrors to localStorage
   },[myAccounts, myCategories, myDictionary, myTransactions, myGroups]);
 
   // One-time migration: fix orphaned positive transfer transactions missing their negative counterpart
@@ -1032,6 +1735,13 @@ function App() {
       });
     }
     localStorage.setItem('ambit_transfer_migration_v1','done');
+  },[mode]);
+
+  // First-run wizard — show when My Budget has no accounts
+  useEffect(()=>{
+    if(mode==='mine' && isLicensed && myAccounts.length===0 && !localStorage.getItem('ambit_firstrun_done')) {
+      setShowFirstRun(true);
+    }
   },[mode]);
 
   // Monthly budget review — trigger once per month on first open in 'mine' mode
@@ -1082,13 +1792,9 @@ function App() {
 
   const navItems = [
     { id:'dashboard', icon:'📊', label:'Dashboard' },
-    { id:'import', icon:'📥', label:'Import' },
-    { id:'transactions', icon:'📋', label:'Transactions' },
-    { id:'budget', icon:'💰', label:'Budget' },
-    { id:'debt', icon:'💳', label:'Debt Planner' },
     { id:'accounts', icon:'🏦', label:'Accounts' },
-    { id:'categories', icon:'📂', label:'Categories' },
-    { id:'dictionary', icon:'📖', label:'Payee Rules' },
+    { id:'budget', icon:'💰', label:'Budget' },
+    { id:'transactions', icon:'📋', label:'Transactions' },
   ];
 
   // Splash screen on first load
@@ -1126,9 +1832,15 @@ function App() {
       }
     }),
 
+    // First-run setup wizard
+    showFirstRun && h(FirstRunWizard, {setPage, onDismiss:()=>{
+      localStorage.setItem('ambit_firstrun_done','1');
+      setShowFirstRun(false);
+    }}),
+
     // Sidebar
-    h('nav',{className:'sidebar'},
-      h('div',{className:'logo', style:{display:'flex',alignItems:'center',gap:10}},
+    h('nav',{className:'sidebar', 'aria-label':'Main navigation'},
+      h('h1',{className:'logo', style:{display:'flex',alignItems:'center',gap:10}},
         h(ShieldLogo, {size:34}),
         h('div',null, 'Ambit', h('span',{style:{display:'block',fontSize:10,letterSpacing:1,textTransform:'uppercase',color:'var(--text2)',marginTop:1}},'Budget Pro'))
       ),
@@ -1149,12 +1861,17 @@ function App() {
         ...a11yClick(()=>setPage(n.id)), 'aria-current':page===n.id?'page':undefined
       }, h('span',{className:'icon','aria-hidden':'true'},n.icon), h('span',null,n.label))),
       h('div',{className:'nav-sep'}),
+      h('div',{style:{padding:'4px 20px 6px',fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)',opacity:0.5}},'Data'),
+      h('div',{className:'nav-item'+(page==='import'?' active':''), ...a11yClick(()=>setPage('import'))}, h('span',{className:'icon','aria-hidden':'true'},'📥'), h('span',null,'Import Bank Data')),
       h('div',{className:'nav-item', ...a11yClick(()=>{
-        if(confirm('Export all data as JSON?')) {
-          const blob = new Blob([JSON.stringify({accounts,categories,dictionary,transactions},null,2)],{type:'application/json'});
+        if(confirm('Export all data as JSON backup?')) {
+          const blob = new Blob([JSON.stringify({accounts,categories,dictionary,transactions,groups},null,2)],{type:'application/json'});
           const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup.json'; a.click();
+          localStorage.setItem('ambit_last_backup', new Date().toISOString());
+          setBackupDismissed(true);
+          showToast('✅ Backup saved');
         }
-      })}, h('span',{className:'icon','aria-hidden':'true'},'💾'), h('span',null,'Export')),
+      })}, h('span',{className:'icon','aria-hidden':'true'},'💾'), h('span',null,'Export Backup')),
       h('div',{className:'nav-item', ...a11yClick(()=>{
         const inp = document.createElement('input'); inp.type='file'; inp.accept='.json';
         inp.onchange = e => {
@@ -1167,16 +1884,22 @@ function App() {
               if(d.categories) setCategories(d.categories.map(c=>({...c, catType:normCatType(c)})));
               if(d.dictionary) setDictionary(d.dictionary);
               if(d.transactions) setTransactions(d.transactions);
-              showToast('✅ Data imported successfully');
+              if(d.groups) setGroups(d.groups);
+              showToast('✅ Data restored successfully');
             } catch(e) { showToast('❌ Invalid file'); }
           };
           r.readAsText(f);
         };
         inp.click();
-      })}, h('span',{className:'icon','aria-hidden':'true'},'📂'), h('span',null,'Import File')),
+      })}, h('span',{className:'icon','aria-hidden':'true'},'📂'), h('span',null,'Restore Backup')),
+      h('div',{className:'nav-sep'}),
       h('div',{className:'nav-item', ...a11yClick(()=>{
         window.location.href='mailto:'+_fb()+'?subject=Ambit Budget Pro Feedback';
       })}, h('span',{className:'icon','aria-hidden':'true'},'💬'), h('span',null,'Feedback')),
+      h('div',{className:'nav-item', ...a11yClick(()=>setHighContrast(p=>!p), 'Toggle high contrast mode')},
+        h('span',{className:'icon','aria-hidden':'true'},'🔲'),
+        h('span',null, highContrast?'Standard Mode':'High Contrast')
+      ),
       h('div',{className:'nav-sep'}),
       isLicensed
         ? h('div',{style:{padding:'8px 16px',fontSize:11,display:'flex',flexDirection:'column',gap:4}},
@@ -1199,90 +1922,27 @@ function App() {
     ),
 
     // Bottom Tab Bar (hidden on desktop via CSS, shown at ≤768px)
-    h('div',{className:'bottom-tabs'},
+    h('nav',{className:'bottom-tabs', 'aria-label':'Mobile navigation'},
       [{id:'dashboard',icon:'📊',label:'Dashboard'},
-       {id:'transactions',icon:'📋',label:'Txns'},
-       {id:'import',icon:'📥',label:'Import'},
+       {id:'accounts',icon:'🏦',label:'Accounts'},
        {id:'budget',icon:'💰',label:'Budget'},
-       {id:'_more',icon:'⋯',label:'More'}
+       {id:'transactions',icon:'📋',label:'Txns'},
+       {id:'import',icon:'📥',label:'Import'}
       ].map(t => h('div',{
         key:t.id,
-        className:'tab-item'+(t.id==='_more'? (moreOpen?' active':'') : (page===t.id?' active':'')),
-        ...a11yClick(()=>{
-          if(t.id==='_more'){ setMoreOpen(!moreOpen); }
-          else { setPage(t.id); setMoreOpen(false); }
-        }),
-        role:'tab', 'aria-selected':t.id==='_more'?moreOpen:page===t.id
+        className:'tab-item'+(page===t.id?' active':''),
+        ...a11yClick(()=>setPage(t.id)),
+        role:'tab', 'aria-selected':page===t.id
       }, h('span',{className:'tab-icon','aria-hidden':'true'},t.icon), t.label))
     ),
 
-    // More menu overlay (slides up from bottom tabs)
-    moreOpen && h('div',{className:'more-menu-overlay', onClick:()=>setMoreOpen(false)},
-      h('div',{className:'more-menu', onClick:e=>e.stopPropagation()},
-        h('div',{style:{width:40,height:4,borderRadius:2,background:'rgba(255,255,255,0.3)',margin:'0 auto 12px'}}),
-        [{id:'debt',icon:'💳',label:'Debt Planner'},
-         {id:'accounts',icon:'🏦',label:'Accounts'},
-         {id:'categories',icon:'📂',label:'Categories'},
-         {id:'dictionary',icon:'📖',label:'Payee Rules'}
-        ].map(t => h('div',{
-          key:t.id,
-          className:'more-item'+(page===t.id?' active':''),
-          ...a11yClick(()=>{ setPage(t.id); setMoreOpen(false); }), role:'menuitem'
-        }, h('span',{'aria-hidden':'true'},t.icon), t.label)),
-        h('div',{style:{borderTop:'1px solid rgba(255,255,255,0.1)',margin:'8px 0'}}),
-        h('div',{className:'more-item', role:'menuitem', ...a11yClick(()=>{
-          setMoreOpen(false);
-          if(confirm('Export all data as JSON?')) {
-            const blob = new Blob([JSON.stringify({accounts,categories,dictionary,transactions},null,2)],{type:'application/json'});
-            const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup.json'; a.click();
-          }
-        })}, h('span',{'aria-hidden':'true'},'💾'), 'Export'),
-        h('div',{className:'more-item', role:'menuitem', ...a11yClick(()=>{
-          setMoreOpen(false);
-          const inp = document.createElement('input'); inp.type='file'; inp.accept='.json';
-          inp.onchange = e => {
-            const f = e.target.files[0]; if(!f) return;
-            const r = new FileReader();
-            r.onload = ev => {
-              try {
-                const d = JSON.parse(ev.target.result);
-                if(d.accounts) setAccounts(d.accounts);
-                if(d.categories) setCategories(d.categories.map(c=>({...c, catType:normCatType(c)})));
-                if(d.dictionary) setDictionary(d.dictionary);
-                if(d.transactions) setTransactions(d.transactions);
-                showToast('✅ Data imported successfully');
-              } catch(e) { showToast('❌ Invalid file'); }
-            };
-            r.readAsText(f);
-          };
-          inp.click();
-        })}, h('span',{'aria-hidden':'true'},'📂'), 'Import File'),
-        h('div',{className:'more-item', role:'menuitem', ...a11yClick(()=>{
-          setMoreOpen(false);
-          window.location.href='mailto:'+_fb()+'?subject=Ambit Budget Pro Feedback';
-        })}, h('span',{'aria-hidden':'true'},'💬'), 'Feedback'),
-        !demoHidden && h('div',{style:{borderTop:'1px solid rgba(255,255,255,0.1)',margin:'8px 0'}}),
-        !demoHidden && h('div',{style:{display:'flex',gap:8,padding:'4px 24px'}},
-          h('div',{className:'mode-tab'+(mode==='demo'?' active':''),
-            style:{flex:1,padding:'6px 0',textAlign:'center',fontSize:11,fontWeight:600,letterSpacing:0.5,textTransform:'uppercase',cursor:'pointer',borderRadius:6,color:mode==='demo'?'var(--accent2)':'var(--text2)',background:mode==='demo'?'rgba(232,160,32,0.12)':'transparent'},
-            ...a11yClick(()=>{setMode('demo');setPage('dashboard');setMoreOpen(false);}), role:'tab', 'aria-selected':mode==='demo'
-          }, h('span',{className:'mode-dot demo','aria-hidden':'true'}), 'Demo'),
-          h('div',{className:'mode-tab'+(mode==='mine'?' active':''),
-            style:{flex:1,padding:'6px 0',textAlign:'center',fontSize:11,fontWeight:600,letterSpacing:0.5,textTransform:'uppercase',cursor:'pointer',borderRadius:6,color:mode==='mine'?'var(--accent2)':'var(--text2)',background:mode==='mine'?'rgba(232,160,32,0.12)':'transparent'},
-            ...a11yClick(()=>{
-              if(!isLicensed){setShowLicenseGate(true);setMoreOpen(false);return;}
-              setMode('mine');setPage('dashboard');setMoreOpen(false);
-            }), role:'tab', 'aria-selected':mode==='mine'
-          }, h('span',{className:'mode-dot mine','aria-hidden':'true'}), 'My Budget')
-        )
-      )
-    ),
+    // More menu removed — all 5 pages fit in bottom tabs now
 
     // Compass watermark (fixed behind all content)
     h('div',{className:'compass-watermark','aria-hidden':'true'}, h(CompassRose, {size:500, color:'#7ec8e3'})),
 
     // Main content
-    h('main',{className:'main'},
+    h('main',{id:'main-content', className:'main', 'aria-label':'Page content'},
       isDemo && !demoHidden && h('div',{className:'demo-banner'},
         h('span',null,'💡'),
         h('span',null,'You\'re viewing sample data. Switch to '), h('strong',{style:{cursor:'pointer',textDecoration:'underline'}, ...a11yClick(()=>{
@@ -1304,14 +1964,47 @@ function App() {
           }, 'Hide demo mode')},'✕ Hide Demo')
         )
       ),
-      page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, groupColors, defaultAcct}),
-      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, setDictionary, categories, setCategories, catMap, categorize, showToast, accounts, groupList, groups, setGroups, groupColors}),
-      page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct}),
-      page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns, dictionary, groupColors, accounts, defaultAcct}),
-      page==='debt' && h(DebtPlannerPage, {accounts, setAccounts, transactions:liveTxns, tier, isDemo, showToast}),
+      // Update available banner
+      updateAvailable && h('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',marginBottom:12,background:'rgba(80,144,232,0.12)',border:'1px solid rgba(80,144,232,0.3)',borderRadius:8,fontSize:13,color:'var(--text)'},role:'status'},
+        h('span',{'aria-hidden':'true'},'🆕'),
+        h('span',{style:{flex:1}},
+          'Update available: v'+updateAvailable.version,
+          updateAvailable.notes ? ' — '+updateAvailable.notes : ''
+        ),
+        h('button',{className:'btn sm primary',onClick:()=>{
+          if('serviceWorker' in navigator) navigator.serviceWorker.getRegistration().then(r=>{if(r)r.update();});
+          window.location.reload(true);
+        }},'Update Now'),
+        h('button',{style:{background:'none',border:'none',cursor:'pointer',color:'var(--text2)',fontSize:16,padding:2},'aria-label':'Dismiss update',onClick:()=>setUpdateAvailable(null)},'✕')
+      ),
+
+      // Backup reminder banner
+      !isDemo && backupNeeded && h('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',marginBottom:12,background:'rgba(232,160,32,0.1)',border:'1px solid rgba(232,160,32,0.25)',borderRadius:8,fontSize:13,color:'var(--text)'},role:'status'},
+        h('span',{'aria-hidden':'true'},'🔒'),
+        h('span',{style:{flex:1}},
+          backupNeeded.never
+            ? 'Your data is stored locally on this device. Create a backup to protect against data loss.'
+            : 'Last backup: '+backupNeeded.days+' days ago. Your data is stored locally on this device.'
+        ),
+        h('button',{className:'btn sm primary',onClick:()=>{
+          const blob = new Blob([JSON.stringify({accounts,categories,dictionary,transactions,groups},null,2)],{type:'application/json'});
+          const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+          localStorage.setItem('ambit_last_backup', new Date().toISOString());
+          setBackupDismissed(true);
+          showToast('✅ Backup saved');
+        }},'Download Backup'),
+        h('button',{className:'btn sm',onClick:()=>{
+          localStorage.setItem('ambit_backup_snoozed', new Date().toISOString());
+          setBackupDismissed(true);
+        }},'Later'),
+        h('button',{style:{background:'none',border:'none',cursor:'pointer',color:'var(--text2)',fontSize:16,padding:2},'aria-label':'Dismiss backup reminder',onClick:()=>setBackupDismissed(true)},'✕')
+      ),
+
+      page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, groupColors, defaultAcct, setPage}),
+      page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors}),
+      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage}),
+      page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns, setTransactions, catMap, dictionary, setDictionary, groupColors, accounts, defaultAcct, groups, setGroups, groupList, showToast}),
       page==='accounts' && h(AccountsPage, {accounts, setAccounts, transactions:liveTxns, setTransactions, catMap, showToast, accountLimit, tier, isDemo}),
-      page==='categories' && h(CategoriesPage, {categories, setCategories, dictionary, showToast, groups, setGroups, groupList, groupColors}),
-      page==='dictionary' && h(DictionaryPage, {dictionary, setDictionary, categories, showToast, groupColors}),
     ),
 
     toast && h(Toast, {message:toast, onDone:()=>setToast(null)})
@@ -1436,6 +2129,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast, group
   },[categories]);
 
   return h('div',{className:'animate-in'},
+    h(HelpBar, HELP_CONTENT.categoriesGroups),
     h('div',{className:'page-header', style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}},
       h('div',null,
         h('h2',null,'📂 Categories', h(InfoPill,{text:'Organize your spending into categories (e.g., Groceries, Rent) and groups (e.g., Food, Housing). Set each as Income, Fixed, Discretionary, or Transfer. Budget amounts are set on the Budget page.'})),
@@ -1469,7 +2163,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast, group
               h('td',null,
                 editGrpIdx===i
                   ? h('div',{style:{display:'flex',gap:3,flexWrap:'wrap'}},
-                      COLOR_PRESETS.map(c=>h('div',{key:c,onClick:()=>setEditGrpColor(c),style:{width:16,height:16,borderRadius:'50%',background:c,cursor:'pointer',border:editGrpColor===c?'2px solid white':'2px solid transparent'}}))
+                      COLOR_PRESETS.map(c=>h('div',{key:c,...a11yClick(()=>setEditGrpColor(c),'Select color '+c),style:{width:16,height:16,borderRadius:'50%',background:c,cursor:'pointer',border:editGrpColor===c?'2px solid white':'2px solid transparent'}}))
                     )
                   : h('div',{style:{width:16,height:16,borderRadius:'50%',background:g.color}})
               ),
@@ -1496,7 +2190,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast, group
           h('tr',null,
             h('td',null,
               h('div',{style:{display:'flex',gap:3,flexWrap:'wrap'}},
-                COLOR_PRESETS.slice(0,7).map(c=>h('div',{key:c,onClick:()=>setNewGrpColor(c),style:{width:14,height:14,borderRadius:'50%',background:c,cursor:'pointer',border:newGrpColor===c?'2px solid white':'2px solid transparent'}}))
+                COLOR_PRESETS.slice(0,7).map(c=>h('div',{key:c,...a11yClick(()=>setNewGrpColor(c),'Select color '+c),style:{width:14,height:14,borderRadius:'50%',background:c,cursor:'pointer',border:newGrpColor===c?'2px solid white':'2px solid transparent'}}))
               )
             ),
             h('td',null, h('input',{className:'input',value:newGrpName,onChange:e=>setNewGrpName(e.target.value),onKeyDown:e=>{if(e.key==='Enter')addGroup();},placeholder:'New group name...',style:{fontSize:12,padding:'3px 6px',width:140}})),
@@ -1604,7 +2298,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast, group
 }
 
 // ── Dictionary (Payee Rules) Page ───────────────────────
-function DictionaryPage({dictionary, setDictionary, categories, showToast, groupColors}) {
+function DictionaryPage({dictionary, setDictionary, categories, showToast, groupColors, transactions, setTransactions, catMap}) {
   const [keyword, setKeyword] = useState('');
   const [cleanName, setCleanName] = useState('');
   const [category, setCategory] = useState('');
@@ -1627,7 +2321,28 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast, group
     if(frequency && frequency!=='monthly') entry.frequency = frequency;
     setDictionary(prev=>[...prev, entry]);
     setKeyword(''); setCleanName(''); setDueDay(''); setFrequency('monthly');
-    showToast('✅ Rule added');
+    // Retroactive application: check existing uncategorized transactions
+    const kw = entry.keyword;
+    const matching = (transactions||[]).filter(t =>
+      t.category === 'Uncategorized' &&
+      normalizeForMatch(t.description).includes(normalizeForMatch(kw))
+    );
+    if(matching.length > 0 && setTransactions) {
+      if(confirm('Apply this rule to '+matching.length+' existing transaction(s) matching "'+kw+'"?')) {
+        const cat = (catMap||{})[entry.category];
+        setTransactions(prev => prev.map(t => {
+          if(t.category === 'Uncategorized' && normalizeForMatch(t.description).includes(normalizeForMatch(kw))) {
+            return {...t, cleanName: entry.cleanName, category: entry.category, group: cat?.group||'Other', catType: cat?.catType||'discretionary'};
+          }
+          return t;
+        }));
+        showToast('✅ Rule added + applied to '+matching.length+' transactions');
+      } else {
+        showToast('✅ Rule added (future imports only)');
+      }
+    } else {
+      showToast('✅ Rule added');
+    }
   };
 
   const del = (idx) => {
@@ -1666,10 +2381,11 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast, group
   const catNames = categories.map(c=>c.name);
 
   return h('div',{className:'animate-in'},
+    h(HelpBar, HELP_CONTENT.payeeRules),
     h('div',{className:'page-header', style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}},
       h('div',null,
-        h('h2',null,'📖 Payee Rules', h(InfoPill,{text:'Rules map bank descriptions to clean payee names and categories. When you import transactions, any description containing the keyword is automatically categorized. Set due days and frequency for recurring bills.'})),
-        h('p',null,'Map transaction keywords to categories for automatic matching.')
+        h('h2',null,'📖 Auto-Match Rules', h(InfoPill,{text:'Rules map bank descriptions to display names and categories. When you import transactions, any description containing the match text is automatically categorized. Set due days and frequency for recurring bills.'})),
+        h('p',null,'Map bank description text to categories for automatic matching.')
       ),
       h('div',{style:{display:'flex',gap:8}},
         h('button',{className:'btn'+(bulkMode?' primary':''), onClick:()=>setBulkMode(!bulkMode)}, bulkMode?'Single Add':'Bulk Import')
@@ -1685,16 +2401,16 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast, group
     h('div',{className:'card', style:{marginBottom:16}},
       !bulkMode
         ? h('div',null,
-            h('h3',null, h('span',{className:'icon'},'⚡'), 'Add Payee Rule'),
+            h('h3',null, h('span',{className:'icon'},'⚡'), 'Add Auto-Match Rule'),
             categories.length === 0
               ? h('p',{style:{color:'var(--text2)',fontSize:13}}, '⚠️ Create categories first before adding payee rules.')
               : h('div',{style:{display:'flex',gap:10,alignItems:'flex-end',flexWrap:'wrap'}},
                   h('div',{style:{flex:1,minWidth:140}},
-                    h('label',{htmlFor:'rule-keyword',style:{fontSize:11,color:'var(--text2)',display:'block',marginBottom:3}},'Keyword'),
+                    h('label',{htmlFor:'rule-keyword',style:{fontSize:11,color:'var(--text2)',display:'block',marginBottom:3}},'Match Text'),
                     h('input',{id:'rule-keyword',className:'input',value:keyword,onChange:e=>setKeyword(e.target.value),placeholder:'e.g. WALMART',style:{width:'100%'}})
                   ),
                   h('div',{style:{flex:1,minWidth:140}},
-                    h('label',{htmlFor:'rule-cleanname',style:{fontSize:11,color:'var(--text2)',display:'block',marginBottom:3}},'Clean Name'),
+                    h('label',{htmlFor:'rule-cleanname',style:{fontSize:11,color:'var(--text2)',display:'block',marginBottom:3}},'Display Name'),
                     h('input',{id:'rule-cleanname',className:'input',value:cleanName,onChange:e=>setCleanName(e.target.value),placeholder:'e.g. Walmart',style:{width:'100%'}})
                   ),
                   h('div',{style:{flex:1,minWidth:140}},
@@ -1734,7 +2450,7 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast, group
     h('div',{className:'card'},
       h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,flexWrap:'wrap',gap:8}},
         h('h3',{style:{margin:0}}, h('span',{className:'icon'},'📖'), 'Dictionary ('+dictionary.length+')'),
-        h('input',{className:'input',value:filter,onChange:e=>setFilter(e.target.value),placeholder:'Filter rules...',style:{width:200}})
+        h('input',{className:'input',value:filter,onChange:e=>setFilter(e.target.value),placeholder:'Filter rules...','aria-label':'Filter payee rules',style:{width:200}})
       ),
       filtered.length === 0
         ? h('div',{className:'empty'},
@@ -1743,7 +2459,7 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast, group
           )
         : h('div',{className:'table-scroll'}, h('table',{className:'table dict-table'},
             h('thead',null, h('tr',null,
-              h('th',null,'Keyword'), h('th',null,'Clean Name'), h('th',null,'Category'), h('th',null,'Group'), h('th',null,'Due Day'), h('th',null,'Freq'), h('th',{style:{width:40}},null)
+              h('th',{scope:'col'},'Match Text'), h('th',{scope:'col'},'Display Name'), h('th',{scope:'col'},'Category'), h('th',{scope:'col'},'Group'), h('th',{scope:'col'},'Due Day'), h('th',{scope:'col'},'Freq'), h('th',{scope:'col',style:{width:40}},null)
             )),
             h('tbody',null, filtered.map((d,i) => {
               const cat = categories.find(c=>c.name===d.category);
@@ -1769,7 +2485,9 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast, group
                       })
                     )
                   : h('td',{style:{fontSize:12,cursor:'pointer'},title:'Click to set due day',
-                      onClick:()=>{setEditDueDayIdx(i);setEditDueDayVal(d.dueDay?String(d.dueDay):'');}
+                      tabIndex:0, role:'button', 'aria-label':'Set due day for '+d.keyword,
+                      onClick:()=>{setEditDueDayIdx(i);setEditDueDayVal(d.dueDay?String(d.dueDay):'');},
+                      onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setEditDueDayIdx(i);setEditDueDayVal(d.dueDay?String(d.dueDay):'');}}
                     },
                       d.dueDay ? d.dueDay : h('span',{style:{color:'var(--card-text2)'}},'—')
                     ),
@@ -1901,132 +2619,10 @@ function detectColumns(headers, sampleRows) {
   return result;
 }
 
-// ── Unmatched Row Translator ────────────────────────────
-function UnmatchedRow({txn, index, categories, setCategories, showToast, onResolve, onSkip, groupList}) {
-  const [expanded, setExpanded] = useState(false);
-  const [keyword, setKeyword] = useState('');
-  const [cleanName, setCleanName] = useState('');
-  const [category, setCategory] = useState('');
-  const [showNewCat, setShowNewCat] = useState(false);
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatGroup, setNewCatGroup] = useState('Other');
-  const [newCatDisc, setNewCatDisc] = useState('discretionary');
-
-  // Auto-suggest keyword from description
-  useEffect(()=>{
-    if(!keyword && txn.description) {
-      const desc = txn.description.toUpperCase();
-      // Check for masked account numbers (e.g. XXXXX3989, ****1234, X1234)
-      const acctMatch = desc.match(/[X*]{2,}\d{3,}/i);
-      if(acctMatch) {
-        // Use the account number pattern as keyword — most specific for transfers
-        setKeyword(acctMatch[0]);
-        setCleanName('Transfer ' + acctMatch[0].slice(-4));
-      } else {
-        const words = desc.replace(/[^A-Z0-9\s]/g,'').trim().split(/\s+/);
-        const stopWords = new Set(['THE','A','AN','OF','IN','AT','TO','FOR','ON','BY','WITH','AND','OR','FROM','ACH','POS','DEBIT','CREDIT','PURCHASE','CARD','PAYMENT','TRANSACTION','CHECKCARD','ONLINE','TRANSFER','WITHDRAWAL','DEPOSIT']);
-        const meaningful = words.filter(w=>!stopWords.has(w) && w.length>1);
-        const suggested = meaningful.slice(0,2).join(' ');
-        setKeyword(suggested);
-        if(suggested) {
-          setCleanName(suggested.split(' ').map(w=>w.charAt(0)+w.slice(1).toLowerCase()).join(' '));
-        }
-      }
-    }
-  },[txn.description]);
-
-  const handleCatChange = (val) => {
-    if(val==='__new__') { setShowNewCat(true); setCategory(''); }
-    else { setCategory(val); setShowNewCat(false); }
-  };
-
-  const createCategory = () => {
-    if(!newCatName.trim()) return;
-    if(categories.find(c=>c.name.toLowerCase()===newCatName.trim().toLowerCase())) {
-      showToast('⚠️ Category already exists'); return;
-    }
-    setCategories(prev=>[...prev, {name:newCatName.trim(), group:newCatGroup, catType:newCatDisc, budget:0}]);
-    setCategory(newCatName.trim());
-    setShowNewCat(false);
-    setNewCatName('');
-    showToast('✅ Category created: '+newCatName.trim());
-  };
-
-  const canSave = keyword.trim() && cleanName.trim() && category;
-
-  return h('div',{style:{borderTop:index?'1px solid rgba(232,160,32,0.15)':'none'}},
-    // Summary row
-    h('div',{style:{display:'flex',gap:8,padding:'8px 10px',alignItems:'center',fontSize:12,cursor:'pointer'},onClick:()=>setExpanded(!expanded)},
-      h('span',{style:{color:'var(--yellow)',fontSize:14,width:18}}, expanded?'▼':'▶'),
-      h('span',{style:{minWidth:75,color:'var(--text2)'}},txn.date),
-      h('span',{style:{flex:1,fontWeight:500}},txn.description),
-      h('span',{style:{fontWeight:600}}, (txn.amount>=0?'+':'')+fmt(txn.amount)),
-      !expanded && h('button',{className:'btn sm primary',onClick:e=>{e.stopPropagation();setExpanded(true);},style:{fontSize:11,padding:'3px 8px'}},'Translate')
-    ),
-
-    // Expanded translator form
-    expanded && h('div',{style:{padding:'6px 10px 12px 28px',background:'rgba(232,160,32,0.03)'}},
-      h('div',{style:{fontSize:11,color:'var(--text2)',marginBottom:6}},
-        'Raw: ', h('code',{style:{background:'var(--surface2)',padding:'1px 4px',borderRadius:3,fontSize:10}}, txn.description)
-      ),
-      h('div',{style:{display:'flex',gap:8,alignItems:'flex-end',flexWrap:'wrap'}},
-        h('div',{style:{flex:1,minWidth:110}},
-          h('label',{htmlFor:'trans-keyword',style:{fontSize:10,color:'var(--text2)',display:'block',marginBottom:2}},'Keyword (for matching)'),
-          h('input',{id:'trans-keyword',className:'input',value:keyword,onChange:e=>setKeyword(e.target.value),
-            placeholder:'e.g. WALMART',style:{width:'100%',fontSize:12,padding:'5px 8px'}})
-        ),
-        h('div',{style:{flex:1,minWidth:110}},
-          h('label',{htmlFor:'trans-cleanname',style:{fontSize:10,color:'var(--text2)',display:'block',marginBottom:2}},'Clean Name'),
-          h('input',{id:'trans-cleanname',className:'input',value:cleanName,onChange:e=>setCleanName(e.target.value),
-            placeholder:'e.g. Walmart',style:{width:'100%',fontSize:12,padding:'5px 8px'}})
-        ),
-        h('div',{style:{flex:1,minWidth:110}},
-          h('label',{htmlFor:'trans-category',style:{fontSize:10,color:'var(--text2)',display:'block',marginBottom:2}},'Category'),
-          h('select',{id:'trans-category',className:'input',value:category,onChange:e=>handleCatChange(e.target.value),
-            style:{width:'100%',fontSize:12,padding:'5px 8px'}},
-            h('option',{value:''},'Select...'),
-            [...categories].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>h('option',{key:c.name,value:c.name},c.name)),
-            h('option',{value:'__new__',style:{fontWeight:600,color:'#e8a020'}},'＋ New Category...')
-          )
-        ),
-        h('button',{className:'btn sm green',onClick:()=>onResolve(keyword.trim(), cleanName.trim(), category),
-          disabled:!canSave,style:{fontSize:11}},'✓ Save Rule'),
-        h('button',{className:'btn sm',onClick:()=>setExpanded(false),style:{fontSize:11}},'Skip')
-      ),
-
-      // Inline new category creation
-      showNewCat && h('div',{style:{marginTop:8,padding:10,border:'1px dashed var(--accent)',borderRadius:8,background:'rgba(232,160,32,0.04)'}},
-        h('div',{style:{fontSize:11,fontWeight:600,color:'var(--accent)',marginBottom:8}},'➕ Quick Create Category'),
-        h('div',{style:{display:'flex',gap:8,alignItems:'flex-end',flexWrap:'wrap'}},
-          h('div',{style:{flex:1,minWidth:100}},
-            h('label',{htmlFor:'trans-newcat',style:{fontSize:10,color:'var(--text2)',display:'block',marginBottom:2}},'Name'),
-            h('input',{id:'trans-newcat',className:'input',value:newCatName,onChange:e=>setNewCatName(e.target.value),
-              placeholder:'e.g. Fast Food',style:{width:'100%',fontSize:12,padding:'5px 8px'},autoFocus:true})
-          ),
-          h('div',{style:{flex:1,minWidth:100}},
-            h('label',{htmlFor:'trans-newcat-group',style:{fontSize:10,color:'var(--text2)',display:'block',marginBottom:2}},'Group'),
-            h('select',{id:'trans-newcat-group',className:'input',value:newCatGroup,onChange:e=>setNewCatGroup(e.target.value),
-              style:{width:'100%',fontSize:12,padding:'5px 8px'}},
-              groupList.map(g=>h('option',{key:g,value:g},g))
-            )
-          ),
-          h('label',{style:{fontSize:11,display:'flex',alignItems:'center',gap:4,cursor:'pointer',whiteSpace:'nowrap'}},
-            h('select',{className:'input',value:newCatDisc,onChange:e=>setNewCatDisc(e.target.value),style:{fontSize:11,padding:'3px 6px'}},
-              h('option',{value:'discretionary'},'Disc'),
-              h('option',{value:'fixed'},'Fixed'),
-              h('option',{value:'transfer'},'Transfer')
-            )
-          ),
-          h('button',{className:'btn sm primary',onClick:createCategory,disabled:!newCatName.trim(),style:{fontSize:11}},'Create'),
-          h('button',{className:'btn sm',onClick:()=>setShowNewCat(false),style:{fontSize:11}},'Cancel')
-        )
-      )
-    )
-  );
-}
+// (UnmatchedRow removed — Import is now a pure data utility)
 
 // ── Import Page ─────────────────────────────────────────
-function ImportPage({transactions, setTransactions, dictionary, setDictionary, categories, setCategories, catMap, categorize, showToast, accounts, groupList, groups, setGroups, groupColors}) {
+function ImportPage({transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage}) {
   const [csv, setCsv] = useState('');
   const [preview, setPreview] = useState(null);
   const [parsedData, setParsedData] = useState(null);
@@ -2034,7 +2630,13 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
   const [importMode, setImportMode] = useState('paste');
   const [selectedAccount, setSelectedAccount] = useState('');
   const [transferDestAcct, setTransferDestAcct] = useState('');
+  const [postImport, setPostImport] = useState(null);
   const fileRef = useRef(null);
+
+  // Auto-select single account
+  useEffect(()=>{
+    if(accounts.length===1 && !selectedAccount) setSelectedAccount(accounts[0].id);
+  },[accounts]);
 
   // Step 1: Parse raw text into headers+rows and auto-detect columns
   const parseRaw = (text) => {
@@ -2286,6 +2888,7 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
     const pairMsg = paired.length > 0 ? ` (${paired.length} paired transfers created)` : '';
     const pendMsg = pendingUpdates.length > 0 ? `, ${pendingUpdates.length} pending cleared` : '';
     showToast(`\u2705 Imported ${all.length} transactions${pairMsg}${pendMsg}`);
+    setPostImport({total:all.length, matched:preview.matched.length, unmatched:preview.unmatched.length});
     setCsv(''); setPreview(null); setParsedData(null);
   };
 
@@ -2305,6 +2908,7 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
   };
 
   return h('div',{className:'animate-in'},
+    h(HelpBar, HELP_CONTENT.import),
     h('div',{className:'page-header'},
       h('h2',null,'📥 Import Transactions', h(InfoPill,{text:'Import bank transactions by pasting from Excel/CSV or uploading a file. The system auto-matches payees to your rules and categories.'})),
       h('p',null,'Paste data from Excel or upload a bank CSV file. Columns are auto-detected.')
@@ -2326,7 +2930,7 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
             h('span',{style:{fontSize:13,fontWeight:600}},'🏦 Import to Account:'),
             accounts.length > 0
               ? h('select',{className:'input',value:selectedAccount,onChange:e=>setSelectedAccount(e.target.value),
-                  style:{flex:1,maxWidth:220}},
+                  'aria-label':'Import to account', 'aria-required':'true', style:{flex:1,maxWidth:220}},
                   h('option',{value:''},'Select account...'),
                   accounts.map(a=>h('option',{key:a.id,value:a.id}, a.name+' ('+a.type+')'))
                 )
@@ -2451,7 +3055,7 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
         // Preview results
         preview && h('div',{className:'card animate-in',style:{marginTop:16,border:'2px solid var(--green)'}},
           h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,flexWrap:'wrap',gap:8}},
-            h('h3',{style:{margin:0}}, 'Preview — '+(preview.matched.length+preview.unmatched.length)+' ready', h(InfoPill,{text:'Green rows are matched to existing payee rules. Yellow rows are new and need a category assigned. You can set rules here that will auto-match future imports.'})),
+            h('h3',{style:{margin:0},'aria-live':'polite'}, 'Preview — '+(preview.matched.length+preview.unmatched.length)+' ready', h(InfoPill,{text:'Green rows matched existing payee rules. Yellow rows will import as "Uncategorized" — categorize them on the Transactions screen afterward.'})),
             h('div',{style:{display:'flex',gap:8}},
               h('button',{className:'btn',onClick:()=>setPreview(null)},'Cancel'),
               h('button',{className:'btn green',onClick:confirmImport,disabled:preview.matched.length+preview.unmatched.length===0},'✓ Confirm Import')
@@ -2522,48 +3126,17 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
             )
           ),
           preview.unmatched.length>0 && h('div',null,
-            h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}},
-              h('div',{style:{fontSize:12,fontWeight:600,color:'var(--yellow)'}},'⚠️ Unmatched ('+preview.unmatched.length+') — Translate below to create rules'),
-              preview.unmatched.length>1 && h('button',{className:'btn sm',onClick:()=>{
-                // Skip all — leave as uncategorized
-                showToast('All unmatched will import as "Uncategorized"');
-              }},'Skip All')
+            h('div',{style:{fontSize:12,fontWeight:600,color:'var(--yellow)',marginBottom:6}},'⚠️ Unmatched ('+preview.unmatched.length+') — will import as "Uncategorized"'),
+            h('div',{style:{padding:'10px 14px',marginBottom:8,background:'rgba(232,160,32,0.08)',border:'1px solid rgba(232,160,32,0.2)',borderRadius:8,fontSize:12,color:'var(--card-text2)'}},
+              'These transactions will be imported without a category. Go to the ',h('strong',null,'Transactions'),' screen to categorize them, or set up ',h('strong',null,'Payee Rules'),' on the Budget page to auto-match future imports.'
             ),
-            h('div',{style:{border:'1px solid rgba(232,160,32,0.3)',borderRadius:8,background:'rgba(232,160,32,0.05)',overflow:'hidden',maxHeight:350,overflowY:'auto'}},
-              preview.unmatched.map((t,i)=>h(UnmatchedRow,{key:t.id, txn:t, index:i, categories, setCategories, showToast, groupList,
-                onResolve:(keyword, cleanName, category) => {
-                  // Save rule to dictionary
-                  const cat = catMap[category];
-                  const kw = keyword.toUpperCase();
-                  setDictionary(prev=>{
-                    if(prev.find(d=>d.keyword.toUpperCase()===kw)) return prev;
-                    return [...prev, {keyword:kw, cleanName, category}];
-                  });
-                  // Apply to ALL unmatched transactions that contain this keyword (normalize both sides)
-                  const kwNorm = normalizeForMatch(kw);
-                  const matchCount = preview.unmatched.filter(u=>normalizeForMatch(u.description).includes(kwNorm)).length;
-                  setPreview(prev=>{
-                    const nowMatched = [];
-                    const stillUnmatched = [];
-                    for(const u of prev.unmatched) {
-                      if(normalizeForMatch(u.description).includes(kwNorm)) {
-                        nowMatched.push({...u, cleanName, category, group:cat?.group||'Other', catType:cat?.catType||'discretionary'});
-                      } else {
-                        stillUnmatched.push(u);
-                      }
-                    }
-                    return {
-                      ...prev,
-                      matched:[...prev.matched, ...nowMatched],
-                      unmatched:stillUnmatched
-                    };
-                  });
-                  showToast('\u2705 Rule saved: '+keyword+' \u2192 '+category+' (matched '+matchCount+' transaction'+(matchCount===1?'':'s')+')');
-                },
-                onSkip:() => {}
-              }))
-            ),
-            h('p',{style:{fontSize:11,color:'var(--yellow)',marginTop:6}},'💡 Translate each payee to auto-create rules, or import as-is and fix later on the Transactions page.')
+            h('div',{style:{border:'1px solid rgba(232,160,32,0.3)',borderRadius:8,background:'rgba(232,160,32,0.05)',overflow:'hidden',maxHeight:250,overflowY:'auto'}},
+              preview.unmatched.map((t,i)=>h('div',{key:t.id,style:{display:'flex',gap:8,padding:'5px 10px',borderTop:i?'1px solid var(--border)':'none',fontSize:12,alignItems:'center'}},
+                h('span',{style:{minWidth:75,color:'var(--text2)'}},t.date),
+                h('span',{style:{flex:1}},t.description.substring(0,40)),
+                h('span',{style:{fontWeight:600,color:t.amount>=0?'var(--green)':'var(--text)'}}, (t.amount>=0?'+':'')+fmt(t.amount))
+              ))
+            )
           )
         )
       ),
@@ -2571,10 +3144,10 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
       // Right: Info panel
       h('div',{className:'import-right',style:{flex:1,minWidth:260}},
         h('div',{className:'card',style:{marginBottom:16}},
-          h('h3',null, h('span',{className:'icon'},'📊'), 'Import Stats', h(InfoPill,{text:'Summary of what was imported: how many transactions matched existing rules vs new ones, and any duplicates that were skipped.'})),
+          h('h3',null, h('span',{className:'icon'},'📊'), 'Import Stats', h(InfoPill,{text:'Summary of your current data: total transactions in the system and how many payee rules exist for auto-matching.'})),
           h('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.8}},
             h('div',null,'Total transactions: ',h('strong',{style:{color:'var(--text)'}},transactions.length)),
-            h('div',null,'Dictionary rules: ',h('strong',{style:{color:'var(--text)'}},dictionary.length)),
+            h('div',null,'Payee rules: ',h('strong',{style:{color:'var(--text)'}},dictionary.length)),
             h('div',null,'Categories: ',h('strong',{style:{color:'var(--text)'}},Object.keys(catMap).length))
           )
         ),
@@ -2593,13 +3166,42 @@ function ImportPage({transactions, setTransactions, dictionary, setDictionary, c
           )
         )
       )
+    ),
+
+    // Post-import guidance card
+    postImport && h('div',{className:'card animate-in',style:{marginTop:20,border:'2px solid var(--green)'}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}},
+        h('div',null,
+          h('h3',{style:{color:'var(--green)',margin:0,marginBottom:4}},'✅ '+postImport.total+' transactions imported!'),
+          h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:0}},
+            postImport.matched+' auto-matched by rules, '+postImport.unmatched+' need categorization'
+          )
+        ),
+        h('button',{className:'btn sm',onClick:()=>setPostImport(null)},'✕')
+      ),
+      h('div',{style:{fontSize:13,fontWeight:600,color:'var(--card-text)',marginBottom:12}},'What\'s next:'),
+      h('div',{style:{display:'flex',gap:12,flexWrap:'wrap',marginBottom:16}},
+        postImport.unmatched>0 && h('button',{className:'btn primary',onClick:()=>{setPage('transactions');localStorage.setItem('ambit_txn_filter','uncategorized');}},
+          '📋 Categorize '+postImport.unmatched+' Transactions'
+        ),
+        h('button',{className:'btn',onClick:()=>setPage('budget')},
+          '📖 Set Up Auto-Match Rules'
+        )
+      ),
+      h('div',{style:{padding:'10px 14px',background:'rgba(126,200,227,0.08)',borderRadius:8,fontSize:12,color:'var(--card-text2)'}},
+        '💡 ', h('strong',null,'Tip:'),' Auto-Match Rules automatically categorize future imports. Set them up once and never manually categorize the same payee again.'
+      )
     )
   );
 }
 
 // ── Transactions Page ───────────────────────────────────
-function TransactionsPage({transactions, setTransactions, catMap, accounts, setAccounts, defaultAcct}) {
-  const [filter, setFilter] = useState('');
+function TransactionsPage({transactions, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors}) {
+  const [filter, setFilter] = useState(()=>{
+    const saved = localStorage.getItem('ambit_txn_search');
+    if(saved) { localStorage.removeItem('ambit_txn_search'); return saved; }
+    return '';
+  });
   const [acctFilter, setAcctFilterRaw] = useState(defaultAcct||'all');
   const setAcctFilter = (v) => { setAcctFilterRaw(v); localStorage.setItem('ambit_default_account', v); };
   const [sortCol, setSortCol] = useState('date');
@@ -2611,11 +3213,38 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   const [showReconcile, setShowReconcile] = useState(false);
   const [reconcileDate, setReconcileDate] = useState('');
   const [showAddTxn, setShowAddTxn] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(()=>{
+    const saved = localStorage.getItem('ambit_txn_filter');
+    if(saved) { localStorage.removeItem('ambit_txn_filter'); return saved; }
+    return 'all';
+  });
   const [dateFilter, setDateFilter] = useState('current'); // 'all', 'current', or 'YYYY-MM'
   const [newTxn, setNewTxn] = useState({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:'',transferDest:''});
+  // New category inline creation state
+  const [showNewCat, setShowNewCat] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatGroup, setNewCatGroup] = useState('Other');
+  const [newCatType, setNewCatType] = useState('discretionary');
+  const [newCatContext, setNewCatContext] = useState(null); // 'inline' or 'modal'
+  const createNewCategory = () => {
+    if(!newCatName.trim()) return;
+    if(categories && categories.find(c=>c.name.toLowerCase()===newCatName.trim().toLowerCase())) {
+      showToast('⚠️ Category already exists'); return;
+    }
+    const name = newCatName.trim();
+    setCategories(prev=>[...prev, {name, group:newCatGroup, catType:newCatType, budget:0}]);
+    if(newCatContext==='inline') setEditCat(name);
+    if(newCatContext==='modal') setNewTxn(p=>({...p, category:name}));
+    setShowNewCat(false); setNewCatName(''); setNewCatGroup('Other'); setNewCatType('discretionary'); setNewCatContext(null);
+    showToast('✅ Category created: '+name);
+  };
+  const handleCatDropdown = (val, context) => {
+    if(val==='__new__') { setShowNewCat(true); setNewCatContext(context); }
+    else if(context==='inline') setEditCat(val);
+    else if(context==='modal') setNewTxn(p=>({...p, category:val}));
+  };
 
-  const resetNewTxn = () => { setNewTxn({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:'',transferDest:''}); setShowAddTxn(false); };
+  const resetNewTxn = () => { setNewTxn({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:'',transferDest:''}); setShowAddTxn(false); setShowNewCat(false); };
 
   const saveNewTxn = () => {
     const {date,description,amount,category,accountId,pending,checkNumber,transferDest} = newTxn;
@@ -2659,6 +3288,19 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       setTransactions(prev=>[...prev, txn, paired]);
     } else {
       setTransactions(prev=>[...prev, txn]);
+    }
+    // Create dictionary rule so Dashboard bills/budget tracks this payee
+    if(category && category!=='Uncategorized' && !isTransfer && setDictionary) {
+      const keyword = description.trim().toUpperCase();
+      if(keyword) {
+        setDictionary(prev => {
+          const existing = prev.find(d=>d.keyword.toUpperCase()===keyword);
+          if(!existing) {
+            return [...prev, {keyword, cleanName:description.trim(), category}];
+          }
+          return prev;
+        });
+      }
     }
     resetNewTxn();
   };
@@ -2731,6 +3373,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     }
     if(statusFilter==='pending') arr = arr.filter(t=>t.pending);
     else if(statusFilter==='cleared') arr = arr.filter(t=>!t.pending);
+    else if(statusFilter==='uncategorized') arr = arr.filter(t=>t.category==='Uncategorized');
     if(filter) {
       const f = filter.toLowerCase();
       arr = arr.filter(t=>t.cleanName.toLowerCase().includes(f)||t.description.toLowerCase().includes(f)||t.category.toLowerCase().includes(f));
@@ -2776,8 +3419,29 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
 
   const saveCat = (id) => {
     if(!editCat) return;
-    const cat = catMap[editCat];
+    // Look up category from catMap, but also check the categories array directly
+    // in case catMap hasn't re-derived yet after a new category was just created
+    const cat = catMap[editCat] || categories.find(c=>c.name===editCat);
+    const txn = transactions.find(t=>t.id===id);
     setTransactions(prev=>prev.map(t=>t.id===id?{...t, category:editCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'}:t));
+    // Create or update dictionary rule so Dashboard bills/budget tracks this payee
+    if(txn && setDictionary) {
+      const keyword = (txn.description||'').trim().toUpperCase();
+      const cleanName = txn.cleanName || txn.description || '';
+      if(keyword) {
+        setDictionary(prev => {
+          const existing = prev.find(d=>d.keyword.toUpperCase()===keyword);
+          if(existing) {
+            // Update existing rule to point to the new category
+            return prev.map(d=>d.keyword.toUpperCase()===keyword?{...d, category:editCat}:d);
+          } else {
+            // Create new rule for this payee
+            return [...prev, {keyword, cleanName, category:editCat}];
+          }
+        });
+      }
+    }
+    showToast('✅ Category updated: '+editCat);
     setEditId(null); setEditCat('');
   };
 
@@ -2815,6 +3479,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   const filteredBals = acctFilter==='all' ? acctBalances : acctBalances.filter(b=>b.id===acctFilter);
 
   return h('div',{className:'animate-in'},
+    h(HelpBar, HELP_CONTENT.transactions),
     h('div',{className:'page-header',style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}},
       h('div',null,
         h('h2',null,'📋 Transactions', h(InfoPill,{text:'All imported transactions. Use filters to search by text, category, or date range. Click a payee or category to edit it inline. Use the + button to add manual transactions.'})),
@@ -2862,9 +3527,11 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
           h('select',{className:'input',value:statusFilter,onChange:e=>setStatusFilter(e.target.value),style:{fontSize:12}},
             h('option',{value:'all'},'All Status'),
             h('option',{value:'pending'},'🟡 Pending'),
-            h('option',{value:'cleared'},'🟢 Cleared')
+            h('option',{value:'cleared'},'🟢 Cleared'),
+            h('option',{value:'uncategorized'},'⚠ Uncategorized')
           ),
           h('input',{className:'input',value:filter,onChange:e=>setFilter(e.target.value),placeholder:'Search...', 'aria-label':'Search transactions', style:{width:180}}),
+          (()=>{const uc=transactions.filter(t=>t.category==='Uncategorized').length; return uc>0 && h('button',{className:'btn sm'+(statusFilter==='uncategorized'?' primary':''),onClick:()=>setStatusFilter(statusFilter==='uncategorized'?'all':'uncategorized'),style:{fontSize:11,whiteSpace:'nowrap'}},'⚠ '+uc+' Uncategorized');})(),
           acctFilter!=='all'
             ? h('button',{className:'btn green sm',onClick:()=>{
                 const acct = acctMap[acctFilter];
@@ -2887,12 +3554,12 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
         : h('div',{className:'table-scroll',style:{maxHeight:500,overflowY:'auto'}},
             h('table',{className:'table txn-table'},
               h('thead',null,h('tr',null,
-                h('th',{style:{width:30}},null),
-                h('th',{onClick:()=>toggleSort('date'), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleSort('date');}}, tabIndex:0, role:'columnheader', 'aria-sort':sortCol==='date'?(sortDir>0?'ascending':'descending'):'none', style:{cursor:'pointer'}},'Date'+(sortCol==='date'?(sortDir>0?' ↑':' ↓'):'')),
-                h('th',null,'Payee'),
-                h('th',null,'Category'),
-                h('th',null,'Type'),
-                accounts.length>0 && h('th',null,'Account'),
+                h('th',{scope:'col',style:{width:30}},null),
+                h('th',{scope:'col',onClick:()=>toggleSort('date'), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleSort('date');}}, tabIndex:0, role:'columnheader', 'aria-sort':sortCol==='date'?(sortDir>0?'ascending':'descending'):'none', style:{cursor:'pointer'}},'Date'+(sortCol==='date'?(sortDir>0?' ↑':' ↓'):'')),
+                h('th',{scope:'col'},'Payee'),
+                h('th',{scope:'col'},'Category'),
+                h('th',{scope:'col'},'Type'),
+                accounts.length>0 && h('th',{scope:'col'},'Account'),
                 h('th',{onClick:()=>toggleSort('amount'), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleSort('amount');}}, tabIndex:0, role:'columnheader', 'aria-sort':sortCol==='amount'?(sortDir>0?'ascending':'descending'):'none', style:{cursor:'pointer'}},'Amount'+(sortCol==='amount'?(sortDir>0?' ↑':' ↓'):'')),
                 h('th',null,'Balance'),
                 h('th',{style:{width:60}},null)
@@ -2917,17 +3584,37 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
                   ),
                   h('td',null,
                     editId===t.id
-                      ? h('div',{style:{display:'flex',gap:4}},
-                          h('select',{className:'input',value:editCat,onChange:e=>setEditCat(e.target.value),style:{fontSize:12,padding:'3px 6px'}},
+                      ? h('div',{style:{display:'flex',gap:4,flexWrap:'wrap'}},
+                          h('select',{className:'input',value:editCat,onChange:e=>handleCatDropdown(e.target.value,'inline'),style:{fontSize:12,padding:'3px 6px'}},
                             h('option',{value:''},'Select...'),
-                            Object.keys(catMap).sort((a,b)=>a.localeCompare(b)).map(c=>h('option',{key:c,value:c},c))
+                            Object.keys(catMap).sort((a,b)=>a.localeCompare(b)).map(c=>h('option',{key:c,value:c},c)),
+                            h('option',{value:'__new__',style:{fontWeight:600,color:'#e8a020'}},'＋ New Category...')
                           ),
                           h('button',{className:'btn sm',onClick:()=>saveCat(t.id)},'✓'),
-                          h('button',{className:'btn sm',onClick:()=>setEditId(null)},'✗')
+                          h('button',{className:'btn sm',onClick:()=>{setEditId(null);setShowNewCat(false);}},'✗'),
+                          showNewCat && newCatContext==='inline' && h('div',{style:{width:'100%',marginTop:4,padding:8,border:'1px dashed var(--accent)',borderRadius:8,background:'rgba(232,160,32,0.04)'}},
+                            h('div',{style:{fontSize:11,fontWeight:600,color:'var(--accent)',marginBottom:6}},'➕ Quick Create Category'),
+                            h('div',{style:{display:'flex',gap:6,alignItems:'flex-end',flexWrap:'wrap'}},
+                              h('input',{className:'input',value:newCatName,onChange:e=>setNewCatName(e.target.value),placeholder:'Name',style:{flex:1,minWidth:80,fontSize:12,padding:'4px 6px'},autoFocus:true}),
+                              h('select',{className:'input',value:newCatGroup,onChange:e=>setNewCatGroup(e.target.value),style:{fontSize:11,padding:'4px 6px'}},
+                                (groupList||['Housing','Food','Transport','Utilities','Personal','Health','Entertainment','Savings','Income','Other']).map(g=>h('option',{key:g,value:g},g))
+                              ),
+                              h('select',{className:'input',value:newCatType,onChange:e=>setNewCatType(e.target.value),style:{fontSize:11,padding:'4px 6px'}},
+                                h('option',{value:'discretionary'},'Disc'),h('option',{value:'fixed'},'Fixed'),h('option',{value:'transfer'},'Transfer')
+                              ),
+                              h('button',{className:'btn sm primary',onClick:createNewCategory,disabled:!newCatName.trim(),style:{fontSize:11}},'Create'),
+                              h('button',{className:'btn sm',onClick:()=>setShowNewCat(false),style:{fontSize:11}},'Cancel')
+                            )
+                          )
                         )
-                      : h('span',{onClick:()=>startEditCat(t), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();startEditCat(t);}}, tabIndex:0, role:'button', style:{cursor:'pointer'},title:'Click to change'},
-                          t.category,
-                          t.category==='Uncategorized' && h('span',{style:{color:'var(--yellow)',marginLeft:4,fontSize:11}},'⚠')
+                      : h('span',{onClick:()=>startEditCat(t), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();startEditCat(t);}}, tabIndex:0, role:'button',
+                          style:{cursor:'pointer',padding:'2px 8px',borderRadius:6,display:'inline-flex',alignItems:'center',gap:4,
+                            background:t.category==='Uncategorized'?'rgba(232,160,32,0.12)':'rgba(255,255,255,0.06)',
+                            border:t.category==='Uncategorized'?'1px solid rgba(232,160,32,0.3)':'1px solid transparent',
+                            transition:'all 0.15s'},
+                          title:'Click to change category'},
+                          t.category==='Uncategorized' ? h('span',{style:{color:'var(--yellow)',fontWeight:600,fontSize:12}},'⚠ Categorize') : t.category,
+                          t.category!=='Uncategorized' && h('span',{style:{fontSize:10,opacity:0.4,marginLeft:2}},'✎')
                         )
                   ),
                   h('td',null, h(TypeTag,{catType:t.catType})),
@@ -2971,7 +3658,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
           h('div',{style:{flex:1}},
             h('label',{htmlFor:'txn-amount',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Amount'),
             h('input',{id:'txn-amount',className:'input',type:'number',value:newTxn.amount,onChange:e=>setNewTxn(p=>({...p,amount:e.target.value})),placeholder:'e.g. 0.01 or -50.00',style:{width:'100%'},step:'0.01'}),
-            h('div',{style:{fontSize:10,color:'var(--card-text2)',marginTop:2}},'Sign auto-set by category (enter as positive)')
+            h('div',{style:{fontSize:11,color:'var(--blue)',marginTop:4,display:'flex',alignItems:'center',gap:4}},'💡 Just enter the number \u2014 sign is set automatically (expenses become negative, income becomes positive)')
           )
         ),
         h('div',null,
@@ -2988,10 +3675,31 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
           ),
           h('div',{style:{flex:1}},
             h('label',{htmlFor:'txn-category',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Category'),
-            h('select',{id:'txn-category',className:'input',value:newTxn.category,onChange:e=>setNewTxn(p=>({...p,category:e.target.value})),style:{width:'100%'}},
+            h('select',{id:'txn-category',className:'input',value:newTxn.category,onChange:e=>handleCatDropdown(e.target.value,'modal'),style:{width:'100%'}},
               h('option',{value:''},'Uncategorized'),
-              Object.keys(catMap).sort((a,b)=>a.localeCompare(b)).map(c=>h('option',{key:c,value:c},c))
+              Object.keys(catMap).sort((a,b)=>a.localeCompare(b)).map(c=>h('option',{key:c,value:c},c)),
+              h('option',{value:'__new__',style:{fontWeight:600,color:'#e8a020'}},'＋ New Category...')
             )
+          )
+        ),
+        showNewCat && newCatContext==='modal' && h('div',{style:{padding:10,border:'1px dashed var(--accent)',borderRadius:8,background:'rgba(232,160,32,0.04)'}},
+          h('div',{style:{fontSize:11,fontWeight:600,color:'var(--accent)',marginBottom:6}},'➕ Quick Create Category'),
+          h('div',{style:{display:'flex',gap:8,alignItems:'flex-end',flexWrap:'wrap'}},
+            h('div',{style:{flex:1,minWidth:100}},
+              h('label',{style:{fontSize:10,color:'var(--card-text2)',display:'block',marginBottom:2}},'Name'),
+              h('input',{className:'input',value:newCatName,onChange:e=>setNewCatName(e.target.value),placeholder:'e.g. Fast Food',style:{width:'100%',fontSize:12,padding:'5px 8px'},autoFocus:true})
+            ),
+            h('div',{style:{flex:1,minWidth:100}},
+              h('label',{style:{fontSize:10,color:'var(--card-text2)',display:'block',marginBottom:2}},'Group'),
+              h('select',{className:'input',value:newCatGroup,onChange:e=>setNewCatGroup(e.target.value),style:{width:'100%',fontSize:12,padding:'5px 8px'}},
+                (groupList||['Housing','Food','Transport','Utilities','Personal','Health','Entertainment','Savings','Income','Other']).map(g=>h('option',{key:g,value:g},g))
+              )
+            ),
+            h('select',{className:'input',value:newCatType,onChange:e=>setNewCatType(e.target.value),style:{fontSize:11,padding:'4px 6px'}},
+              h('option',{value:'discretionary'},'Disc'),h('option',{value:'fixed'},'Fixed'),h('option',{value:'transfer'},'Transfer')
+            ),
+            h('button',{className:'btn sm primary',onClick:createNewCategory,disabled:!newCatName.trim(),style:{fontSize:11}},'Create'),
+            h('button',{className:'btn sm',onClick:()=>setShowNewCat(false),style:{fontSize:11}},'Cancel')
           )
         ),
         catMap[newTxn.category]?.catType==='transfer' && h('div',{style:{padding:'8px 0'}},
@@ -3041,7 +3749,21 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
 }
 
 // ── Budget Page ─────────────────────────────────────────
-function BudgetPage({categories, setCategories, transactions, dictionary, groupColors, accounts, defaultAcct}) {
+function BudgetPage({categories, setCategories, transactions, setTransactions, catMap, dictionary, setDictionary, groupColors, accounts, defaultAcct, groups, setGroups, groupList, showToast}) {
+  const [activeTab, setActiveTab] = useState('monthly');
+  return h('div',{className:'animate-in'},
+    h('div',{className:'budget-tabs', role:'tablist', 'aria-label':'Budget sections'},
+      h('div',{className:'budget-tab'+(activeTab==='monthly'?' active':''), ...a11yClick(()=>setActiveTab('monthly')), role:'tab', 'aria-selected':activeTab==='monthly', id:'tab-monthly', 'aria-controls':'tabpanel-monthly'}, 'Monthly Budget'),
+      h('div',{className:'budget-tab'+(activeTab==='categories'?' active':''), ...a11yClick(()=>setActiveTab('categories')), role:'tab', 'aria-selected':activeTab==='categories', id:'tab-categories', 'aria-controls':'tabpanel-categories'}, 'Categories & Groups'),
+      h('div',{className:'budget-tab'+(activeTab==='rules'?' active':''), ...a11yClick(()=>setActiveTab('rules')), role:'tab', 'aria-selected':activeTab==='rules', id:'tab-rules', 'aria-controls':'tabpanel-rules'}, 'Payee Rules')
+    ),
+    activeTab==='monthly' && h('div',{role:'tabpanel', id:'tabpanel-monthly', 'aria-labelledby':'tab-monthly'}, h(BudgetMonthlyTab, {categories, setCategories, transactions, dictionary, groupColors, accounts, defaultAcct, showToast})),
+    activeTab==='categories' && h('div',{role:'tabpanel', id:'tabpanel-categories', 'aria-labelledby':'tab-categories'}, h(CategoriesPage, {categories, setCategories, dictionary, showToast, groups, setGroups, groupList, groupColors})),
+    activeTab==='rules' && h('div',{role:'tabpanel', id:'tabpanel-rules', 'aria-labelledby':'tab-rules'}, h(DictionaryPage, {dictionary, setDictionary, categories, showToast, groupColors, transactions, setTransactions, catMap}))
+  );
+}
+
+function BudgetMonthlyTab({categories, setCategories, transactions, dictionary, groupColors, accounts, defaultAcct, showToast}) {
   const [expandedGroup, setExpandedGroup] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(()=>{const now=new Date();return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');});
   const [drilldown, setDrilldown] = useState(null);
@@ -3105,6 +3827,7 @@ function BudgetPage({categories, setCategories, transactions, dictionary, groupC
   const discBudget = spendingCats.filter(c=>c.catType==='discretionary').reduce((s,c)=>s+getMonthlyBudget(c,budgetAcct),0);
   const fixedBudget = spendingCats.filter(c=>c.catType==='fixed').reduce((s,c)=>s+getMonthlyBudget(c,budgetAcct),0);
 
+  const budgetToastRef = useRef(null);
   const updateBudget = (catName, val) => {
     const numVal = Math.max(0,+val);
     if(budgetAcct==='all') {
@@ -3115,6 +3838,10 @@ function BudgetPage({categories, setCategories, transactions, dictionary, groupC
         const ab = {...(c.accountBudgets||{}), [budgetAcct]:numVal};
         return {...c, accountBudgets:ab};
       }));
+    }
+    if(showToast) {
+      clearTimeout(budgetToastRef.current);
+      budgetToastRef.current = setTimeout(()=>showToast('✅ Budget saved: '+catName+' $'+numVal+'/mo'), 600);
     }
   };
 
@@ -3198,6 +3925,7 @@ function BudgetPage({categories, setCategories, transactions, dictionary, groupC
   };
 
   return h('div',{className:'animate-in'},
+    h(HelpBar, HELP_CONTENT.budgetMonthly),
     h('div',{className:'page-header',style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}},
       h('div',null,
         h('h2',null,'\uD83D\uDCB0 Budget Setup', h(InfoPill,{text:'Set monthly budget amounts for each category. The app tracks your actual spending against these budgets across all pages.'})),
@@ -3583,7 +4311,7 @@ function BudgetPage({categories, setCategories, transactions, dictionary, groupC
 }
 
 // ── Dashboard Page ──────────────────────────────────────
-function DashboardPage({categories, transactions, catMap, accounts, dictionary, setDictionary, onStartTour, tier, isDemo, groupColors, defaultAcct}) {
+function DashboardPage({categories, transactions, catMap, accounts, dictionary, setDictionary, onStartTour, tier, isDemo, groupColors, defaultAcct, setPage}) {
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedAcct, setSelectedAcctRaw] = useState(defaultAcct||'all');
   const setSelectedAcct = (v) => { setSelectedAcctRaw(v); localStorage.setItem('ambit_default_account', v); };
@@ -3688,6 +4416,7 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
     const incomeCats = categories.filter(c=>c.group==='Income');
     const incomeData = incomeCats.map(cat=>{
       const rules = (dictionary||[]).filter(d=>d.category===cat.name);
+      const ruleCleanNames = new Set(rules.map(r=>r.cleanName));
       const payees = rules.filter(rule=>{
         const txns = currentMonthTxns.filter(t=>t.cleanName===rule.cleanName && t.category===cat.name && t.amount>=0);
         return txns.length>0 || isExpectedThisMonth(rule);
@@ -3702,6 +4431,17 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
         const freq = freqLabel(rule);
         return {cleanName:cn, keyword:rule.keyword, received, receivedAmount, receivedDate, expectedDay, expectedAmount, dueDay:rule.dueDay||null, freq, frequency:rule.frequency||'monthly', txns};
       });
+      // Also include income transactions with no dictionary rule
+      const unruledTxns = currentMonthTxns.filter(t=>t.category===cat.name && t.amount>=0 && !ruleCleanNames.has(t.cleanName));
+      const unruledByPayee = {};
+      unruledTxns.forEach(t=>{
+        if(!unruledByPayee[t.cleanName]) unruledByPayee[t.cleanName] = [];
+        unruledByPayee[t.cleanName].push(t);
+      });
+      Object.entries(unruledByPayee).forEach(([cn, txns])=>{
+        const receivedAmount = txns.reduce((s,t)=>s+t.amount,0);
+        payees.push({cleanName:cn, keyword:'', received:true, receivedAmount, receivedDate:txns[0].date, expectedDay:null, expectedAmount:receivedAmount, dueDay:null, freq:'', frequency:'monthly', txns});
+      });
       const totalReceived = payees.filter(p=>p.received).reduce((s,p)=>s+p.receivedAmount,0);
       const totalExpected = payees.reduce((s,p)=>s+p.expectedAmount,0);
       return {...cat, payees, totalReceived, totalExpected};
@@ -3711,6 +4451,7 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
     const fixedCats = categories.filter(c=>c.catType==='fixed' && c.group!=='Income');
     const billsData = fixedCats.map(cat=>{
       const rules = (dictionary||[]).filter(d=>d.category===cat.name);
+      const ruleCleanNames = new Set(rules.map(r=>r.cleanName));
       const payees = rules.filter(rule=>{
         // Always show if paid this month; otherwise only show if expected this month
         const txns = currentMonthTxns.filter(t=>t.cleanName===rule.cleanName && t.category===cat.name);
@@ -3727,6 +4468,17 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
         const isPastDue = isUpcoming && expectedDay<todayDay;
         const freq = freqLabel(rule);
         return {cleanName:cn, keyword:rule.keyword, isPaid, paidAmount, paidDate, expectedDay, expectedAmount, isUpcoming, isPastDue, dueDay:rule.dueDay||null, freq, frequency:rule.frequency||'monthly', txns};
+      });
+      // Also include transactions in this category that have no dictionary rule
+      const unruledTxns = currentMonthTxns.filter(t=>t.category===cat.name && !ruleCleanNames.has(t.cleanName));
+      const unruledByPayee = {};
+      unruledTxns.forEach(t=>{
+        if(!unruledByPayee[t.cleanName]) unruledByPayee[t.cleanName] = [];
+        unruledByPayee[t.cleanName].push(t);
+      });
+      Object.entries(unruledByPayee).forEach(([cn, txns])=>{
+        const paidAmount = txns.reduce((s,t)=>s+Math.abs(t.amount),0);
+        payees.push({cleanName:cn, keyword:'', isPaid:true, paidAmount, paidDate:txns[0].date, expectedDay:null, expectedAmount:paidAmount, isUpcoming:false, isPastDue:false, dueDay:null, freq:'', frequency:'monthly', txns});
       });
       const totalPaid = payees.filter(p=>p.isPaid).reduce((s,p)=>s+p.paidAmount,0);
       const totalExpected = payees.reduce((s,p)=>s+p.expectedAmount,0);
@@ -4036,6 +4788,7 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
   },[transactions]);
 
   return h('div',{className:'animate-in'},
+    h(HelpBar, HELP_CONTENT.dashboard),
     h('div',{className:'page-header',style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}},
       h('div',null,
         h('h2',null,'📊 Dashboard', h(InfoPill,{text:'Overview of your spending, bills, and balance projections. Use the filters above to view a specific account or month. Click any category in the table below to see individual transactions.'})),
@@ -4440,6 +5193,10 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
                           width:Math.min(cat.budgetPct,100)+'%',
                           background:cat.overBudget?'var(--red)':cat.budgetPct>80?'var(--yellow)':'var(--green)'}})
                       )
+                    ),
+                    cat.overBudget && setPage && h('div',{style:{display:'flex',gap:8,marginTop:6}},
+                      h('span',{style:{fontSize:11,cursor:'pointer',color:'var(--blue)',textDecoration:'underline'}, ...a11yClick(()=>setPage('budget'))},'Adjust Budget'),
+                      h('span',{style:{fontSize:11,cursor:'pointer',color:'var(--blue)',textDecoration:'underline'}, ...a11yClick(()=>{localStorage.setItem('ambit_txn_search',cat.name);setPage('transactions');})},'View Transactions')
                     )
                   )
                 )
@@ -4637,7 +5394,7 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
 }
 
 // ── Debt Planner Page ─────────────────────────────────
-function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, showToast}) {
+function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, showToast, embedded}) {
   const [strategy, setStrategy] = useState('avalanche');
   const [extraPayment, setExtraPayment] = useState(0);
   const [editDebt, setEditDebt] = useState(null);
@@ -4869,8 +5626,8 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
 
   // Gate check
   if(!isDemo && !tier?.debtPlanner) {
-    return h('div',{className:'page'},
-      h('div',{className:'page-header'},h('h2',null,'💳 Debt Reduction Planner')),
+    return h('div',{className:embedded?'':'page'},
+      !embedded && h('div',{className:'page-header'},h('h2',null,'💳 Debt Reduction Planner')),
       h('div',{className:'card',style:{textAlign:'center',padding:'40px 20px'}},
         h('div',{style:{fontSize:48,marginBottom:12}},'💳'),
         h('h3',{style:{margin:'0 0 8px'}},'Debt Reduction Planner'),
@@ -4884,7 +5641,7 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
 
   // No debt accounts
   if(debtAccounts.length===0) {
-    return h('div',{className:'page'},
+    return embedded ? null : h('div',{className:'page'},
       h('div',{className:'page-header'},h('h2',null,'💳 Debt Reduction Planner')),
       h('div',{className:'card',style:{textAlign:'center',padding:'40px 20px'}},
         h('div',{className:'empty'},
@@ -4896,10 +5653,10 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
     );
   }
 
-  return h('div',{className:'page'},
+  return h('div',{className:embedded?'':'page'},
     // Header
-    h('div',{className:'page-header',style:{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10}},
-      h('h2',{style:{margin:0}},'💳 Debt Reduction Planner'),
+    h('div',{className:embedded?'':'page-header',style:{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10}},
+      !embedded && h('h2',{style:{margin:0}},'💳 Debt Reduction Planner'),
       h('div',{style:{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}},
         h('div',{style:{display:'flex',borderRadius:8,overflow:'hidden',border:'1px solid var(--border)'}},
           h('button',{onClick:()=>setStrategy('avalanche'),
@@ -5231,6 +5988,28 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
   );
 }
 
+// ── Debt Planner Section (embedded in Accounts) ────────
+function DebtPlannerSection({accounts, setAccounts, transactions, tier, isDemo, showToast}) {
+  const [expanded, setExpanded] = useState(false);
+  return h('div',{style:{marginTop:24}},
+    h('div',{className:'card',style:{padding:0,overflow:'hidden'}},
+      h('div',{
+        style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 20px',cursor:'pointer',background:expanded?'rgba(232,160,32,0.06)':'transparent',transition:'background 0.15s'},
+        ...a11yClick(()=>setExpanded(!expanded))
+      },
+        h('div',{style:{display:'flex',alignItems:'center',gap:10}},
+          h('span',{style:{fontSize:18}},'💳'),
+          h('h3',{style:{margin:0,fontSize:15,fontWeight:600}},'Debt Payoff Planner')
+        ),
+        h('span',{style:{fontSize:18,transition:'transform 0.2s',transform:expanded?'rotate(180deg)':'rotate(0)'}}, '▾')
+      ),
+      expanded && h('div',{style:{padding:'0 20px 20px'}},
+        h(DebtPlannerPage, {accounts, setAccounts, transactions, tier, isDemo, showToast, embedded:true})
+      )
+    )
+  );
+}
+
 // ── Accounts Page ──────────────────────────────────────
 function AccountsPage({accounts, setAccounts, transactions, setTransactions, catMap, showToast, accountLimit, tier, isDemo}) {
   const [showAdd, setShowAdd] = useState(false);
@@ -5367,6 +6146,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
   };
 
   return h('div',{className:'animate-in'},
+    h(HelpBar, HELP_CONTENT.accounts),
     h('div',{className:'page-header',style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}},
       h('div',null,
         h('h2',null,'🏦 Accounts', h(InfoPill,{text:'Track your bank accounts with starting balances. The app calculates current balances from imported transactions. Use Reconcile to verify your balance matches your bank statement.'})),
@@ -5455,6 +6235,9 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
           style:{color:'var(--accent2)',textDecoration:'underline',fontSize:13,fontWeight:600}}, 'Upgrade for more accounts →')
       ),
 
+    // Debt Payoff Planner (shown when user has debt accounts)
+    accounts.some(a=>a.type==='credit_card'||a.type==='loan') && h(DebtPlannerSection, {accounts, setAccounts, transactions, tier, isDemo, showToast}),
+
     showAdd && h(Modal,{onClose:resetForm},
       h('h3',null, editIdx!==null?'✏️ Edit Account':'➕ New Account'),
       h('div',{style:{display:'flex',flexDirection:'column',gap:12}},
@@ -5519,8 +6302,71 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
   );
 }
 
+// ── Error Boundary ──────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = {hasError:false, error:null}; }
+  static getDerivedStateFromError(error) { return {hasError:true, error}; }
+  render() {
+    if(this.state.hasError) {
+      return h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#0c1445',color:'#eef0ff',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif'}},
+        h('div',{style:{textAlign:'center',maxWidth:420,padding:40}},
+          h('div',{style:{fontSize:48,marginBottom:16}},'⚠️'),
+          h('h2',{style:{marginBottom:12,fontSize:20}},'Something went wrong'),
+          h('p',{style:{fontSize:14,color:'#c0c8e8',lineHeight:1.6,marginBottom:20}},
+            'Ambit Budget encountered an error. Your data is safe — it\'s stored locally on your device.'),
+          h('div',{style:{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}},
+            h('button',{onClick:()=>window.location.reload(),
+              style:{padding:'10px 20px',background:'#e8a020',color:'#fff',border:'none',borderRadius:8,fontSize:14,cursor:'pointer',fontWeight:600}},
+              '🔄 Reload App'),
+            h('button',{onClick:()=>{
+              try {
+                const raw = localStorage.getItem('budgetpro_v2');
+                if(raw) {
+                  const blob = new Blob([raw],{type:'application/json'});
+                  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-emergency-backup.json'; a.click();
+                }
+              } catch(e){}
+            }, style:{padding:'10px 20px',background:'transparent',color:'#e8a020',border:'1px solid #e8a020',borderRadius:8,fontSize:14,cursor:'pointer',fontWeight:600}},
+              '💾 Download Backup')
+          ),
+          h('details',{style:{marginTop:20,textAlign:'left',fontSize:12,color:'#9da5d0'}},
+            h('summary',{style:{cursor:'pointer'}},'Error details'),
+            h('pre',{style:{marginTop:8,padding:12,background:'rgba(255,255,255,0.05)',borderRadius:8,overflow:'auto',maxHeight:150,fontSize:11}},
+              String(this.state.error))
+          )
+        )
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ── App Loader (IndexedDB async init) ───────────────────
+function AppLoader() {
+  const [ready, setReady] = useState(false);
+  const [idbData, setIdbData] = useState(null);
+  useEffect(()=>{
+    AmbitDB.load().then(data=>{
+      setIdbData(data);
+      setReady(true);
+    }).catch(()=>setReady(true));
+  },[]);
+  if(!ready) return h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'var(--bg)',color:'var(--text)',fontSize:16,fontFamily:'DM Sans, sans-serif'}},
+    h('div',{style:{textAlign:'center'}},
+      h('div',{style:{fontSize:32,marginBottom:8}},'🔮'),
+      h('div',null,'Loading Ambit Budget...')
+    )
+  );
+  return h(App, {idbData});
+}
+
+// ── Service Worker Registration ─────────────────────────
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
 // ── Render ──────────────────────────────────────────────
-ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+ReactDOM.createRoot(document.getElementById('root')).render(h(ErrorBoundary, null, h(AppLoader)));
 </script>
 </body>
 </html>
