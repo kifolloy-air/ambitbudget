@@ -106,8 +106,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .p-card-cta { flex-shrink: 0; }
 .p-card-cta a { display: block; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center; white-space: nowrap; transition: all 0.2s; }
 .p-card-cta .btn-soon { background: rgba(232,160,32,0.15); color: var(--accent2); opacity: 0.7; pointer-events: none; }
+.p-card-cta .btn-demo { display: block; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; text-decoration: none; text-align: center; white-space: nowrap; transition: all 0.2s; background: rgba(126,200,227,0.12); color: var(--blue); border: 1px solid rgba(126,200,227,0.25); margin-top: 6px; }
+.p-card-cta .btn-demo:hover { background: rgba(126,200,227,0.2); border-color: rgba(126,200,227,0.4); color: #fff; }
 .p-card-cta .btn-more { background: none; color: var(--text2); border: 1px solid rgba(255,255,255,0.12); padding: 8px 16px; font-size: 12px; margin-top: 6px; }
 .p-card-cta .btn-more:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+
+/* Demo tier tabs */
+.demo-bar-right { display: flex; align-items: center; gap: 10px; }
+.demo-tier-tabs { display: flex; gap: 2px; background: rgba(255,255,255,0.06); border-radius: 6px; padding: 2px; }
+.demo-tier-btn { background: none; border: none; color: var(--text2); font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 5px; cursor: pointer; font-family: inherit; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+.demo-tier-btn:hover { color: var(--text); }
+.demo-tier-btn.active { background: var(--accent); color: #fff; }
+
+/* Active pricing card highlight */
+.p-card.demo-active { border-color: var(--blue); box-shadow: 0 0 20px rgba(126,200,227,0.15); }
+.p-card.demo-active .btn-demo { background: var(--blue); color: var(--bg); border-color: var(--blue); }
 
 /* ── Tier features ── */
 .tiers-section { padding: 48px 0 0; }
@@ -189,7 +202,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <a href="#pricing">Pricing</a>
       <a href="./faq.html">FAQ</a>
       <a href="./coming-soon.html">What's Next</a>
-      <a href="./app/index.html?mode=demo" class="nav-cta">Try Demo</a>
+      <a href="./app/index.html?mode=demo&tier=pro" class="nav-cta">Try Demo</a>
     </div>
   </div>
 </nav>
@@ -212,20 +225,27 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <div class="container">
   <div class="main-split">
 
-    <!-- Left: Live Demo -->
+    <!-- Left: Live Demo (tier-switchable) -->
     <div class="demo-col" id="demo-inline">
       <div class="demo-bar">
         <div class="demo-bar-left">
           <div class="demo-bar-dots"><i></i><i></i><i></i></div>
-          <span>Live Demo</span>
+          <span id="demo-tier-label">Live Demo — Starter</span>
         </div>
-        <button class="demo-expand" onclick="toggleDemo()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
-          Expand
-        </button>
+        <div class="demo-bar-right">
+          <div class="demo-tier-tabs">
+            <button class="demo-tier-btn active" data-tier="starter" onclick="switchDemoTier('starter')">Starter</button>
+            <button class="demo-tier-btn" data-tier="plus" onclick="switchDemoTier('plus')">Plus</button>
+            <button class="demo-tier-btn" data-tier="pro" onclick="switchDemoTier('pro')">Pro</button>
+          </div>
+          <button class="demo-expand" onclick="toggleDemo()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+            Expand
+          </button>
+        </div>
       </div>
       <div class="demo-iframe-wrap">
-        <iframe src="./app/index.html?mode=demo" loading="lazy" title="Ambit Budget Pro Demo"></iframe>
+        <iframe id="demo-inline-iframe" src="./app/index.html?mode=demo&tier=starter" loading="lazy" title="Ambit Budget Pro Demo — Starter"></iframe>
       </div>
       <a href="./features.html" class="see-all">See all features &#x2192;</a>
     </div>
@@ -235,12 +255,19 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div class="demo-bar">
         <div class="demo-bar-left">
           <div class="demo-bar-dots"><i></i><i></i><i></i></div>
-          <span>Live Demo</span>
+          <span id="demo-fs-tier-label">Live Demo — Starter</span>
         </div>
-        <button class="demo-expand" onclick="toggleDemo()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h6v6m10-10h-6V4m0 16l7-7M14 4l-7 7"/></svg>
-          Close
-        </button>
+        <div class="demo-bar-right">
+          <div class="demo-tier-tabs">
+            <button class="demo-tier-btn active" data-tier="starter" onclick="switchDemoTier('starter')">Starter</button>
+            <button class="demo-tier-btn" data-tier="plus" onclick="switchDemoTier('plus')">Plus</button>
+            <button class="demo-tier-btn" data-tier="pro" onclick="switchDemoTier('pro')">Pro</button>
+          </div>
+          <button class="demo-expand" onclick="toggleDemo()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h6v6m10-10h-6V4m0 16l7-7M14 4l-7 7"/></svg>
+            Close
+          </button>
+        </div>
       </div>
       <div class="demo-iframe-wrap">
         <iframe id="demo-fs-iframe" title="Ambit Budget Pro Demo (Fullscreen)"></iframe>
@@ -253,7 +280,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <p class="pricing-sub">One-time purchase. Yours forever.</p>
 
       <!-- Starter -->
-      <div class="p-card">
+      <div class="p-card" id="p-card-starter">
         <div class="p-card-info">
           <div class="p-card-tier">Starter</div>
           <div class="p-card-price"><sup>$</sup>9.99</div>
@@ -262,12 +289,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="p-card-cta">
           <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/83990c64-8c99-430a-9885-02348f3afea0 -->
           <a href="#" class="btn-soon">Coming Soon</a>
+          <a href="javascript:void(0)" class="btn-demo" onclick="switchDemoTier('starter')">Try Demo &#x25B6;</a>
           <a href="./starter.html" class="btn-more">Learn more</a>
         </div>
       </div>
 
       <!-- Plus -->
-      <div class="p-card popular">
+      <div class="p-card popular" id="p-card-plus">
         <div class="pop-tag">Popular</div>
         <div class="p-card-info">
           <div class="p-card-tier">Plus</div>
@@ -277,12 +305,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="p-card-cta">
           <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/0cce8c89-2888-4c22-b7c6-030cb190b477 -->
           <a href="#" class="btn-soon">Coming Soon</a>
+          <a href="javascript:void(0)" class="btn-demo" onclick="switchDemoTier('plus')">Try Demo &#x25B6;</a>
           <a href="./plus.html" class="btn-more">Learn more</a>
         </div>
       </div>
 
       <!-- Pro -->
-      <div class="p-card">
+      <div class="p-card" id="p-card-pro">
         <div class="p-card-info">
           <div class="p-card-tier">Pro</div>
           <div class="p-card-price"><sup>$</sup>29.99</div>
@@ -291,6 +320,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="p-card-cta">
           <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/abd7c8e0-d5ea-437f-8f7b-2e357d2e99ce -->
           <a href="#" class="btn-soon">Coming Soon</a>
+          <a href="javascript:void(0)" class="btn-demo" onclick="switchDemoTier('pro')">Try Demo &#x25B6;</a>
           <a href="./pro.html" class="btn-more">Learn more</a>
         </div>
       </div>
@@ -444,6 +474,53 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 </footer>
 
 <script>
+// Current demo tier
+var currentDemoTier = 'starter';
+var tierNames = { starter: 'Starter', plus: 'Plus', pro: 'Pro' };
+
+// Switch demo tier
+function switchDemoTier(tier) {
+  currentDemoTier = tier;
+  var url = './app/index.html?mode=demo&tier=' + tier;
+
+  // Update inline iframe
+  var inlineIframe = document.getElementById('demo-inline-iframe');
+  if (inlineIframe) {
+    inlineIframe.src = url;
+    inlineIframe.title = 'Ambit Budget Pro Demo — ' + tierNames[tier];
+  }
+
+  // Update fullscreen iframe if open
+  var fs = document.getElementById('demo-fs');
+  var fsIframe = document.getElementById('demo-fs-iframe');
+  if (fs.classList.contains('active') && fsIframe) {
+    fsIframe.src = url;
+  }
+
+  // Update labels
+  var labels = ['demo-tier-label', 'demo-fs-tier-label'];
+  labels.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = 'Live Demo — ' + tierNames[tier];
+  });
+
+  // Update tab active states (both inline and fullscreen)
+  document.querySelectorAll('.demo-tier-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-tier') === tier);
+  });
+
+  // Highlight the corresponding pricing card
+  document.querySelectorAll('.p-card').forEach(function(card) {
+    card.classList.remove('demo-active');
+  });
+  var activeCard = document.getElementById('p-card-' + tier);
+  if (activeCard) activeCard.classList.add('demo-active');
+
+  // Scroll demo into view
+  var demoCol = document.getElementById('demo-inline');
+  if (demoCol) demoCol.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 // Demo expand/collapse
 function toggleDemo() {
   var fs = document.getElementById('demo-fs');
@@ -453,11 +530,17 @@ function toggleDemo() {
     fsIframe.src = '';
     document.body.style.overflow = '';
   } else {
-    fsIframe.src = './app/index.html?mode=demo';
+    fsIframe.src = './app/index.html?mode=demo&tier=' + currentDemoTier;
     fs.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
 }
+
+// Set initial active card
+document.addEventListener('DOMContentLoaded', function() {
+  var starterCard = document.getElementById('p-card-starter');
+  if (starterCard) starterCard.classList.add('demo-active');
+});
 
 // Nav scroll effect
 window.addEventListener('scroll', () => {

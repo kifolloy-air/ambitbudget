@@ -1560,7 +1560,12 @@ function App({idbData}) {
   const saved = useMemo(()=>idbData || loadState(),[]);
 
   // URL mode override (check first — used by tour & mode init)
-  const urlMode = useMemo(()=> new URLSearchParams(window.location.search).get('mode'), []);
+  const urlParams = useMemo(()=> new URLSearchParams(window.location.search), []);
+  const urlMode = useMemo(()=> urlParams.get('mode'), []);
+  const urlTier = useMemo(()=> {
+    const t = (urlParams.get('tier')||'').toLowerCase();
+    return t === 'starter' ? 'Starter' : t === 'plus' ? 'Plus' : t === 'pro' ? 'Pro' : null;
+  }, []);
 
   // Splash & Tour — tour only auto-starts via ?mode=demo URL (marketing site clicks)
   const [showSplash, setShowSplash] = useState(true);
@@ -1576,8 +1581,12 @@ function App({idbData}) {
   const [showLicenseGate, setShowLicenseGate] = useState(false);
   const [licenseDismissed, setLicenseDismissed] = useState(()=> localStorage.getItem('ambit_license_dismissed')==='1');
   const isLicensed = license && license.valid;
-  const tier = isLicensed ? (TIERS[license.tier]||TIERS.Starter) : null;
+  // In demo mode with ?tier= param, use that tier's feature gates (for landing page tier-specific demos)
+  const demoTier = (urlMode === 'demo' && urlTier) ? TIERS[urlTier] : null;
+  const tier = isLicensed ? (TIERS[license.tier]||TIERS.Starter) : demoTier;
   const accountLimit = tier ? tier.limit : 0;
+  // isDemo should be false when viewing a tier-specific demo (so feature gates apply)
+  const isTierDemo = !!(urlMode === 'demo' && urlTier);
   const API_BASE = 'https://ambitbudget.com';
 
   // Beta test keys — remove before public launch
@@ -1650,7 +1659,8 @@ function App({idbData}) {
   const [demoGroups, setDemoGroups] = useState(DEFAULT_GROUPS);
 
   // ── Active data based on mode ──
-  const isDemo = mode === 'demo';
+  // When viewing tier-specific demo (?tier=starter), isDemo is false so feature gates apply
+  const isDemo = mode === 'demo' && !isTierDemo;
   const accounts = isDemo ? demoAccounts : myAccounts;
   const setAccounts = isDemo ? setDemoAccounts : setMyAccounts;
   const categories = isDemo ? demoCategories : myCategories;
@@ -1943,6 +1953,13 @@ function App({idbData}) {
 
     // Main content
     h('main',{id:'main-content', className:'main', 'aria-label':'Page content'},
+      isTierDemo && h('div',{className:'demo-banner', style:{background:'rgba(126,200,227,0.1)',borderColor:'rgba(126,200,227,0.2)',color:'var(--blue)'}},
+        h('span',null,'🎯'),
+        h('span',null,'You\'re previewing the '),h('strong',null,urlTier),h('span',null,' plan with sample data.'),
+        h('span',{style:{marginLeft:'auto',display:'flex',gap:12,alignItems:'center'}},
+          h('a',{href:'../index.html#pricing',style:{cursor:'pointer',fontSize:12,whiteSpace:'nowrap',color:'inherit',textDecoration:'none',fontWeight:600}},'← Back to Pricing')
+        )
+      ),
       isDemo && !demoHidden && h('div',{className:'demo-banner'},
         h('span',null,'💡'),
         h('span',null,'You\'re viewing sample data. Switch to '), h('strong',{style:{cursor:'pointer',textDecoration:'underline'}, ...a11yClick(()=>{
