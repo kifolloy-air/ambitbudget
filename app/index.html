@@ -3168,6 +3168,23 @@ function BudgetPage({categories, setCategories, transactions, dictionary, groupC
     return m;
   },[filteredTxns]);
 
+  // Actual transfers by category
+  const transferByCategory = useMemo(()=>{
+    const m = {};
+    filteredTxns.filter(t=>t.catType==='transfer').forEach(t=>{
+      m[t.category] = (m[t.category]||0) + Math.abs(t.amount);
+    });
+    return m;
+  },[filteredTxns]);
+  const transferTxnsByCategory = useMemo(()=>{
+    const m = {};
+    filteredTxns.filter(t=>t.catType==='transfer').forEach(t=>{
+      if(!m[t.category]) m[t.category]=[];
+      m[t.category].push(t);
+    });
+    return m;
+  },[filteredTxns]);
+
   const totalIncome = Object.values(incomeByCategory).reduce((s,v)=>s+v,0);
   const totalExpenses = Object.values(actualByCategory).reduce((s,v)=>s+v,0);
   const totalIncomeDisplay = selectedMonth==='all' ? totalIncome/numMonths : totalIncome;
@@ -3217,7 +3234,7 @@ function BudgetPage({categories, setCategories, transactions, dictionary, groupC
       const curDisc = curTxns.filter(t=>t.amount<0 && t.catType==='discretionary').reduce((s,t)=>s+Math.abs(t.amount),0);
       const curXfer = curTxns.filter(t=>t.amount<0 && t.catType==='transfer').reduce((s,t)=>s+Math.abs(t.amount),0);
       const incomeBudgetMo = (grouped['Income']||[]).reduce((s,c)=>s+getMonthlyBudget(c,budgetAcct),0);
-      const xferBudgetMo = spendingCats.filter(c=>c.catType==='transfer').reduce((s,c)=>s+getMonthlyBudget(c,budgetAcct),0);
+      const xferBudgetMo = categories.filter(c=>c.catType==='transfer').reduce((s,c)=>s+getMonthlyBudget(c,budgetAcct),0);
       const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const mLabel = mNames[now.getMonth()];
       return h('div',{className:'stats'},
@@ -3321,13 +3338,103 @@ function BudgetPage({categories, setCategories, transactions, dictionary, groupC
             })
           ),
 
+          // ── Transfers Section ──
+          (()=>{
+            const xferCats = categories.filter(c=>c.catType==='transfer');
+            if(xferCats.length===0) return null;
+            return h('div',{className:'card',style:{marginBottom:14}},
+              h('h3',null, h('span',{className:'icon'},'\uD83D\uDD04'), 'Monthly Transfers',
+                selectedMonth!=='all' && h('span',{style:{fontWeight:400,fontSize:12,color:'var(--card-text2)',marginLeft:8}},' — '+monthLabel(selectedMonth)),
+                h(InfoPill,{text:'Expected transfers between accounts. Set amounts and schedules to include them in your forecast.'})
+              ),
+              xferCats.map(c => {
+                const actual = transferByCategory[c.name]||0;
+                const display = selectedMonth==='all' ? actual/numMonths : actual;
+                const catBgt = getEffectiveBudget(c,budgetAcct);
+                const pct = catBgt>0 ? Math.min(display/catBgt*100, 100) : 0;
+                const catTxns = transferTxnsByCategory[c.name]||[];
+                const freq = c.frequency||'monthly';
+                const moEquiv = getMonthlyBudget(c,budgetAcct);
+                return h('div',{key:c.name,style:{marginBottom:10,padding:'8px 12px'}},
+                  h('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}},
+                    h('span',{style:{width:130,fontSize:13,fontWeight:500}}, c.name),
+                    (()=>{
+                      const isEditing = editingSchedule===c.name;
+                      const summary = freq==='biweekly' ? (c.refDate ? 'Biweekly' : '+ Schedule')
+                        : freq==='semimonthly' ? ('Day '+(c.dueDay||'?')+' & '+(c.dueDay2||'?'))
+                        : freq==='quarterly' ? (c.dueDay ? 'Quarterly Day '+c.dueDay : '+ Schedule')
+                        : freq==='annual' ? (c.dueDay ? 'Annual Day '+c.dueDay : '+ Schedule')
+                        : (c.dueDay ? 'Day '+c.dueDay : '+ Schedule');
+                      return isEditing
+                        ? h('div',{style:{display:'flex',alignItems:'center',gap:4,fontSize:10,flexWrap:'wrap'},onClick:e=>e.stopPropagation()},
+                            h('select',{value:freq,onChange:e=>updateCatField(c.name,'frequency',e.target.value),
+                              style:{fontSize:10,padding:'2px 4px',borderRadius:4,border:'1px solid var(--border)',background:'var(--surface)'}},
+                              h('option',{value:'monthly'},'Monthly'),
+                              h('option',{value:'biweekly'},'Biweekly'),
+                              h('option',{value:'semimonthly'},'Semi-monthly'),
+                              h('option',{value:'quarterly'},'Quarterly'),
+                              h('option',{value:'annual'},'Annual')
+                            ),
+                            (freq==='monthly'||freq==='quarterly'||freq==='annual') && h('input',{type:'number',min:1,max:31,placeholder:'Day',value:c.dueDay||'',
+                              onChange:e=>{const v=parseInt(e.target.value);if(v>=1&&v<=31)updateCatField(c.name,'dueDay',v);},
+                              style:{width:36,fontSize:10,padding:'2px 4px',borderRadius:4,border:'1px solid var(--border)',textAlign:'center'}}),
+                            (freq==='quarterly'||freq==='annual') && h('input',{type:'date',value:c.refDate||'',placeholder:'Start date',
+                              onChange:e=>updateCatField(c.name,'refDate',e.target.value),
+                              style:{fontSize:10,padding:'2px 4px',borderRadius:4,border:'1px solid var(--border)'}}),
+                            freq==='semimonthly' && h(React.Fragment,null,
+                              h('input',{type:'number',min:1,max:31,placeholder:'Day 1',value:c.dueDay||'',
+                                onChange:e=>{const v=parseInt(e.target.value);if(v>=1&&v<=31)updateCatField(c.name,'dueDay',v);},
+                                style:{width:36,fontSize:10,padding:'2px 4px',borderRadius:4,border:'1px solid var(--border)',textAlign:'center'}}),
+                              h('span',null,'&'),
+                              h('input',{type:'number',min:1,max:31,placeholder:'Day 2',value:c.dueDay2||'',
+                                onChange:e=>{const v=parseInt(e.target.value);if(v>=1&&v<=31)updateCatField(c.name,'dueDay2',v);},
+                                style:{width:36,fontSize:10,padding:'2px 4px',borderRadius:4,border:'1px solid var(--border)',textAlign:'center'}})
+                            ),
+                            freq==='biweekly' && h('input',{type:'date',value:c.refDate||'',
+                              onChange:e=>updateCatField(c.name,'refDate',e.target.value),
+                              style:{fontSize:10,padding:'2px 4px',borderRadius:4,border:'1px solid var(--border)'}}),
+                            h('button',{className:'btn sm',onClick:()=>setEditingSchedule(null),
+                              style:{fontSize:9,padding:'1px 6px'}},'\u2713')
+                          )
+                        : h('span',{onClick:()=>setEditingSchedule(c.name),
+                            style:{fontSize:9,padding:'1px 5px',borderRadius:99,background:'rgba(236,153,75,0.12)',color:'var(--accent2)',fontWeight:600,whiteSpace:'nowrap',cursor:'pointer'}},
+                            summary);
+                    })(),
+                    h('span',{style:{color:'var(--text2)',fontSize:13}},'$'),
+                    h('input',{className:'input',type:'number',value:catBgt,
+                      onChange:e=>updateBudget(c.name,e.target.value),
+                      style:{width:90,padding:'5px 8px',fontSize:13}
+                    }),
+                    freq!=='monthly' && catBgt>0 && h('span',{style:{fontSize:9,color:'var(--text2)',fontStyle:'italic'}},'~'+fmt(moEquiv)+'/mo'),
+                    budgetAcct!=='all' && !(c.accountBudgets && c.accountBudgets[budgetAcct]!==undefined) && h('span',{style:{fontSize:9,color:'var(--text2)',fontStyle:'italic'}},'global'),
+                    h('div',{style:{flex:1,minWidth:80}},
+                      h('div',{className:'progress'},
+                        h('div',{className:'progress-fill',style:{width:pct+'%',background:'var(--accent2)'}})
+                      )
+                    ),
+                    h('span',{style:{fontSize:11,color:'var(--accent2)',minWidth:70,textAlign:'right'}},
+                      fmt(display)+(selectedMonth==='all'?' avg':'')
+                    ),
+                    catBgt>0 && h('span',{style:{fontSize:11,color:'var(--text2)',minWidth:60,textAlign:'right'}},
+                      'of ',fmt(moEquiv),'/mo'
+                    ),
+                    catTxns.length>0 && h('button',{className:'btn sm',onClick:()=>setDrilldown({name:c.name,txns:catTxns,budget:catBgt,isIncome:false}),
+                      style:{fontSize:10,padding:'3px 8px'}}, catTxns.length+' txn'+(catTxns.length===1?'':'s')+' \u25B8')
+                  )
+                );
+              })
+            );
+          })(),
+
           // ── Expenses Section ──
           h('div',{className:'card'},
             h('h3',null, h('span',{className:'icon'},'📊'), 'Monthly Expenses by Group',
               selectedMonth!=='all' && h('span',{style:{fontWeight:400,fontSize:12,color:'var(--card-text2)',marginLeft:8}},' — '+monthLabel(selectedMonth)),
               h(InfoPill,{text:'Budget vs actual for each expense group. Click a category row to see the transactions driving that number.'})
             ),
-            Object.entries(grouped).filter(([grp])=>grp!=='Income').map(([grp, cats]) => {
+            Object.entries(grouped).filter(([grp])=>grp!=='Income').map(([grp, catsRaw]) => {
+              const cats = catsRaw.filter(c=>c.catType!=='transfer');
+              if(cats.length===0) return null;
               const grpBudget = cats.reduce((s,c)=>s+getMonthlyBudget(c,budgetAcct),0);
               const grpActual = cats.reduce((s,c)=>s+(actualByCategory[c.name]||0),0);
               const grpDisplay = selectedMonth==='all' ? grpActual/numMonths : grpActual;
@@ -4536,6 +4643,8 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
   const [editDebt, setEditDebt] = useState(null);
   const [modalPayment, setModalPayment] = useState('');
   const [modalFreq, setModalFreq] = useState('monthly');
+  const [lumpSum, setLumpSum] = useState('');
+  const [showLumpSum, setShowLumpSum] = useState(false);
 
   // Compute current balance per account
   const acctBalances = useMemo(()=>{
@@ -4592,8 +4701,39 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
   const modalEffective = +modalPayment>0 ? (modalFreq==='biweekly'? +modalPayment*26/12 : +modalPayment) : 0;
   const editAcct = editDebt ? debtAccounts.find(d=>d.id===editDebt) : null;
 
+  // Lump sum allocation helper
+  const allocateLumpSum = (amount, debts, strat) => {
+    let remaining = amount;
+    const result = debts.map(d=>({id:d.id, name:d.name, balance:d.balance, rate:d.rate, allocated:0, newBalance:d.balance}));
+    let sorted;
+    if(strat==='avalanche') sorted = [...result].sort((a,b)=>b.rate-a.rate);
+    else if(strat==='snowball') sorted = [...result].sort((a,b)=>a.balance-b.balance);
+    else { // eliminate — pay off small debts first, skip ones too large, then apply leftover
+      sorted = [...result].sort((a,b)=>a.balance-b.balance);
+      // First pass: fully eliminate debts that fit
+      for(const d of sorted) {
+        if(remaining<=0) break;
+        if(d.balance<=remaining) { d.allocated=d.balance; d.newBalance=0; remaining-=d.balance; }
+      }
+      // Second pass: apply leftover to next smallest unpaid debt
+      for(const d of sorted) {
+        if(remaining<=0) break;
+        if(d.newBalance>0) { const pay=Math.min(remaining,d.newBalance); d.allocated+=pay; d.newBalance-=pay; remaining-=pay; }
+      }
+      return result;
+    }
+    for(const d of sorted) {
+      if(remaining<=0) break;
+      const pay = Math.min(remaining, d.balance);
+      d.allocated = pay;
+      d.newBalance = d.balance - pay;
+      remaining -= pay;
+    }
+    return result;
+  };
+
   // Payoff simulation — useMinOnly forces minimums (for baseline comparison)
-  const simulate = (debts, extra, useMinOnly) => {
+  const simulate = (debts, extra, useMinOnly, strategyOverride) => {
     if(debts.length===0) return {months:0,totalInterest:0,snapshots:[],debtFreeDate:null,perDebt:{}};
     let balances = debts.map(d=>({...d, bal:d.balance, monthlyPay: useMinOnly ? d.minPayment : d.effectiveMonthly}));
     let totalInterest = 0;
@@ -4604,7 +4744,7 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
     debts.forEach(d=>{ perDebt[d.id]={interest:0,paidOff:null,months:0}; });
 
     const sortDebts = (arr) => {
-      if(strategy==='snowball') return [...arr].sort((a,b)=>a.bal-b.bal);
+      if((strategyOverride||strategy)==='snowball') return [...arr].sort((a,b)=>a.bal-b.bal);
       return [...arr].sort((a,b)=>b.rate-a.rate);
     };
 
@@ -4654,6 +4794,40 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
   const interestSaved = baseline.totalInterest - result.totalInterest;
   const monthsSaved = baseline.months - result.months;
   const totalPlannedMonthly = debtAccounts.reduce((s,d)=>s+d.effectiveMonthly,0);
+
+  // Lump sum analysis
+  const lumpSumAnalysis = useMemo(()=>{
+    const amt = +lumpSum||0;
+    if(amt<=0 || debtAccounts.length===0) return null;
+    const strategies = ['avalanche','snowball','eliminate'];
+    const labels = {avalanche:'Avalanche',snowball:'Snowball',eliminate:'Eliminate Small Debts'};
+    const icons = {avalanche:'\u26A1',snowball:'\u2744\uFE0F',eliminate:'\u2705'};
+    const descs = {avalanche:'Apply to highest interest rate first',snowball:'Apply to smallest balance first',eliminate:'Pay off small debts entirely first'};
+    return strategies.map(strat=>{
+      const allocation = allocateLumpSum(amt, debtAccounts, strat);
+      const modifiedDebts = debtAccounts.map(d=>{
+        const alloc = allocation.find(a=>a.id===d.id);
+        return {...d, balance: alloc ? alloc.newBalance : d.balance};
+      }).filter(d=>d.balance>0.01);
+      const simStrat = strat==='eliminate'?'snowball':strat;
+      const simResult = modifiedDebts.length>0 ? simulate(modifiedDebts, +extraPayment||0, false, simStrat) : {months:0,totalInterest:0,debtFreeDate:new Date()};
+      return {
+        key:strat, label:labels[strat], icon:icons[strat], desc:descs[strat],
+        allocation,
+        months:simResult.months,
+        totalInterest:simResult.totalInterest,
+        lsInterestSaved: result.totalInterest - simResult.totalInterest,
+        lsMonthsSaved: result.months - simResult.months,
+        debtFreeDate: simResult.debtFreeDate,
+        debtsEliminated: allocation.filter(a=>a.newBalance<0.01).length
+      };
+    });
+  },[lumpSum,debtAccounts,extraPayment,strategy,result]);
+
+  const lumpSumRec = useMemo(()=>{
+    if(!lumpSumAnalysis) return null;
+    return lumpSumAnalysis.reduce((best,s)=>!best||s.lsInterestSaved>best.lsInterestSaved?s:best, null);
+  },[lumpSumAnalysis]);
 
   const fmtMo = (d) => { if(!d) return '—'; const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return mo[d.getMonth()]+' '+d.getFullYear(); };
 
@@ -4801,6 +4975,79 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
         h('div',null,
           h('div',{style:{fontSize:11,color:'var(--text2)',textTransform:'uppercase'}},'Monthly Payment'),
           h('div',{style:{fontSize:20,fontWeight:700,color:'var(--accent2)'}},'$'+Math.round(totalPlannedMonthly+(+extraPayment||0)).toLocaleString())
+        )
+      )
+    ),
+
+    // Lump Sum Payment Analyzer
+    h('div',{className:'card',style:{padding:'14px 16px',marginBottom:16}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'},onClick:()=>setShowLumpSum(!showLumpSum)},
+        h('h3',{style:{margin:0,fontSize:14}},'\uD83D\uDCB0 Lump Sum Payment Analyzer'),
+        h('span',{style:{fontSize:12,color:'var(--text2)'}},showLumpSum?'\u25B2':'\u25BC')
+      ),
+      showLumpSum && h('div',{style:{marginTop:14}},
+        h('div',{style:{display:'flex',gap:10,alignItems:'center',marginBottom:16}},
+          h('label',{style:{fontSize:12,color:'var(--text2)',whiteSpace:'nowrap'}},'One-time payment:'),
+          h('div',{style:{position:'relative',flex:'0 0 180px'}},
+            h('span',{style:{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',fontSize:13,color:'var(--text2)',pointerEvents:'none'}},'$'),
+            h('input',{type:'number',value:lumpSum,onChange:e=>setLumpSum(e.target.value),placeholder:'e.g. 5000',
+              style:{width:'100%',padding:'8px 10px 8px 22px',borderRadius:8,border:'1px solid var(--border)',background:'var(--bg2)',color:'var(--text)',fontSize:13,boxSizing:'border-box'}})
+          ),
+          lumpSum && h('button',{onClick:()=>setLumpSum(''),style:{padding:'6px 12px',borderRadius:6,border:'1px solid var(--border)',background:'var(--bg2)',color:'var(--text2)',fontSize:11,cursor:'pointer'}},'Clear')
+        ),
+        // Exceeds total debt message
+        (+lumpSum||0)>totalDebt && totalDebt>0 && h('div',{style:{padding:'10px 14px',marginBottom:14,borderRadius:8,background:'rgba(72,187,120,0.1)',border:'1px solid rgba(72,187,120,0.3)',fontSize:12}},
+          '\u2705 This amount ($'+Math.round(+lumpSum).toLocaleString()+') would pay off all debts ($'+Math.round(totalDebt).toLocaleString()+') with $'+Math.round(+lumpSum-totalDebt).toLocaleString()+' remaining.'
+        ),
+        // Single debt message
+        lumpSumAnalysis && debtAccounts.length===1 && h('div',{style:{padding:'10px 14px',marginBottom:14,borderRadius:8,background:'rgba(99,179,237,0.1)',border:'1px solid rgba(99,179,237,0.3)',fontSize:12}},
+          'With only one debt, apply the full amount to '+debtAccounts[0].name+'.'
+        ),
+        // Strategy comparison cards
+        lumpSumAnalysis && debtAccounts.length>1 && h('div',{style:{display:'flex',gap:14,flexWrap:'wrap',marginBottom:14}},
+          lumpSumAnalysis.map(s=>{
+            const isRec = lumpSumRec && s.key===lumpSumRec.key;
+            return h('div',{key:s.key,className:'card',style:{flex:'1 1 calc(33.33% - 10px)',minWidth:220,padding:'14px 16px',
+              border:isRec?'2px solid var(--green)':'1px solid var(--border)',position:'relative'}},
+              isRec && h('span',{style:{position:'absolute',top:8,right:10,fontSize:10,fontWeight:600,color:'var(--green)',background:'rgba(72,187,120,0.1)',padding:'2px 8px',borderRadius:10}},'Recommended'),
+              h('div',{style:{fontSize:14,fontWeight:600,marginBottom:4}},s.icon+' '+s.label),
+              h('div',{style:{fontSize:11,color:'var(--text2)',marginBottom:12}},s.desc),
+              // Allocation breakdown
+              h('div',{style:{fontSize:11,color:'var(--text2)',marginBottom:4,fontWeight:600}},'Allocation:'),
+              h('div',{style:{marginBottom:12}},
+                s.allocation.filter(a=>a.allocated>0).map(a=>
+                  h('div',{key:a.id,style:{display:'flex',justifyContent:'space-between',fontSize:12,padding:'3px 0',borderBottom:'1px solid var(--border)'}},
+                    h('span',null,a.name),
+                    h('span',null,
+                      h('span',{style:{color:'var(--text2)'}},'$'+Math.round(a.allocated).toLocaleString()),
+                      ' \u2192 ',
+                      h('span',{style:{color:a.newBalance<0.01?'var(--green)':'inherit',fontWeight:a.newBalance<0.01?600:'normal'}},
+                        a.newBalance<0.01?'Paid Off':'$'+Math.round(a.newBalance).toLocaleString())
+                    )
+                  )
+                )
+              ),
+              // Metrics
+              h('div',{style:{display:'flex',flexWrap:'wrap',gap:12}},
+                h('div',null,
+                  h('div',{style:{fontSize:10,color:'var(--text2)',textTransform:'uppercase'}},'Interest Saved'),
+                  h('div',{style:{fontSize:16,fontWeight:700,color:'var(--green)'}},s.lsInterestSaved>0?'+$'+Math.round(s.lsInterestSaved).toLocaleString():'$0')
+                ),
+                h('div',null,
+                  h('div',{style:{fontSize:10,color:'var(--text2)',textTransform:'uppercase'}},'Months Saved'),
+                  h('div',{style:{fontSize:16,fontWeight:700,color:s.lsMonthsSaved>0?'var(--green)':'inherit'}},s.lsMonthsSaved>0?s.lsMonthsSaved+' mo':'\u2014')
+                ),
+                h('div',null,
+                  h('div',{style:{fontSize:10,color:'var(--text2)',textTransform:'uppercase'}},'Debt-Free'),
+                  h('div',{style:{fontSize:16,fontWeight:700}},fmtMo(s.debtFreeDate))
+                ),
+                s.debtsEliminated>0 && h('div',null,
+                  h('div',{style:{fontSize:10,color:'var(--text2)',textTransform:'uppercase'}},'Debts Eliminated'),
+                  h('div',{style:{fontSize:16,fontWeight:700,color:'var(--green)'}},s.debtsEliminated)
+                )
+              )
+            );
+          })
         )
       )
     ),
