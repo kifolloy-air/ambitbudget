@@ -18,7 +18,7 @@
 <meta name="twitter:title" content="Ambit Budget Pro — Personal Finance, Your Way">
 <meta name="twitter:description" content="Track spending, manage bills, set budgets, and forecast your balance. One-time purchase. No subscriptions.">
 <meta name="twitter:image" content="https://ambitbudget.com/og-image.png">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cpath d='M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z' fill='%237ec8e3' stroke='%235ba8c8' stroke-width='2'/%3E%3Cg transform='translate(10,8) scale(0.8)'%3E%3Cpolygon points='50,2 56,40 50,47 44,40' fill='%23e87820'/%3E%3Cpolygon points='98,50 60,56 53,50 60,44' fill='%23e87820'/%3E%3Cpolygon points='50,98 44,60 50,53 56,60' fill='%23e87820'/%3E%3Cpolygon points='2,50 40,44 47,50 40,56' fill='%23e87820'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23e87820'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cdefs%3E%3ClinearGradient id='sg' x1='0' y1='0' x2='0.3' y2='1'%3E%3Cstop offset='0%25' stop-color='%231a2870'/%3E%3Cstop offset='40%25' stop-color='%230c1445'/%3E%3Cstop offset='100%25' stop-color='%23080e30'/%3E%3C/linearGradient%3E%3ClinearGradient id='se' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%237ec8e3'/%3E%3Cstop offset='50%25' stop-color='%235ba8c8'/%3E%3Cstop offset='100%25' stop-color='%233a8ab0'/%3E%3C/linearGradient%3E%3Cpath id='ba' d='M15,85 Q50,108 85,85' fill='none'/%3E%3C/defs%3E%3Cpath d='M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z' fill='url(%23sg)' stroke='url(%23se)' stroke-width='2.5'/%3E%3Ctext x='50' y='20' text-anchor='middle' fill='%23f0c050' font-size='11' font-weight='700' font-family='Arial' letter-spacing='4' opacity='0.9'%3EAMBIT%3C/text%3E%3Cpolygon points='50,26 55,50 50,55 45,50' fill='%23e87820'/%3E%3Cpolygon points='50,88 45,60 50,55 55,60' fill='%23f0c050'/%3E%3Cpolygon points='90,55 55,50 50,55 55,60' fill='%23e87820' opacity='0.85'/%3E%3Cpolygon points='10,55 45,60 50,55 45,50' fill='%23f0c050' opacity='0.85'/%3E%3Ccircle cx='50' cy='55' r='5' fill='%23b05810'/%3E%3Ccircle cx='50' cy='55' r='2.5' fill='%238a4510'/%3E%3Ctext x='52' y='72' text-anchor='middle' fill='%23000' font-size='52' font-weight='800' font-family='Arial' opacity='0.4'%3EA%3C/text%3E%3Ctext x='48.5' y='69.5' text-anchor='middle' fill='%23fff' font-size='52' font-weight='800' font-family='Arial' opacity='0.2'%3EA%3C/text%3E%3Ctext x='50' y='71' text-anchor='middle' fill='%237ec8e3' font-size='52' font-weight='800' font-family='Arial'%3EA%3C/text%3E%3Ctext fill='%237ec8e3' font-size='9' font-weight='600' font-family='Arial' letter-spacing='2' opacity='0.8'%3E%3CtextPath href='%23ba' startOffset='50%25' text-anchor='middle'%3EBUDGET%3C/textPath%3E%3C/text%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%233a8ab0' opacity='0.5'/%3E%3Ccircle cx='84' cy='16' r='2.5' fill='%233a8ab0' opacity='0.5'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -186,14 +186,25 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <div class="nav-inner">
     <a href="#" class="nav-logo">
       <svg width="28" height="32" viewBox="0 0 100 115">
-        <path d="M4,12 Q4,4 12,4 L88,4 Q96,4 96,12 L96,60 Q96,85 50,112 Q4,85 4,60 Z" fill="#7ec8e3" stroke="#5ba8c8" stroke-width="2"/>
-        <g transform="translate(10,8) scale(0.8)">
-          <polygon points="50,2 56,40 50,47 44,40" fill="#e87820"/>
-          <polygon points="98,50 60,56 53,50 60,44" fill="#e87820"/>
-          <polygon points="50,98 44,60 50,53 56,60" fill="#e87820"/>
-          <polygon points="2,50 40,44 47,50 40,56" fill="#e87820"/>
-          <circle cx="50" cy="50" r="4" fill="#e87820"/>
-        </g>
+        <defs>
+          <linearGradient id="navSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
+          <linearGradient id="navSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
+          <path id="navBa" d="M15,85 Q50,108 85,85" fill="none"/>
+        </defs>
+        <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#navSg)" stroke="url(#navSe)" stroke-width="2.5"/>
+        <text x="50" y="20" text-anchor="middle" fill="#f0c050" font-size="11" font-weight="700" font-family="Arial" letter-spacing="4" opacity="0.9">AMBIT</text>
+        <polygon points="50,26 55,50 50,55 45,50" fill="#e87820"/>
+        <polygon points="50,88 45,60 50,55 55,60" fill="#f0c050"/>
+        <polygon points="90,55 55,50 50,55 55,60" fill="#e87820" opacity="0.85"/>
+        <polygon points="10,55 45,60 50,55 45,50" fill="#f0c050" opacity="0.85"/>
+        <circle cx="50" cy="55" r="5" fill="#b05810"/>
+        <circle cx="50" cy="55" r="2.5" fill="#8a4510"/>
+        <text x="52" y="72" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
+        <text x="48.5" y="69.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
+        <text x="50" y="71" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
+        <text fill="#7ec8e3" font-size="9" font-weight="600" font-family="Arial" letter-spacing="2" opacity="0.8"><textPath href="#navBa" startOffset="50%" text-anchor="middle">BUDGET</textPath></text>
+        <circle cx="16" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+        <circle cx="84" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
       </svg>
       <div>Ambit<span>Budget Pro</span></div>
     </a>
@@ -445,14 +456,25 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     <div class="footer-inner">
       <div class="footer-logo">
         <svg width="20" height="23" viewBox="0 0 100 115">
-          <path d="M4,12 Q4,4 12,4 L88,4 Q96,4 96,12 L96,60 Q96,85 50,112 Q4,85 4,60 Z" fill="#7ec8e3" stroke="#5ba8c8" stroke-width="2"/>
-          <g transform="translate(10,8) scale(0.8)">
-            <polygon points="50,2 56,40 50,47 44,40" fill="#e87820"/>
-            <polygon points="98,50 60,56 53,50 60,44" fill="#e87820"/>
-            <polygon points="50,98 44,60 50,53 56,60" fill="#e87820"/>
-            <polygon points="2,50 40,44 47,50 40,56" fill="#e87820"/>
-            <circle cx="50" cy="50" r="4" fill="#e87820"/>
-          </g>
+          <defs>
+            <linearGradient id="ftSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
+            <linearGradient id="ftSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
+            <path id="ftBa" d="M15,85 Q50,108 85,85" fill="none"/>
+          </defs>
+          <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#ftSg)" stroke="url(#ftSe)" stroke-width="2.5"/>
+          <text x="50" y="20" text-anchor="middle" fill="#f0c050" font-size="11" font-weight="700" font-family="Arial" letter-spacing="4" opacity="0.9">AMBIT</text>
+          <polygon points="50,26 55,50 50,55 45,50" fill="#e87820"/>
+          <polygon points="50,88 45,60 50,55 55,60" fill="#f0c050"/>
+          <polygon points="90,55 55,50 50,55 55,60" fill="#e87820" opacity="0.85"/>
+          <polygon points="10,55 45,60 50,55 45,50" fill="#f0c050" opacity="0.85"/>
+          <circle cx="50" cy="55" r="5" fill="#b05810"/>
+          <circle cx="50" cy="55" r="2.5" fill="#8a4510"/>
+          <text x="52" y="72" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
+          <text x="48.5" y="69.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
+          <text x="50" y="71" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
+          <text fill="#7ec8e3" font-size="9" font-weight="600" font-family="Arial" letter-spacing="2" opacity="0.8"><textPath href="#ftBa" startOffset="50%" text-anchor="middle">BUDGET</textPath></text>
+          <circle cx="16" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+          <circle cx="84" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
         </svg>
         Ambit <span>Budget Pro</span>
       </div>
