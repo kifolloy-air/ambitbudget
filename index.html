@@ -22,564 +22,803 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0c1445;
-  --bg2: #101850;
-  --text: #eef0ff;
-  --text2: #9da5d0;
-  --accent: #e8a020;
-  --accent2: #f0c050;
+  --navy: #0C1445;
+  --navy-light: #101850;
+  --amber: #E8A020;
+  --amber-hover: #d09018;
+  --amber-light: #f0c050;
   --blue: #7ec8e3;
   --orange: #e87820;
   --green: #40c080;
   --red: #e05050;
+  --bg: #FAFAFA;
+  --bg-alt: #F0F2F5;
+  --text: #1a1a2e;
+  --text2: #5a5f7a;
+  --text3: #8a8fa8;
   --radius: 12px;
+  --sidebar-w: 240px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
 
-/* ── Nav ── */
-.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 16px 0; transition: all 0.3s; }
-.nav.scrolled { background: rgba(12,20,69,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); }
-.nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
-.nav-logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: var(--accent2); text-decoration: none; }
-.nav-logo span { font-size: 10px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; display: block; margin-top: 1px; }
-.nav-links { display: flex; align-items: center; gap: 32px; }
-.nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
-.nav-links a:hover { color: var(--text); }
-.nav-cta { background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s; border: none; cursor: pointer; }
-.nav-cta:hover { background: #d09018; transform: translateY(-1px); }
+/* ── Sidebar ── */
+.sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-w); background: var(--navy);
+  display: flex; flex-direction: column;
+  z-index: 100; padding: 28px 20px 24px;
+  border-right: 1px solid rgba(126,200,227,0.12);
+}
+.sidebar-logo { display: flex; flex-direction: column; align-items: center; margin-bottom: 8px; }
+.sidebar-logo svg { height: 100px; width: auto; }
+.sidebar-brand {
+  color: var(--amber-light); font-size: 16px; font-weight: 700;
+  text-align: center; margin-top: 10px; letter-spacing: 0.3px;
+}
+.sidebar-brand span { display: block; font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 500; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
 
-.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+.sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; margin-top: 28px; }
+.sidebar-nav a {
+  display: flex; align-items: center; gap: 12px;
+  color: rgba(255,255,255,0.7); text-decoration: none;
+  font-size: 14px; font-weight: 500; padding: 10px 14px;
+  border-radius: 8px; transition: all 0.2s;
+}
+.sidebar-nav a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.sidebar-nav a .nav-icon {
+  width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+  font-size: 15px; opacity: 0.8;
+}
+.sidebar-nav a:hover .nav-icon { opacity: 1; }
 
-/* ── Hero (compact) ── */
-.hero { padding: 72px 0 0; text-align: center; }
-.hero h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.3; margin-bottom: 6px; }
-.hero h1 .accent { color: var(--accent2); }
-.hero .summary { font-size: 14px; color: var(--text2); max-width: 640px; margin: 0 auto; line-height: 1.6; }
-.hero .trust-row { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-top: 12px; padding-bottom: 8px; }
-.hero .trust-row span { font-size: 12px; color: var(--text2); font-weight: 500; display: flex; align-items: center; gap: 5px; }
-.hero .trust-row .icon { font-size: 14px; }
+.sidebar-bottom { margin-top: auto; }
+.sidebar-cta {
+  display: block; width: 100%; padding: 12px 16px;
+  background: var(--amber); color: #fff;
+  font-size: 14px; font-weight: 700; text-align: center;
+  border-radius: 8px; text-decoration: none; border: none;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.sidebar-cta:hover { background: var(--amber-hover); transform: translateY(-1px); }
 
-/* ── Main split: demo + pricing ── */
-.main-split { display: grid; grid-template-columns: 7fr 3fr; gap: 24px; padding: 48px 0 0; align-items: start; }
+/* ── Mobile top bar ── */
+.mobile-topbar {
+  display: none; position: fixed; top: 0; left: 0; right: 0;
+  height: 56px; background: var(--navy); z-index: 200;
+  padding: 0 16px; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(126,200,227,0.12);
+}
+.mobile-topbar-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.mobile-topbar-logo svg { height: 36px; width: auto; }
+.mobile-topbar-logo span { color: var(--amber-light); font-size: 16px; font-weight: 700; }
+.hamburger {
+  background: none; border: none; cursor: pointer; padding: 8px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px; background: #fff;
+  border-radius: 2px; transition: all 0.3s;
+}
+.hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
 
-/* Demo column — embedded iframe */
-.demo-col { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid rgba(126,200,227,0.25); background: var(--bg2); }
-.demo-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: rgba(16,24,80,0.9); border-bottom: 1px solid rgba(255,255,255,0.08); }
-.demo-bar-left { display: flex; align-items: center; gap: 8px; }
-.demo-bar-left span { font-size: 13px; font-weight: 600; color: var(--text2); }
-.demo-bar-dots { display: flex; gap: 5px; }
-.demo-bar-dots i { width: 8px; height: 8px; border-radius: 50%; }
-.demo-bar-dots i:nth-child(1) { background: #e05050; }
-.demo-bar-dots i:nth-child(2) { background: #f0c050; }
-.demo-bar-dots i:nth-child(3) { background: #40c080; }
-.demo-expand { background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--text2); font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-family: inherit; transition: all 0.2s; display: flex; align-items: center; gap: 5px; }
-.demo-expand:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
-.demo-iframe-wrap { width: 100%; height: 520px; }
-.demo-iframe-wrap iframe { width: 100%; height: 100%; border: none; background: var(--bg); }
-.demo-col .see-all { display: block; text-align: center; padding: 8px; font-size: 12px; color: var(--accent2); text-decoration: none; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.06); }
-.demo-col .see-all:hover { text-decoration: underline; background: rgba(255,255,255,0.02); }
+/* Mobile nav overlay */
+.mobile-nav-overlay {
+  display: none; position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
+  background: var(--navy); z-index: 199; padding: 20px 24px;
+  flex-direction: column; gap: 6px;
+}
+.mobile-nav-overlay.active { display: flex; }
+.mobile-nav-overlay a {
+  color: rgba(255,255,255,0.8); text-decoration: none;
+  font-size: 17px; font-weight: 600; padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: color 0.2s;
+}
+.mobile-nav-overlay a:hover { color: var(--amber-light); }
+.mobile-nav-overlay .mobile-cta {
+  margin-top: 16px; display: block; padding: 14px;
+  background: var(--amber); color: #fff; font-weight: 700;
+  text-align: center; border-radius: 10px; font-size: 16px;
+  border: none;
+}
 
-/* Fullscreen demo overlay */
-.demo-fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200; background: var(--bg); display: none; flex-direction: column; }
-.demo-fullscreen.active { display: flex; }
-.demo-fullscreen .demo-bar { flex-shrink: 0; }
-.demo-fullscreen .demo-iframe-wrap { flex: 1; height: auto; }
-.demo-fullscreen .demo-iframe-wrap iframe { height: 100%; }
+/* ── Main content area ── */
+.main-content {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+}
 
-/* Pricing column */
-.pricing-col { display: flex; flex-direction: column; gap: 14px; }
-.pricing-col h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 2px; }
-.pricing-col .pricing-sub { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
-.p-card { background: var(--bg2); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 20px 22px; display: flex; align-items: center; gap: 18px; position: relative; transition: border-color 0.2s; }
-.p-card:hover { border-color: rgba(232,160,32,0.3); }
-.p-card.popular { border-color: var(--accent2); }
-.p-card .pop-tag { position: absolute; top: -10px; right: 16px; background: var(--accent2); color: var(--bg); font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.5px; }
-.p-card-info { flex: 1; min-width: 0; }
-.p-card-tier { font-size: 15px; font-weight: 700; color: var(--accent2); }
-.p-card-price { font-size: 28px; font-weight: 800; color: var(--accent2); letter-spacing: -1px; }
-.p-card-price sup { font-size: 13px; font-weight: 500; color: var(--text2); vertical-align: super; }
-.p-card-note { font-size: 12px; color: var(--text2); }
-.p-card-highlight { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 2px; }
-.p-card-cta { flex-shrink: 0; }
-.p-card-cta a { display: block; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center; white-space: nowrap; transition: all 0.2s; }
-.p-card-cta .btn-soon { background: rgba(232,160,32,0.15); color: var(--accent2); opacity: 0.7; pointer-events: none; }
-.p-card-cta .btn-demo { display: block; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; text-decoration: none; text-align: center; white-space: nowrap; transition: all 0.2s; background: rgba(126,200,227,0.12); color: var(--blue); border: 1px solid rgba(126,200,227,0.25); margin-top: 6px; }
-.p-card-cta .btn-demo:hover { background: rgba(126,200,227,0.2); border-color: rgba(126,200,227,0.4); color: #fff; }
-.p-card-cta .btn-more { background: none; color: var(--text2); border: 1px solid rgba(255,255,255,0.12); padding: 8px 16px; font-size: 12px; margin-top: 6px; }
-.p-card-cta .btn-more:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+.container { max-width: 1060px; margin: 0 auto; padding: 0 32px; }
 
-/* Demo tier tabs */
-.demo-bar-right { display: flex; align-items: center; gap: 10px; }
-.demo-tier-tabs { display: flex; gap: 2px; background: rgba(255,255,255,0.06); border-radius: 6px; padding: 2px; }
-.demo-tier-btn { background: none; border: none; color: var(--text2); font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 5px; cursor: pointer; font-family: inherit; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
-.demo-tier-btn:hover { color: var(--text); }
-.demo-tier-btn.active { background: var(--accent); color: #fff; }
+/* ── Hero ── */
+.hero {
+  padding: 80px 0 60px; text-align: center;
+  background: linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+}
+.hero h1 {
+  font-size: 42px; font-weight: 800; color: var(--navy);
+  letter-spacing: -1px; line-height: 1.2; margin-bottom: 16px;
+}
+.hero h1 .accent { color: var(--amber); }
+.hero .summary {
+  font-size: 17px; color: var(--text2); max-width: 580px;
+  margin: 0 auto 28px; line-height: 1.7;
+}
+.hero-cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 36px; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 32px; background: var(--amber); color: #fff;
+  font-size: 16px; font-weight: 700; border-radius: 10px;
+  text-decoration: none; border: none; cursor: pointer;
+  font-family: inherit; transition: all 0.2s; letter-spacing: 0.3px;
+}
+.btn-primary:hover { background: var(--amber-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(232,160,32,0.3); }
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 32px; background: transparent; color: var(--navy);
+  font-size: 16px; font-weight: 600; border-radius: 10px;
+  text-decoration: none; border: 2px solid var(--navy);
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.btn-secondary:hover { background: var(--navy); color: #fff; }
 
-/* Active pricing card highlight */
-.p-card.demo-active { border-color: var(--blue); box-shadow: 0 0 20px rgba(126,200,227,0.15); }
-.p-card.demo-active .btn-demo { background: var(--blue); color: var(--bg); border-color: var(--blue); }
+.hero-trust { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin-bottom: 48px; }
+.hero-trust span {
+  font-size: 13px; color: var(--text2); font-weight: 500;
+  display: flex; align-items: center; gap: 6px;
+}
+.hero-trust .icon { font-size: 16px; }
 
-/* ── Tier features ── */
-.tiers-section { padding: 48px 0 0; }
-.tiers-section h2 { font-size: 24px; font-weight: 800; text-align: center; letter-spacing: -0.5px; margin-bottom: 8px; }
-.tiers-section .tiers-sub { text-align: center; font-size: 14px; color: var(--text2); margin-bottom: 32px; }
-.tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-.tier-col { background: var(--bg2); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 24px; }
-.tier-col.popular { border-color: var(--accent2); }
-.tier-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
-.tier-header h3 { font-size: 17px; font-weight: 700; color: var(--accent2); }
-.tier-header .tier-price { font-size: 14px; color: var(--text2); font-weight: 500; }
-.tier-includes { font-size: 12px; color: var(--text2); margin-bottom: 12px; font-style: italic; }
-.tier-list { list-style: none; }
-.tier-list li { padding: 6px 0; font-size: 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.tier-list li:last-child { border-bottom: none; }
-.tier-list .check { color: var(--green); font-size: 13px; flex-shrink: 0; }
-.tier-compare { text-align: center; margin-top: 24px; }
-.tier-compare a { font-size: 13px; color: var(--accent2); text-decoration: none; font-weight: 600; }
-.tier-compare a:hover { text-decoration: underline; }
-.pricing-save { margin-top: 20px; padding: 12px; background: rgba(64,192,128,0.08); border-radius: 10px; border: 1px solid rgba(64,192,128,0.15); text-align: center; }
-.pricing-save p { font-size: 13px; color: var(--green); }
-.pricing-save strong { font-weight: 700; }
+.hero-mockup {
+  max-width: 800px; margin: 0 auto;
+  background: var(--navy); border-radius: 14px;
+  overflow: hidden; border: 1px solid rgba(126,200,227,0.2);
+  box-shadow: 0 20px 60px rgba(12,20,69,0.15), 0 4px 20px rgba(0,0,0,0.08);
+}
+.hero-mockup-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; background: rgba(16,24,80,0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.hero-mockup-dots { display: flex; gap: 6px; }
+.hero-mockup-dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+.hero-mockup-dots i:nth-child(1) { background: #e05050; }
+.hero-mockup-dots i:nth-child(2) { background: #f0c050; }
+.hero-mockup-dots i:nth-child(3) { background: #40c080; }
+.hero-mockup-bar span { font-size: 12px; color: rgba(255,255,255,0.5); margin-left: 8px; }
+.hero-mockup iframe {
+  width: 100%; height: 480px; border: none; display: block;
+}
+
+/* ── Section common ── */
+.section { padding: 72px 0; }
+.section-alt { background: var(--bg-alt); }
+.section-title {
+  font-size: 32px; font-weight: 800; color: var(--navy);
+  text-align: center; letter-spacing: -0.5px; margin-bottom: 10px;
+}
+.section-sub {
+  text-align: center; font-size: 16px; color: var(--text2);
+  max-width: 560px; margin: 0 auto 40px;
+}
+
+/* ── Features ── */
+.features-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.feature-card {
+  background: #fff; border: 1px solid #e8eaf0;
+  border-radius: var(--radius); padding: 28px 24px;
+  transition: all 0.25s;
+}
+.feature-card:hover { border-color: var(--amber); box-shadow: 0 8px 24px rgba(232,160,32,0.1); transform: translateY(-2px); }
+.feature-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; margin-bottom: 16px;
+  background: rgba(12,20,69,0.06);
+}
+.feature-card h3 { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.feature-card p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+/* ── Pricing ── */
+.pricing-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 20px; align-items: start;
+}
+.price-card {
+  background: #fff; border: 2px solid #e8eaf0;
+  border-radius: 16px; padding: 28px 24px;
+  text-align: center; transition: all 0.25s;
+  position: relative;
+}
+.price-card:hover { border-color: var(--amber); box-shadow: 0 8px 30px rgba(232,160,32,0.12); }
+.price-card.popular { border-color: var(--amber); }
+.price-card .pop-badge {
+  position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+  background: var(--amber); color: #fff; font-size: 11px; font-weight: 700;
+  padding: 3px 14px; border-radius: 99px; text-transform: uppercase;
+  letter-spacing: 0.5px; white-space: nowrap;
+}
+.price-card-tier { font-size: 14px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.price-card-price { font-size: 42px; font-weight: 800; color: var(--navy); letter-spacing: -2px; margin-bottom: 4px; }
+.price-card-price sup { font-size: 18px; font-weight: 600; vertical-align: super; }
+.price-card-price .period { font-size: 14px; font-weight: 500; color: var(--text3); letter-spacing: 0; }
+.price-card-accounts { font-size: 13px; color: var(--amber); font-weight: 600; margin-bottom: 16px; }
+.price-card-features { list-style: none; text-align: left; margin-bottom: 20px; }
+.price-card-features li {
+  padding: 7px 0; font-size: 13px; color: var(--text2);
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid #f0f1f5;
+}
+.price-card-features li:last-child { border-bottom: none; }
+.price-card-features .check { color: var(--green); font-weight: 700; flex-shrink: 0; }
+.price-card-features .x-mark { color: var(--text3); font-weight: 700; flex-shrink: 0; opacity: 0.4; }
+
+.price-card-cta {
+  display: block; width: 100%; padding: 12px 16px;
+  border-radius: 8px; font-size: 14px; font-weight: 600;
+  text-decoration: none; text-align: center; transition: all 0.2s;
+  font-family: inherit; cursor: pointer; border: none;
+}
+.price-card-cta.cta-primary { background: var(--amber); color: #fff; }
+.price-card-cta.cta-primary:hover { background: var(--amber-hover); }
+.price-card-cta.cta-outline { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
+.price-card-cta.cta-outline:hover { background: var(--navy); color: #fff; }
+
+.pricing-note {
+  text-align: center; margin-top: 28px; padding: 16px 24px;
+  background: rgba(64,192,128,0.08); border-radius: 10px;
+  border: 1px solid rgba(64,192,128,0.15);
+}
+.pricing-note p { font-size: 14px; color: var(--green); }
+.pricing-note strong { font-weight: 700; }
+
+/* ── Privacy section ── */
+.privacy-block {
+  display: flex; align-items: center; gap: 48px;
+  max-width: 860px; margin: 0 auto;
+}
+.privacy-icon-big {
+  flex-shrink: 0; width: 120px; height: 120px;
+  background: linear-gradient(135deg, var(--navy) 0%, #1a2870 100%);
+  border-radius: 24px; display: flex; align-items: center;
+  justify-content: center; font-size: 52px;
+}
+.privacy-text h2 { font-size: 28px; font-weight: 800; color: var(--navy); margin-bottom: 12px; }
+.privacy-text p { font-size: 15px; color: var(--text2); line-height: 1.7; margin-bottom: 12px; }
+.privacy-badges { display: flex; gap: 16px; flex-wrap: wrap; }
+.privacy-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--navy);
+  padding: 6px 14px; border-radius: 99px;
+  background: rgba(12,20,69,0.06);
+}
+
+/* ── Download / Install ── */
+.install-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  max-width: 700px; margin: 0 auto;
+}
+.install-card {
+  background: #fff; border: 1px solid #e8eaf0;
+  border-radius: var(--radius); padding: 32px 28px; text-align: center;
+  transition: all 0.2s;
+}
+.install-card:hover { border-color: var(--amber); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+.install-card-icon { font-size: 36px; margin-bottom: 14px; }
+.install-card h3 { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.install-card p { font-size: 13px; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
+.install-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 22px; border-radius: 8px; font-size: 13px;
+  font-weight: 600; text-decoration: none; transition: all 0.2s;
+  font-family: inherit; cursor: pointer; border: none;
+}
+.install-btn-primary { background: var(--navy); color: #fff; }
+.install-btn-primary:hover { background: #1a2870; }
+.install-btn-outline { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
+.install-btn-outline:hover { background: var(--navy); color: #fff; }
+
+/* ── Waitlist ── */
+.waitlist-section { text-align: center; }
+.waitlist-form {
+  display: flex; gap: 10px; max-width: 460px; margin: 0 auto;
+  flex-wrap: wrap; justify-content: center;
+}
+.waitlist-form input[type="email"] {
+  flex: 1; min-width: 200px; padding: 14px 18px; border-radius: 10px;
+  border: 2px solid #e0e2e8; background: #fff; color: var(--text);
+  font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.2s;
+}
+.waitlist-form input[type="email"]:focus { border-color: var(--amber); }
+.waitlist-form button {
+  padding: 14px 28px; border-radius: 10px; border: none;
+  background: var(--amber); color: #fff; font-weight: 700;
+  font-size: 15px; cursor: pointer; font-family: inherit;
+  white-space: nowrap; transition: all 0.2s;
+}
+.waitlist-form button:hover { background: var(--amber-hover); }
+
+/* ── Beta Download ── */
+.beta-download {
+  max-width: 380px; margin: 32px auto 0; padding: 24px;
+  border: 2px solid #e0e2e8; border-radius: 14px; background: #fff;
+  text-align: center;
+}
+.beta-download .lock-icon { font-size: 22px; margin-bottom: 6px; }
+.beta-download .dl-title { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 4px; }
+.beta-download .dl-sub { font-size: 12px; color: var(--text3); margin-bottom: 14px; }
+.beta-download .dl-row { display: flex; gap: 8px; }
+.beta-download .dl-row input {
+  flex: 1; padding: 10px 14px; border-radius: 8px;
+  border: 2px solid #e0e2e8; background: #fff; color: var(--text);
+  font-size: 14px; font-family: inherit; outline: none;
+}
+.beta-download .dl-row input:focus { border-color: var(--amber); }
+.beta-download .dl-row button {
+  padding: 10px 20px; border-radius: 8px; border: none;
+  background: var(--amber); color: #fff; font-weight: 600;
+  font-size: 14px; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
 
 /* ── Footer ── */
-.footer { border-top: 1px solid rgba(255,255,255,0.08); padding: 40px 0; }
-.footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-.footer-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--accent2); }
-.footer-logo span { color: var(--text2); font-weight: 400; font-size: 12px; }
+.footer { border-top: 1px solid #e0e2e8; padding: 40px 0; background: #fff; }
+.footer-inner {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; font-weight: 700; color: var(--navy);
+}
+.footer-logo span { color: var(--text3); font-weight: 400; font-size: 12px; }
 .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
 .footer-links a { color: var(--text2); text-decoration: none; font-size: 13px; transition: color 0.2s; }
-.footer-links a:hover { color: var(--text); }
-.footer-copy { color: var(--text2); font-size: 12px; opacity: 0.6; }
+.footer-links a:hover { color: var(--navy); }
+.footer-copy { color: var(--text3); font-size: 12px; }
 
 /* ── Responsive ── */
-@media (max-width: 900px) {
-  .main-split { grid-template-columns: 1fr; gap: 24px; }
-  .demo-iframe-wrap { height: 400px; }
-  .tiers-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+@media (max-width: 1024px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .pricing-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
 @media (max-width: 768px) {
-  .hero h1 { font-size: 24px; }
-  .nav-links { display: none; }
-  .hero { padding: 64px 0 0; }
-  .hero .trust-row { gap: 12px; }
+  .sidebar { display: none; }
+  .mobile-topbar { display: flex; }
+  .main-content { margin-left: 0; padding-top: 56px; }
+  .hero { padding: 48px 0 40px; }
+  .hero h1 { font-size: 30px; }
+  .hero .summary { font-size: 15px; }
+  .hero-mockup iframe { height: 360px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto; }
+  .privacy-block { flex-direction: column; text-align: center; gap: 24px; }
+  .privacy-badges { justify-content: center; }
+  .install-grid { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto; }
   .footer-inner { flex-direction: column; text-align: center; }
+  .container { padding: 0 20px; }
+  .section { padding: 48px 0; }
+  .section-title { font-size: 26px; }
 }
+
 @media (max-width: 480px) {
-  .hero .trust-row { flex-direction: column; align-items: center; gap: 6px; }
-  .p-card { flex-direction: column; text-align: center; gap: 12px; }
+  .hero h1 { font-size: 26px; }
+  .hero-trust { flex-direction: column; align-items: center; gap: 8px; }
+  .hero-cta-row { flex-direction: column; align-items: center; }
+  .hero-cta-row a { width: 100%; max-width: 280px; justify-content: center; }
 }
 </style>
 <script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
 </head>
 <body>
 
-<!-- Coming Soon Banner -->
-<div id="coming-soon-banner" style="background:linear-gradient(90deg,var(--accent),var(--orange));color:#fff;text-align:center;padding:10px 24px;font-size:14px;font-weight:600;letter-spacing:0.3px;position:relative;z-index:101;">
-  Coming Soon — Join the waitlist below to get notified at launch!
+<!-- ======== SIDEBAR (desktop) ======== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sbSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
+        <linearGradient id="sbSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
+        <path id="sbBa" d="M15,85 Q50,108 85,85" fill="none"/>
+      </defs>
+      <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#sbSg)" stroke="url(#sbSe)" stroke-width="2.5"/>
+      <text x="50" y="20" text-anchor="middle" fill="#f0c050" font-size="11" font-weight="700" font-family="Arial" letter-spacing="4" opacity="0.9">AMBIT</text>
+      <polygon points="50,26 55,50 50,55 45,50" fill="#e87820"/>
+      <polygon points="50,88 45,60 50,55 55,60" fill="#f0c050"/>
+      <polygon points="90,55 55,50 50,55 55,60" fill="#e87820" opacity="0.85"/>
+      <polygon points="10,55 45,60 50,55 45,50" fill="#f0c050" opacity="0.85"/>
+      <circle cx="50" cy="55" r="5" fill="#b05810"/>
+      <circle cx="50" cy="55" r="2.5" fill="#8a4510"/>
+      <text x="52" y="72" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
+      <text x="48.5" y="69.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
+      <text x="50" y="71" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
+      <text fill="#7ec8e3" font-size="9" font-weight="600" font-family="Arial" letter-spacing="2" opacity="0.8"><textPath href="#sbBa" startOffset="50%" text-anchor="middle">BUDGET</textPath></text>
+      <circle cx="16" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+      <circle cx="84" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+    </svg>
+    <div class="sidebar-brand">Ambit Budget Pro</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="#features"><span class="nav-icon">&#x2726;</span> Features</a>
+    <a href="#pricing"><span class="nav-icon">&#x2606;</span> Pricing</a>
+    <a href="#demo"><span class="nav-icon">&#x25B6;</span> Demo</a>
+    <a href="#download"><span class="nav-icon">&#x2913;</span> Download</a>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <a href="./app/index.html?mode=demo&tier=free" class="sidebar-cta">Try Free</a>
+  </div>
+</aside>
+
+<!-- ======== MOBILE TOP BAR ======== -->
+<header class="mobile-topbar" id="mobile-topbar">
+  <a href="#" class="mobile-topbar-logo">
+    <!-- Simplified shield: no AMBIT/BUDGET text, just shield + A + compass -->
+    <svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="mbSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
+        <linearGradient id="mbSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
+      </defs>
+      <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#mbSg)" stroke="url(#mbSe)" stroke-width="2.5"/>
+      <polygon points="50,22 55,48 50,53 45,48" fill="#e87820"/>
+      <polygon points="50,86 45,58 50,53 55,58" fill="#f0c050"/>
+      <polygon points="90,53 55,48 50,53 55,58" fill="#e87820" opacity="0.85"/>
+      <polygon points="10,53 45,58 50,53 45,48" fill="#f0c050" opacity="0.85"/>
+      <circle cx="50" cy="53" r="5" fill="#b05810"/>
+      <circle cx="50" cy="53" r="2.5" fill="#8a4510"/>
+      <text x="52" y="80" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
+      <text x="48.5" y="77.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
+      <text x="50" y="79" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
+    </svg>
+    <span>Ambit</span>
+  </a>
+  <button class="hamburger" id="hamburger-btn" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<!-- Mobile nav overlay -->
+<div class="mobile-nav-overlay" id="mobile-nav">
+  <a href="#features" onclick="closeMobileNav()">Features</a>
+  <a href="#pricing" onclick="closeMobileNav()">Pricing</a>
+  <a href="#demo" onclick="closeMobileNav()">Demo</a>
+  <a href="#download" onclick="closeMobileNav()">Download</a>
+  <a href="./app/index.html?mode=demo&tier=free" class="mobile-cta">Try Free</a>
 </div>
 
-<!-- Nav -->
-<nav class="nav" id="nav">
-  <div class="nav-inner">
-    <a href="#" class="nav-logo">
-      <svg width="28" height="32" viewBox="0 0 100 115">
-        <defs>
-          <linearGradient id="navSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
-          <linearGradient id="navSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
-          <path id="navBa" d="M15,85 Q50,108 85,85" fill="none"/>
-        </defs>
-        <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#navSg)" stroke="url(#navSe)" stroke-width="2.5"/>
-        <text x="50" y="20" text-anchor="middle" fill="#f0c050" font-size="11" font-weight="700" font-family="Arial" letter-spacing="4" opacity="0.9">AMBIT</text>
-        <polygon points="50,26 55,50 50,55 45,50" fill="#e87820"/>
-        <polygon points="50,88 45,60 50,55 55,60" fill="#f0c050"/>
-        <polygon points="90,55 55,50 50,55 55,60" fill="#e87820" opacity="0.85"/>
-        <polygon points="10,55 45,60 50,55 45,50" fill="#f0c050" opacity="0.85"/>
-        <circle cx="50" cy="55" r="5" fill="#b05810"/>
-        <circle cx="50" cy="55" r="2.5" fill="#8a4510"/>
-        <text x="52" y="72" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
-        <text x="48.5" y="69.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
-        <text x="50" y="71" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
-        <text fill="#7ec8e3" font-size="9" font-weight="600" font-family="Arial" letter-spacing="2" opacity="0.8"><textPath href="#navBa" startOffset="50%" text-anchor="middle">BUDGET</textPath></text>
-        <circle cx="16" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
-        <circle cx="84" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
-      </svg>
-      <div>Ambit<span>Budget Pro</span></div>
-    </a>
-    <div class="nav-links">
-      <a href="./features.html">Features</a>
-      <a href="#pricing">Pricing</a>
-      <a href="./faq.html">FAQ</a>
-      <a href="./coming-soon.html">What's Next</a>
-      <a href="./app/index.html?mode=demo&tier=pro" class="nav-cta">Try Demo</a>
-    </div>
+<!-- ======== MAIN CONTENT ======== -->
+<main class="main-content">
+
+  <!-- Coming Soon Banner -->
+  <div id="coming-soon-banner" style="background:linear-gradient(90deg,var(--amber),var(--orange));color:#fff;text-align:center;padding:10px 24px;font-size:14px;font-weight:600;letter-spacing:0.3px;">
+    Coming Soon — Join the waitlist below to get notified at launch!
   </div>
-</nav>
 
-<!-- Hero (compact) -->
-<section class="hero">
-  <div class="container">
-    <h1>Personal finance, <span class="accent">your way.</span></h1>
-    <p class="summary">Track spending, manage bills, set budgets, and forecast your balance — from a single file in your browser. No subscriptions. No cloud.</p>
-    <div class="trust-row">
-      <span><span class="icon">&#x1F512;</span> 100% Private</span>
-      <span><span class="icon">&#x1F4B3;</span> One-Time Purchase</span>
-      <span><span class="icon">&#x1F4F1;</span> Any Device</span>
-      <span><span class="icon">&#x26A1;</span> No Account Needed</span>
-    </div>
-  </div>
-</section>
+  <!-- ── HERO ── -->
+  <section class="hero" id="hero">
+    <div class="container">
+      <h1>Personal finance,<br><span class="accent">your way.</span></h1>
+      <p class="summary">Track spending, manage bills, set budgets, and forecast your balance — from a single file in your browser. No subscriptions. No cloud.</p>
+      <div class="hero-cta-row">
+        <a href="./app/index.html?mode=demo&tier=free" class="btn-primary">Try Free &#x2192;</a>
+        <a href="#pricing" class="btn-secondary">View Plans</a>
+      </div>
+      <div class="hero-trust">
+        <span><span class="icon">&#x1F512;</span> 100% Private</span>
+        <span><span class="icon">&#x1F4B3;</span> One-Time Purchase</span>
+        <span><span class="icon">&#x1F4F1;</span> Any Device</span>
+        <span><span class="icon">&#x26A1;</span> No Account Needed</span>
+      </div>
 
-<!-- Demo + Pricing split -->
-<div class="container">
-  <div class="main-split">
-
-    <!-- Left: Live Demo (tier-switchable) -->
-    <div class="demo-col" id="demo-inline">
-      <div class="demo-bar">
-        <div class="demo-bar-left">
-          <div class="demo-bar-dots"><i></i><i></i><i></i></div>
-          <span id="demo-tier-label">Live Demo — Starter</span>
+      <!-- App mockup -->
+      <div class="hero-mockup" id="demo">
+        <div class="hero-mockup-bar">
+          <div class="hero-mockup-dots"><i></i><i></i><i></i></div>
+          <span>ambitbudget.com/app</span>
         </div>
-        <div class="demo-bar-right">
-          <div class="demo-tier-tabs">
-            <button class="demo-tier-btn active" data-tier="starter" onclick="switchDemoTier('starter')">Starter</button>
-            <button class="demo-tier-btn" data-tier="plus" onclick="switchDemoTier('plus')">Plus</button>
-            <button class="demo-tier-btn" data-tier="pro" onclick="switchDemoTier('pro')">Pro</button>
+        <iframe src="./app/index.html?mode=demo&tier=pro" loading="lazy" title="Ambit Budget Pro Demo"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ── -->
+  <section class="section section-alt" id="features">
+    <div class="container">
+      <h2 class="section-title">Everything you need to stay on top of your money</h2>
+      <p class="section-sub">Powerful budgeting tools that work offline, on any device, with zero cloud dependency.</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">&#x1F4CA;</div>
+          <h3>Smart Dashboard</h3>
+          <p>Get a complete snapshot of your finances with spending breakdowns, category trends, and balance summaries at a glance.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#x1F4C1;</div>
+          <h3>CSV &amp; Excel Import</h3>
+          <p>Import your bank statements in seconds. Supports CSV and Excel formats from any bank — no manual entry required.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#x1F3F7;</div>
+          <h3>Auto-Categorization</h3>
+          <p>Set payee rules once and watch transactions categorize themselves. Smart matching saves hours of manual work.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#x1F4B0;</div>
+          <h3>Budget Tracking</h3>
+          <p>Create category budgets, track progress in real time, and get alerts when you're approaching your limits.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#x1F4C5;</div>
+          <h3>Bill Management</h3>
+          <p>Never miss a payment. Track recurring bills, due dates, and upcoming obligations in a unified calendar view.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#x1F52E;</div>
+          <h3>Balance Forecast</h3>
+          <p>See where your balance is headed. Day-by-day projections show exactly when money comes and goes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRICING ── -->
+  <section class="section" id="pricing">
+    <div class="container">
+      <h2 class="section-title">Simple, transparent pricing</h2>
+      <p class="section-sub">One-time purchase. Yours forever. No subscriptions, no hidden fees.</p>
+
+      <div class="pricing-grid">
+        <!-- Free -->
+        <div class="price-card">
+          <div class="price-card-tier">Free</div>
+          <div class="price-card-price">$0</div>
+          <div class="price-card-accounts">1 Account</div>
+          <ul class="price-card-features">
+            <li><span class="check">&#x2713;</span> Manual categorization</li>
+            <li><span class="check">&#x2713;</span> Spending breakdown</li>
+            <li><span class="check">&#x2713;</span> CSV import</li>
+            <li><span class="check">&#x2713;</span> Works offline</li>
+            <li><span class="x-mark">&#x2717;</span> Payee rules</li>
+            <li><span class="x-mark">&#x2717;</span> Budgets</li>
+          </ul>
+          <a href="./app/index.html?mode=demo&tier=free" class="price-card-cta cta-outline">Try Demo</a>
+        </div>
+
+        <!-- Starter -->
+        <div class="price-card">
+          <div class="price-card-tier">Starter</div>
+          <div class="price-card-price"><sup>$</sup>9<sup>.99</sup></div>
+          <div class="price-card-accounts">2 Accounts</div>
+          <ul class="price-card-features">
+            <li><span class="check">&#x2713;</span> Payee rules</li>
+            <li><span class="check">&#x2713;</span> Budget tracking</li>
+            <li><span class="check">&#x2713;</span> Category groups</li>
+            <li><span class="check">&#x2713;</span> Bill tracking</li>
+            <li><span class="x-mark">&#x2717;</span> Forecast</li>
+            <li><span class="x-mark">&#x2717;</span> Debt planner</li>
+          </ul>
+          <a href="./app/index.html?mode=demo&tier=starter" class="price-card-cta cta-outline">Try Demo</a>
+        </div>
+
+        <!-- Plus -->
+        <div class="price-card popular">
+          <div class="pop-badge">Most Popular</div>
+          <div class="price-card-tier">Plus</div>
+          <div class="price-card-price"><sup>$</sup>19<sup>.99</sup></div>
+          <div class="price-card-accounts">3 Accounts</div>
+          <ul class="price-card-features">
+            <li><span class="check">&#x2713;</span> Everything in Starter</li>
+            <li><span class="check">&#x2713;</span> Balance forecast</li>
+            <li><span class="check">&#x2713;</span> Monthly review</li>
+            <li><span class="check">&#x2713;</span> Calendar year view</li>
+            <li><span class="check">&#x2713;</span> Savings goals</li>
+            <li><span class="x-mark">&#x2717;</span> Debt planner</li>
+          </ul>
+          <a href="./app/index.html?mode=demo&tier=plus" class="price-card-cta cta-primary">Try Demo</a>
+        </div>
+
+        <!-- Pro -->
+        <div class="price-card">
+          <div class="price-card-tier">Pro</div>
+          <div class="price-card-price"><sup>$</sup>29<sup>.99</sup></div>
+          <div class="price-card-accounts">Unlimited Accounts</div>
+          <ul class="price-card-features">
+            <li><span class="check">&#x2713;</span> Everything in Plus</li>
+            <li><span class="check">&#x2713;</span> Day-by-day projections</li>
+            <li><span class="check">&#x2713;</span> Debt planner</li>
+            <li><span class="check">&#x2713;</span> Lump sum analyzer</li>
+            <li><span class="check">&#x2713;</span> All future features</li>
+          </ul>
+          <a href="./app/index.html?mode=demo&tier=pro" class="price-card-cta cta-outline">Try Demo</a>
+        </div>
+      </div>
+
+      <div class="pricing-note">
+        <p>Most budget apps charge <strong>$5&#x2013;15/month</strong>. That's $60&#x2013;180/year. Ambit pays for itself in <strong>weeks, not months</strong>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRIVACY ── -->
+  <section class="section section-alt" id="privacy">
+    <div class="container">
+      <div class="privacy-block">
+        <div class="privacy-icon-big">&#x1F512;</div>
+        <div class="privacy-text">
+          <h2>Your data stays on YOUR device</h2>
+          <p>Ambit Budget Pro runs entirely in your browser. Your financial data never leaves your device — no cloud servers, no third-party access, no data mining. Period.</p>
+          <p>Works offline, works anywhere, and your information is never shared with anyone. You are in complete control.</p>
+          <div class="privacy-badges">
+            <span class="privacy-badge">&#x1F6E1; No Cloud Storage</span>
+            <span class="privacy-badge">&#x1F50C; Works Offline</span>
+            <span class="privacy-badge">&#x1F512; Zero Data Collection</span>
           </div>
-          <button class="demo-expand" onclick="toggleDemo()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
-            Expand
-          </button>
-        </div>
-      </div>
-      <div class="demo-iframe-wrap">
-        <iframe id="demo-inline-iframe" src="./app/index.html?mode=demo&tier=starter" loading="lazy" title="Ambit Budget Pro Demo — Starter"></iframe>
-      </div>
-      <a href="./features.html" class="see-all">See all features &#x2192;</a>
-    </div>
-
-    <!-- Fullscreen overlay (hidden) -->
-    <div class="demo-fullscreen" id="demo-fs">
-      <div class="demo-bar">
-        <div class="demo-bar-left">
-          <div class="demo-bar-dots"><i></i><i></i><i></i></div>
-          <span id="demo-fs-tier-label">Live Demo — Starter</span>
-        </div>
-        <div class="demo-bar-right">
-          <div class="demo-tier-tabs">
-            <button class="demo-tier-btn active" data-tier="starter" onclick="switchDemoTier('starter')">Starter</button>
-            <button class="demo-tier-btn" data-tier="plus" onclick="switchDemoTier('plus')">Plus</button>
-            <button class="demo-tier-btn" data-tier="pro" onclick="switchDemoTier('pro')">Pro</button>
-          </div>
-          <button class="demo-expand" onclick="toggleDemo()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h6v6m10-10h-6V4m0 16l7-7M14 4l-7 7"/></svg>
-            Close
-          </button>
-        </div>
-      </div>
-      <div class="demo-iframe-wrap">
-        <iframe id="demo-fs-iframe" title="Ambit Budget Pro Demo (Fullscreen)"></iframe>
-      </div>
-    </div>
-
-    <!-- Right: Compact pricing cards -->
-    <div class="pricing-col" id="pricing">
-      <h2>Pick your plan</h2>
-      <p class="pricing-sub">One-time purchase. Yours forever.</p>
-
-      <!-- Starter -->
-      <div class="p-card" id="p-card-starter">
-        <div class="p-card-info">
-          <div class="p-card-tier">Starter</div>
-          <div class="p-card-price"><sup>$</sup>9.99</div>
-          <div class="p-card-highlight">1 Bank Account</div>
-        </div>
-        <div class="p-card-cta">
-          <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/83990c64-8c99-430a-9885-02348f3afea0 -->
-          <a href="#" class="btn-soon">Coming Soon</a>
-          <a href="javascript:void(0)" class="btn-demo" onclick="switchDemoTier('starter')">Try Demo &#x25B6;</a>
-          <a href="./starter.html" class="btn-more">Learn more</a>
-        </div>
-      </div>
-
-      <!-- Plus -->
-      <div class="p-card popular" id="p-card-plus">
-        <div class="pop-tag">Popular</div>
-        <div class="p-card-info">
-          <div class="p-card-tier">Plus</div>
-          <div class="p-card-price"><sup>$</sup>19.99</div>
-          <div class="p-card-highlight">3 Bank Accounts</div>
-        </div>
-        <div class="p-card-cta">
-          <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/0cce8c89-2888-4c22-b7c6-030cb190b477 -->
-          <a href="#" class="btn-soon">Coming Soon</a>
-          <a href="javascript:void(0)" class="btn-demo" onclick="switchDemoTier('plus')">Try Demo &#x25B6;</a>
-          <a href="./plus.html" class="btn-more">Learn more</a>
-        </div>
-      </div>
-
-      <!-- Pro -->
-      <div class="p-card" id="p-card-pro">
-        <div class="p-card-info">
-          <div class="p-card-tier">Pro</div>
-          <div class="p-card-price"><sup>$</sup>29.99</div>
-          <div class="p-card-highlight">Unlimited Accounts</div>
-        </div>
-        <div class="p-card-cta">
-          <!-- LAUNCH: restore href to https://ambitbudget.lemonsqueezy.com/checkout/buy/abd7c8e0-d5ea-437f-8f7b-2e357d2e99ce -->
-          <a href="#" class="btn-soon">Coming Soon</a>
-          <a href="javascript:void(0)" class="btn-demo" onclick="switchDemoTier('pro')">Try Demo &#x25B6;</a>
-          <a href="./pro.html" class="btn-more">Learn more</a>
         </div>
       </div>
     </div>
+  </section>
 
-  </div>
-</div>
+  <!-- ── DOWNLOAD / INSTALL ── -->
+  <section class="section" id="download">
+    <div class="container">
+      <h2 class="section-title">Get Ambit Budget Pro</h2>
+      <p class="section-sub">Install as a PWA on any device or get it from the Microsoft Store.</p>
 
-<!-- Tier features breakdown -->
-<div class="container">
-  <div class="tiers-section">
-    <h2>What's in each plan</h2>
-    <p class="tiers-sub">All plans are one-time purchases with lifetime access and offline support.</p>
-
-    <div class="tiers-grid">
-
-      <!-- Starter -->
-      <div class="tier-col">
-        <div class="tier-header">
-          <h3>Starter</h3>
-          <span class="tier-price">$9.99</span>
+      <div class="install-grid">
+        <div class="install-card">
+          <div class="install-card-icon">&#x1F4F1;</div>
+          <h3>Install as PWA</h3>
+          <p>Add to your home screen from any browser. Works on phones, tablets, and desktops — no app store needed.</p>
+          <a href="./app/index.html" class="install-btn install-btn-primary">Open App &#x2192;</a>
         </div>
-        <ul class="tier-list">
-          <li><span class="check">&#x2713;</span> Smart Dashboard</li>
-          <li><span class="check">&#x2713;</span> CSV/Excel Import</li>
-          <li><span class="check">&#x2713;</span> Auto-Categorization</li>
-          <li><span class="check">&#x2713;</span> Budget Tracking</li>
-          <li><span class="check">&#x2713;</span> Bill Management</li>
-          <li><span class="check">&#x2713;</span> 1 Bank Account</li>
-          <li><span class="check">&#x2713;</span> Works Offline Forever</li>
-          <li><span class="check">&#x2713;</span> Lifetime Access</li>
-        </ul>
-      </div>
-
-      <!-- Plus -->
-      <div class="tier-col popular">
-        <div class="tier-header">
-          <h3>Plus</h3>
-          <span class="tier-price">$19.99</span>
+        <div class="install-card">
+          <div class="install-card-icon">&#x1F6CD;</div>
+          <h3>Microsoft Store</h3>
+          <p>Get the native Windows experience with automatic updates and seamless integration.</p>
+          <span class="install-btn install-btn-outline" style="opacity:0.5;cursor:default;">Coming Soon</span>
         </div>
-        <div class="tier-includes">Everything in Starter, plus:</div>
-        <ul class="tier-list">
-          <li><span class="check">&#x2713;</span> Balance Forecast</li>
-          <li><span class="check">&#x2713;</span> Monthly Budget Review</li>
-          <li><span class="check">&#x2713;</span> Calendar Year View</li>
-          <li><span class="check">&#x2713;</span> Per-Account Budgets</li>
-          <li><span class="check">&#x2713;</span> Up to 3 Bank Accounts</li>
-        </ul>
       </div>
+    </div>
+  </section>
 
-      <!-- Pro -->
-      <div class="tier-col">
-        <div class="tier-header">
-          <h3>Pro</h3>
-          <span class="tier-price">$29.99</span>
+  <!-- ── WAITLIST ── -->
+  <section class="section section-alt" id="waitlist">
+    <div class="container waitlist-section">
+      <h2 class="section-title">Be the first to know</h2>
+      <p class="section-sub">Drop your email and we'll notify you when Ambit Budget Pro is available for purchase.</p>
+      <form id="waitlist-form" action="https://formspree.io/f/xojnbyek" method="POST" class="waitlist-form">
+        <input type="email" name="email" required placeholder="you@example.com">
+        <button type="submit">Notify Me &#x2192;</button>
+      </form>
+      <div id="waitlist-thanks" style="display:none;margin-top:16px;color:var(--green);font-weight:600;font-size:15px;">You're on the list! We'll email you at launch.</div>
+      <p style="margin-top:12px;font-size:12px;color:var(--text3);">No spam. Just one email when we go live.</p>
+
+      <!-- Beta download -->
+      <div class="beta-download">
+        <div class="lock-icon">&#x1F512;</div>
+        <div class="dl-title">Already have access?</div>
+        <div class="dl-sub">Enter your download password</div>
+        <div class="dl-row">
+          <input id="dl-pass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')document.getElementById('dl-btn').click()">
+          <button id="dl-btn" onclick="
+            var p=document.getElementById('dl-pass').value;
+            var e=document.getElementById('dl-err');
+            if(p==='kifolo13'){
+              e.style.display='none';
+              var a=document.createElement('a');
+              a.href='./dl/ambit-budget-pro.html';
+              a.download='AmbitBudgetPro.html';
+              a.click();
+            } else {
+              e.style.display='block';
+            }
+          ">Download</button>
         </div>
-        <div class="tier-includes">Everything in Plus, plus:</div>
-        <ul class="tier-list">
-          <li><span class="check">&#x2713;</span> Payment Scheduling</li>
-          <li><span class="check">&#x2713;</span> Day-by-Day Projections</li>
-          <li><span class="check">&#x2713;</span> Debt Planner</li>
-          <li><span class="check">&#x2713;</span> Lump Sum Analyzer</li>
-          <li><span class="check">&#x2713;</span> Unlimited Bank Accounts</li>
-          <li><span class="check">&#x2713;</span> All Current &amp; Future Features</li>
-        </ul>
+        <div id="dl-err" style="display:none;color:var(--red);font-size:12px;margin-top:8px;">Invalid password</div>
       </div>
-
     </div>
+  </section>
 
-    <div class="pricing-save">
-      <p>Most budget apps charge <strong>$5&#x2013;15/month</strong>. That's $60&#x2013;180/year. Ambit pays for itself in <strong>weeks, not months</strong>.</p>
-    </div>
-    <div class="tier-compare">
-      <a href="./features.html">Compare all features &#x2192;</a>
-    </div>
-  </div>
-</div>
-
-<!-- Waitlist -->
-<section id="waitlist" style="text-align:center;padding:48px 0 20px;">
-  <div class="container">
-    <h2 style="font-size:24px;font-weight:800;margin-bottom:8px;letter-spacing:-0.5px;">Be the first to know.</h2>
-    <p style="color:var(--text2);font-size:14px;margin-bottom:18px;">Drop your email and we'll notify you when Ambit Budget Pro is available.</p>
-    <form id="waitlist-form" action="https://formspree.io/f/xojnbyek" method="POST" style="display:flex;gap:10px;max-width:440px;margin:0 auto;flex-wrap:wrap;justify-content:center;">
-      <input type="email" name="email" required placeholder="you@example.com" style="flex:1;min-width:200px;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:14px;font-family:inherit;outline:none;">
-      <button type="submit" style="padding:12px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.2s;">Notify Me &#x2192;</button>
-    </form>
-    <div id="waitlist-thanks" style="display:none;margin-top:16px;color:var(--green);font-weight:600;">You're on the list! We'll email you at launch.</div>
-    <p style="margin-top:10px;font-size:12px;color:var(--text2);opacity:0.6;">No spam. Just one email when we go live.</p>
-  </div>
-</section>
-
-<!-- Beta Download -->
-<div id="download" style="text-align:center;padding:12px 0 40px;">
-  <div style="max-width:340px;margin:0 auto;padding:20px;border:1px solid rgba(255,255,255,0.08);border-radius:12px;background:rgba(16,24,80,0.5);">
-    <div style="font-size:18px;margin-bottom:4px;">&#x1F512;</div>
-    <div style="font-size:13px;font-weight:600;margin-bottom:4px;color:var(--text2);">Already have access?</div>
-    <div style="font-size:11px;color:var(--text2);opacity:0.6;margin-bottom:14px;">Enter your download password</div>
-    <div style="display:flex;gap:8px;">
-      <input id="dl-pass" type="password" placeholder="Password" style="flex:1;padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:var(--text);font-size:13px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')document.getElementById('dl-btn').click()">
-      <button id="dl-btn" onclick="
-        var p=document.getElementById('dl-pass').value;
-        var e=document.getElementById('dl-err');
-        if(p==='kifolo13'){
-          e.style.display='none';
-          var a=document.createElement('a');
-          a.href='./dl/ambit-budget-pro.html';
-          a.download='AmbitBudgetPro.html';
-          a.click();
-        } else {
-          e.style.display='block';
-        }
-      " style="padding:9px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;">Download</button>
-    </div>
-    <div id="dl-err" style="display:none;color:var(--red);font-size:11px;margin-top:8px;">Invalid password</div>
-  </div>
-</div>
-
-<!-- Footer -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer-inner">
-      <div class="footer-logo">
-        <svg width="20" height="23" viewBox="0 0 100 115">
-          <defs>
-            <linearGradient id="ftSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
-            <linearGradient id="ftSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
-            <path id="ftBa" d="M15,85 Q50,108 85,85" fill="none"/>
-          </defs>
-          <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#ftSg)" stroke="url(#ftSe)" stroke-width="2.5"/>
-          <text x="50" y="20" text-anchor="middle" fill="#f0c050" font-size="11" font-weight="700" font-family="Arial" letter-spacing="4" opacity="0.9">AMBIT</text>
-          <polygon points="50,26 55,50 50,55 45,50" fill="#e87820"/>
-          <polygon points="50,88 45,60 50,55 55,60" fill="#f0c050"/>
-          <polygon points="90,55 55,50 50,55 55,60" fill="#e87820" opacity="0.85"/>
-          <polygon points="10,55 45,60 50,55 45,50" fill="#f0c050" opacity="0.85"/>
-          <circle cx="50" cy="55" r="5" fill="#b05810"/>
-          <circle cx="50" cy="55" r="2.5" fill="#8a4510"/>
-          <text x="52" y="72" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
-          <text x="48.5" y="69.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
-          <text x="50" y="71" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
-          <text fill="#7ec8e3" font-size="9" font-weight="600" font-family="Arial" letter-spacing="2" opacity="0.8"><textPath href="#ftBa" startOffset="50%" text-anchor="middle">BUDGET</textPath></text>
-          <circle cx="16" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
-          <circle cx="84" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
-        </svg>
-        Ambit <span>Budget Pro</span>
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <svg width="20" height="23" viewBox="0 0 100 115">
+            <defs>
+              <linearGradient id="ftSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
+              <linearGradient id="ftSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
+              <path id="ftBa" d="M15,85 Q50,108 85,85" fill="none"/>
+            </defs>
+            <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#ftSg)" stroke="url(#ftSe)" stroke-width="2.5"/>
+            <text x="50" y="20" text-anchor="middle" fill="#f0c050" font-size="11" font-weight="700" font-family="Arial" letter-spacing="4" opacity="0.9">AMBIT</text>
+            <polygon points="50,26 55,50 50,55 45,50" fill="#e87820"/>
+            <polygon points="50,88 45,60 50,55 55,60" fill="#f0c050"/>
+            <polygon points="90,55 55,50 50,55 55,60" fill="#e87820" opacity="0.85"/>
+            <polygon points="10,55 45,60 50,55 45,50" fill="#f0c050" opacity="0.85"/>
+            <circle cx="50" cy="55" r="5" fill="#b05810"/>
+            <circle cx="50" cy="55" r="2.5" fill="#8a4510"/>
+            <text x="52" y="72" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
+            <text x="48.5" y="69.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
+            <text x="50" y="71" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
+            <text fill="#7ec8e3" font-size="9" font-weight="600" font-family="Arial" letter-spacing="2" opacity="0.8"><textPath href="#ftBa" startOffset="50%" text-anchor="middle">BUDGET</textPath></text>
+            <circle cx="16" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+            <circle cx="84" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+          </svg>
+          Ambit <span>Budget Pro</span>
+        </div>
+        <div class="footer-links">
+          <a href="./features.html">Features</a>
+          <a href="#pricing">Pricing</a>
+          <a href="./starter.html">Starter</a>
+          <a href="./plus.html">Plus</a>
+          <a href="./pro.html">Pro</a>
+          <a href="./faq.html">FAQ</a>
+          <a href="./coming-soon.html">What's Next</a>
+          <a href="mailto:support@ambitbudget.com">Contact</a>
+          <a href="./privacy.html">Privacy</a>
+          <a href="./terms.html">Terms</a>
+        </div>
+        <div class="footer-copy">&copy; 2026 Ambit Budget Pro. All rights reserved.</div>
       </div>
-      <div class="footer-links">
-        <a href="./features.html">Features</a>
-        <a href="#pricing">Pricing</a>
-        <a href="./starter.html">Starter</a>
-        <a href="./plus.html">Plus</a>
-        <a href="./pro.html">Pro</a>
-        <a href="./faq.html">FAQ</a>
-        <a href="./coming-soon.html">What's Next</a>
-        <a href="mailto:support@ambitbudget.com">Contact</a>
-        <a href="./privacy.html">Privacy</a>
-        <a href="./terms.html">Terms</a>
-      </div>
-      <div class="footer-copy">&copy; 2026 Ambit Budget Pro. All rights reserved.</div>
     </div>
-  </div>
-</footer>
+  </footer>
+
+</main>
 
 <script>
-// Current demo tier
-var currentDemoTier = 'starter';
-var tierNames = { starter: 'Starter', plus: 'Plus', pro: 'Pro' };
+// Mobile menu toggle
+var hamburger = document.getElementById('hamburger-btn');
+var mobileNav = document.getElementById('mobile-nav');
 
-// Switch demo tier
-function switchDemoTier(tier) {
-  currentDemoTier = tier;
-  var url = './app/index.html?mode=demo&tier=' + tier;
-
-  // Update inline iframe
-  var inlineIframe = document.getElementById('demo-inline-iframe');
-  if (inlineIframe) {
-    inlineIframe.src = url;
-    inlineIframe.title = 'Ambit Budget Pro Demo — ' + tierNames[tier];
-  }
-
-  // Update fullscreen iframe if open
-  var fs = document.getElementById('demo-fs');
-  var fsIframe = document.getElementById('demo-fs-iframe');
-  if (fs.classList.contains('active') && fsIframe) {
-    fsIframe.src = url;
-  }
-
-  // Update labels
-  var labels = ['demo-tier-label', 'demo-fs-tier-label'];
-  labels.forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = 'Live Demo — ' + tierNames[tier];
-  });
-
-  // Update tab active states (both inline and fullscreen)
-  document.querySelectorAll('.demo-tier-btn').forEach(function(btn) {
-    btn.classList.toggle('active', btn.getAttribute('data-tier') === tier);
-  });
-
-  // Highlight the corresponding pricing card
-  document.querySelectorAll('.p-card').forEach(function(card) {
-    card.classList.remove('demo-active');
-  });
-  var activeCard = document.getElementById('p-card-' + tier);
-  if (activeCard) activeCard.classList.add('demo-active');
-
-  // Scroll demo into view
-  var demoCol = document.getElementById('demo-inline');
-  if (demoCol) demoCol.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-// Demo expand/collapse
-function toggleDemo() {
-  var fs = document.getElementById('demo-fs');
-  var fsIframe = document.getElementById('demo-fs-iframe');
-  if (fs.classList.contains('active')) {
-    fs.classList.remove('active');
-    fsIframe.src = '';
-    document.body.style.overflow = '';
-  } else {
-    fsIframe.src = './app/index.html?mode=demo&tier=' + currentDemoTier;
-    fs.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-}
-
-// Set initial active card
-document.addEventListener('DOMContentLoaded', function() {
-  var starterCard = document.getElementById('p-card-starter');
-  if (starterCard) starterCard.classList.add('demo-active');
+hamburger.addEventListener('click', function() {
+  hamburger.classList.toggle('active');
+  mobileNav.classList.toggle('active');
+  document.body.style.overflow = mobileNav.classList.contains('active') ? 'hidden' : '';
 });
 
-// Nav scroll effect
-window.addEventListener('scroll', () => {
-  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+function closeMobileNav() {
+  hamburger.classList.remove('active');
+  mobileNav.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Smooth scroll for sidebar links
+document.querySelectorAll('.sidebar-nav a').forEach(function(link) {
+  link.addEventListener('click', function(e) {
+    var href = this.getAttribute('href');
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      var target = document.querySelector(href);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  });
 });
 
 // Waitlist form
 var wf = document.getElementById('waitlist-form');
-if(wf) {
+if (wf) {
   wf.addEventListener('submit', function(e) {
     e.preventDefault();
     var data = new FormData(wf);
-    fetch(wf.action, { method:'POST', body:data, headers:{'Accept':'application/json'} })
+    fetch(wf.action, { method: 'POST', body: data, headers: { 'Accept': 'application/json' } })
       .then(function(r) {
-        if(r.ok) {
-          wf.style.display='none';
-          document.getElementById('waitlist-thanks').style.display='block';
+        if (r.ok) {
+          wf.style.display = 'none';
+          document.getElementById('waitlist-thanks').style.display = 'block';
         }
       });
   });
