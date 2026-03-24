@@ -272,6 +272,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .price-card-cta.cta-primary:hover { background: var(--amber-hover); }
 .price-card-cta.cta-outline { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
 .price-card-cta.cta-outline:hover { background: var(--navy); color: #fff; }
+.price-card-cta.cta-green { background: var(--green); color: #fff; font-weight: 700; font-size: 15px; }
+.price-card-cta.cta-green:hover { background: #35a86d; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(64,192,128,0.3); }
+
+/* Free tier card green accent */
+.price-card.free-card { border-color: var(--green); background: linear-gradient(180deg, #e8f8f0 0%, #F5ECD0 40%); }
+.price-card.free-card:hover { border-color: var(--green); box-shadow: 0 8px 30px rgba(64,192,128,0.15); }
+.free-badge { background: var(--green) !important; }
+.price-card-tagline { font-size: 13px; color: var(--text2); font-style: italic; margin-bottom: 16px; }
 
 .pricing-note {
   text-align: center; margin-top: 28px; padding: 16px 24px;
@@ -580,19 +588,22 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
       <div class="pricing-grid">
         <!-- Free -->
-        <div class="price-card">
+        <div class="price-card free-card">
+          <div class="pop-badge free-badge">Get Started</div>
           <div class="price-card-tier">Free</div>
           <div class="price-card-price">$0</div>
           <div class="price-card-accounts">1 Account</div>
+          <div class="price-card-tagline">See where your money goes</div>
           <ul class="price-card-features">
+            <li><span class="check">&#x2713;</span> Import bank data</li>
             <li><span class="check">&#x2713;</span> Manual categorization</li>
             <li><span class="check">&#x2713;</span> Spending breakdown</li>
-            <li><span class="check">&#x2713;</span> CSV import</li>
-            <li><span class="check">&#x2713;</span> Works offline</li>
+            <li><span class="check">&#x2713;</span> 1 account</li>
             <li><span class="x-mark">&#x2717;</span> Payee rules</li>
             <li><span class="x-mark">&#x2717;</span> Budgets</li>
+            <li><span class="x-mark">&#x2717;</span> Forecast</li>
           </ul>
-          <a href="./app/index.html?mode=demo&tier=free" class="price-card-cta cta-outline">Try Demo</a>
+          <a href="./app/index.html?mode=demo&tier=free" class="price-card-cta cta-green">Try Free Demo</a>
         </div>
 
         <!-- Starter -->
@@ -601,6 +612,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <div class="price-card-price"><sup>$</sup>9<sup>.99</sup></div>
           <div class="price-card-accounts">2 Accounts</div>
           <ul class="price-card-features">
+            <li><span class="check">&#x2713;</span> Everything in Free</li>
             <li><span class="check">&#x2713;</span> Payee rules</li>
             <li><span class="check">&#x2713;</span> Budget tracking</li>
             <li><span class="check">&#x2713;</span> Category groups</li>

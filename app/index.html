@@ -1635,7 +1635,7 @@ function App({idbData}) {
   const urlMode = useMemo(()=> urlParams.get('mode'), []);
   const urlTier = useMemo(()=> {
     const t = (urlParams.get('tier')||'').toLowerCase();
-    return t === 'starter' ? 'Starter' : t === 'plus' ? 'Plus' : t === 'pro' ? 'Pro' : null;
+    return t === 'free' ? 'Free' : t === 'starter' ? 'Starter' : t === 'plus' ? 'Plus' : t === 'pro' ? 'Pro' : null;
   }, []);
 
   // Splash & Tour — tour only auto-starts via ?mode=demo URL (marketing site clicks)
