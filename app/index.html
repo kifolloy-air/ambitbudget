@@ -177,6 +177,36 @@ select.input { cursor: pointer; }
 /* Compass watermark behind page content */
 .compass-watermark { position: fixed; top: 50%; left: calc(110px + 50vw); transform: translate(-50%, -50%); pointer-events: none; z-index: 0; opacity: 0.07; }
 
+/* ── Savings Goals ── */
+.goal-card { background: rgba(232,160,32,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
+.goal-card:first-of-type { margin-top: 10px; }
+.goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.goal-name { font-size: 0.8125rem; font-weight: 600; color: var(--card-text); }
+.goal-meta { font-size: 0.6875rem; color: var(--card-text2); }
+.goal-progress-track { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-bottom: 4px; }
+.goal-progress-fill { height: 100%; border-radius: 99px; transition: width 0.3s ease; }
+.goal-progress-fill.on-track { background: var(--green); }
+.goal-progress-fill.slightly-behind { background: var(--yellow); }
+.goal-progress-fill.behind { background: var(--red); }
+.goal-stats { display: flex; justify-content: space-between; align-items: center; font-size: 0.6875rem; color: var(--card-text2); }
+.goal-actions { display: flex; gap: 4px; }
+.goal-actions .btn { padding: 3px 8px; font-size: 0.6875rem; }
+.goals-earmark { font-size: 0.75rem; color: var(--card-text2); margin-top: 6px; padding: 6px 10px; background: rgba(72,216,136,0.06); border-radius: 6px; display: flex; justify-content: space-between; }
+.goals-hint { background: rgba(126,200,227,0.08); border: 1px solid rgba(126,200,227,0.2); border-radius: 8px; padding: 12px 16px; margin-top: 12px; display: flex; align-items: flex-start; gap: 10px; font-size: 0.8125rem; color: var(--card-text2); line-height: 1.5; }
+.goals-hint .dismiss { cursor: pointer; margin-left: auto; opacity: 0.5; font-size: 1rem; flex-shrink: 0; }
+.goals-hint .dismiss:hover { opacity: 1; }
+.skip-save-input { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.skip-save-input .input { padding: 4px 8px; font-size: 0.75rem; }
+.dash-goals-widget { margin-bottom: 14px; }
+.dash-goal-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.dash-goal-row:last-child { border-bottom: none; }
+.dash-goal-info { flex: 1; min-width: 0; }
+.dash-goal-name { font-size: 0.8125rem; font-weight: 500; color: var(--card-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-goal-acct { font-size: 0.6875rem; color: var(--card-text2); }
+.dash-goal-bar { flex: 0 0 100px; }
+.dash-goal-status { font-size: 0.6875rem; font-weight: 600; white-space: nowrap; }
+.spending-suggestion { background: rgba(112,168,240,0.06); border: 1px solid rgba(112,168,240,0.15); border-radius: 6px; padding: 8px 10px; margin-top: 8px; font-size: 0.75rem; color: var(--card-text2); line-height: 1.5; }
+
 /* ── Splash Screen ── */
 .splash-screen { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
 .splash-screen .splash-title { font-size: 2.25rem; font-weight: 700; color: var(--accent2); letter-spacing: -1px; margin-top: 12px; }
@@ -1644,10 +1674,10 @@ function App({idbData}) {
 
   // ── License / Tier system ──
   const TIERS = useMemo(()=>({
-    Free:    { limit:1, label:'Free', price:0, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:false, payeeRules:false, groups:false, autoCategorize:false },
-    Starter: { limit:2, label:'Starter', price:9.99, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true },
-    Plus:    { limit:3, label:'Plus', price:19.99, forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true },
-    Pro:     { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true }
+    Free:    { limit:1, label:'Free', price:0, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:false, payeeRules:false, groups:false, autoCategorize:false, savingsGoals:false },
+    Starter: { limit:2, label:'Starter', price:9.99, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:false },
+    Plus:    { limit:3, label:'Plus', price:19.99, forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true },
+    Pro:     { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true }
   }),[]);
   const [license, setLicense] = useState(()=>{ try { return JSON.parse(localStorage.getItem('ambit_license'))||null; } catch{ return null; } });
   const [showLicenseGate, setShowLicenseGate] = useState(false);
@@ -2115,7 +2145,7 @@ function App({idbData}) {
         h('button',{style:{background:'none',border:'none',cursor:'pointer',color:'var(--text2)',fontSize:16,padding:2},'aria-label':'Dismiss welcome banner',onClick:()=>{localStorage.setItem('ambit_free_welcome_dismissed','1');setFreeWelcomeDismissed(true);}},'✕')
       ),
 
-      page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, groupColors, defaultAcct, setPage, onUpgrade:()=>setShowLicenseGate(true)}),
+      page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, groupColors, defaultAcct, setPage, onUpgrade:()=>setShowLicenseGate(true)}),
       page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors, tier, onUpgrade:()=>setShowLicenseGate(true)}),
       page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage, tier}),
       page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns, setTransactions, catMap, dictionary, setDictionary, groupColors, accounts, defaultAcct, groups, setGroups, groupList, showToast}),
@@ -4428,7 +4458,7 @@ function BudgetMonthlyTab({categories, setCategories, transactions, dictionary, 
 }
 
 // ── Dashboard Page ──────────────────────────────────────
-function DashboardPage({categories, transactions, catMap, accounts, dictionary, setDictionary, onStartTour, tier, isDemo, groupColors, defaultAcct, setPage, onUpgrade}) {
+function DashboardPage({categories, transactions, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour, tier, isDemo, groupColors, defaultAcct, setPage, onUpgrade}) {
   const isFree = tier && tier.budget === false;
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedAcct, setSelectedAcctRaw] = useState(defaultAcct||'all');
@@ -4974,6 +5004,9 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
         h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:8}},'See where your balance is headed — end of month and next month projections.'),
         h('span',{style:{fontSize:11,fontWeight:600,color:'var(--accent2)',cursor:'pointer',textDecoration:'none'}, ...a11yClick(onUpgrade)},'Upgrade to Plus ($19.99) →')
     )),
+
+    // ── Savings Goals Dashboard Widget (Plus+ tier) ──
+    (isDemo || tier?.savingsGoals) && h(DashboardGoalsWidget, {accounts, setAccounts, setPage, showToast:null}),
 
     // ── Budget Comparison: Current vs Previous Month (hidden for free tier) ──
     !isFree && prevMonthBudget.budget > 0 && h('div',{style:{display:'flex',gap:12,marginBottom:14,flexWrap:'wrap'}},
@@ -6147,6 +6180,376 @@ function DebtPlannerSection({accounts, setAccounts, transactions, tier, isDemo, 
   );
 }
 
+// ── Savings Goals Helpers ─────────────────────────────
+function goalProgress(goal) {
+  if(!goal.target || goal.target<=0) return 0;
+  return Math.min(100, Math.round((goal.saved/goal.target)*100));
+}
+
+function goalStatus(goal) {
+  // Returns 'on-track', 'slightly-behind', 'behind', or 'ahead'
+  if(!goal.deadline) return goalProgress(goal)>=100?'ahead':'on-track';
+  const now = new Date();
+  const deadline = new Date(goal.deadline);
+  const created = new Date(goal.createdAt || now);
+  const totalDays = Math.max(1,(deadline-created)/(1000*60*60*24));
+  const elapsedDays = Math.max(0,(now-created)/(1000*60*60*24));
+  const expectedPct = Math.min(100,(elapsedDays/totalDays)*100);
+  const actualPct = goalProgress(goal);
+  if(actualPct>=100) return 'ahead';
+  if(now>deadline) return 'behind';
+  if(actualPct >= expectedPct-5) return actualPct>expectedPct+10?'ahead':'on-track';
+  if(actualPct >= expectedPct-20) return 'slightly-behind';
+  return 'behind';
+}
+
+function goalStatusLabel(status) {
+  if(status==='ahead') return {text:'Ahead',color:'var(--green)'};
+  if(status==='on-track') return {text:'On track',color:'var(--green)'};
+  if(status==='slightly-behind') return {text:'Slightly behind',color:'var(--yellow)'};
+  return {text:'Behind',color:'var(--red)'};
+}
+
+function goalProgressClass(status) {
+  if(status==='ahead'||status==='on-track') return 'on-track';
+  if(status==='slightly-behind') return 'slightly-behind';
+  return 'behind';
+}
+
+function goalMonthlyNeeded(goal) {
+  if(!goal.deadline || goalProgress(goal)>=100) return null;
+  const now = new Date();
+  const deadline = new Date(goal.deadline);
+  const monthsLeft = Math.max(0.5, (deadline-now)/(1000*60*60*24*30.44));
+  const remaining = Math.max(0, goal.target - goal.saved);
+  return remaining/monthsLeft;
+}
+
+function goalWeeklyNeeded(goal) {
+  if(!goal.deadline || goalProgress(goal)>=100) return null;
+  const now = new Date();
+  const deadline = new Date(goal.deadline);
+  const weeksLeft = Math.max(0.5, (deadline-now)/(1000*60*60*24*7));
+  const remaining = Math.max(0, goal.target - goal.saved);
+  return remaining/weeksLeft;
+}
+
+function getAccountEarmarked(account) {
+  if(!account.goals || !account.goals.length) return 0;
+  return account.goals.reduce((sum,g)=>sum+g.saved, 0);
+}
+
+// ── Dashboard Goals Widget ───────────────────────────
+function DashboardGoalsWidget({accounts, setAccounts, setPage, showToast}) {
+  const [quickSkipGoal, setQuickSkipGoal] = useState(null);
+  const [quickSkipAmt, setQuickSkipAmt] = useState('');
+  const [quickSkipDesc, setQuickSkipDesc] = useState('');
+  const [quickMotiv, setQuickMotiv] = useState(null);
+
+  // Gather all goals across non-debt accounts
+  const allGoals = useMemo(()=>{
+    const goals = [];
+    accounts.forEach(a=>{
+      if(a.type!=='checking'&&a.type!=='savings') return;
+      (a.goals||[]).forEach(g=>{
+        goals.push({...g, accountId:a.id, accountName:a.name});
+      });
+    });
+    return goals;
+  },[accounts]);
+
+  if(allGoals.length===0) return null;
+
+  const doQuickSkip = (g) => {
+    const amt = +quickSkipAmt;
+    if(!amt||amt<=0) return;
+    setAccounts(prev=>prev.map(a=>{
+      if(a.id!==g.accountId) return a;
+      return {...a, goals:(a.goals||[]).map(gl=>gl.id===g.id?{...gl,saved:gl.saved+amt}:gl)};
+    }));
+    const newSaved = g.saved+amt;
+    const pct = Math.min(100,Math.round((newSaved/g.target)*100));
+    setQuickMotiv({gid:g.id, text:'Nice! '+pct+'% to your goal.'});
+    setTimeout(()=>setQuickMotiv(null), 3500);
+    setQuickSkipGoal(null); setQuickSkipAmt(''); setQuickSkipDesc('');
+  };
+
+  return h('div',{className:'card dash-goals-widget',style:{padding:'12px 16px',marginBottom:14}},
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}},
+      h('h3',{style:{margin:0,fontSize:13}}, h('span',{className:'icon'},'🎯'), ' Savings Goals'),
+      setPage && h('button',{className:'btn sm',onClick:()=>setPage('accounts'),style:{fontSize:11}},'Manage')
+    ),
+    allGoals.map(g=>{
+      const pct = goalProgress(g);
+      const status = goalStatus(g);
+      const statusInfo = goalStatusLabel(status);
+      return h('div',{key:g.id,className:'dash-goal-row'},
+        h('div',{className:'dash-goal-info'},
+          h('div',{className:'dash-goal-name'}, g.name),
+          h('div',{className:'dash-goal-acct'}, g.accountName, ' \u2022 ', fmt(g.saved),' / ',fmt(g.target))
+        ),
+        h('div',{className:'dash-goal-bar'},
+          h('div',{className:'goal-progress-track',style:{height:6}},
+            h('div',{className:'goal-progress-fill '+goalProgressClass(status), style:{width:pct+'%'}})
+          )
+        ),
+        h('div',{className:'dash-goal-status',style:{color:statusInfo.color,minWidth:70,textAlign:'right'}},
+          pct+'% \u2022 ',statusInfo.text
+        ),
+        h('button',{className:'btn sm',onClick:()=>setQuickSkipGoal(quickSkipGoal===g.id?null:g.id),
+          style:{fontSize:10,padding:'2px 6px',background:'rgba(72,216,136,0.08)',color:'var(--green)',borderColor:'rgba(72,216,136,0.25)'}},
+          'Skip & Save')
+      );
+    }),
+    // Quick skip & save input
+    quickSkipGoal && h('div',{style:{display:'flex',gap:6,alignItems:'center',marginTop:8,flexWrap:'wrap'}},
+      h('input',{className:'input',type:'text',placeholder:'What did you skip?',value:quickSkipDesc,onChange:e=>setQuickSkipDesc(e.target.value),style:{flex:'1 1 100px',padding:'4px 8px',fontSize:12}}),
+      h('input',{className:'input',type:'number',placeholder:'$',value:quickSkipAmt,onChange:e=>setQuickSkipAmt(e.target.value),style:{width:70,padding:'4px 8px',fontSize:12},min:'0',step:'0.01',
+        onKeyDown:e=>{if(e.key==='Enter'){const g=allGoals.find(x=>x.id===quickSkipGoal);if(g)doQuickSkip(g);}}}),
+      h('button',{className:'btn sm green',onClick:()=>{const g=allGoals.find(x=>x.id===quickSkipGoal);if(g)doQuickSkip(g);},disabled:!+quickSkipAmt,style:{fontSize:11}},'Save'),
+      h('button',{className:'btn sm',onClick:()=>{setQuickSkipGoal(null);setQuickSkipAmt('');setQuickSkipDesc('');},style:{fontSize:11}},'Cancel')
+    ),
+    // Motivational message
+    quickMotiv && h('div',{style:{fontSize:12,color:'var(--green)',fontWeight:600,marginTop:6,padding:'4px 8px',background:'rgba(72,216,136,0.08)',borderRadius:6}}, quickMotiv.text)
+  );
+}
+
+// ── Account Goals Component ──────────────────────────
+function AccountGoals({account, setAccounts, transactions, catMap, showToast, tier, isDemo}) {
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [editGoal, setEditGoal] = useState(null);
+  const [goalName, setGoalName] = useState('');
+  const [goalTarget, setGoalTarget] = useState('');
+  const [goalDeadline, setGoalDeadline] = useState('');
+  const [goalInitial, setGoalInitial] = useState('');
+  const [addToGoalId, setAddToGoalId] = useState(null);
+  const [addToGoalAmt, setAddToGoalAmt] = useState('');
+  const [skipSaveId, setSkipSaveId] = useState(null);
+  const [skipDesc, setSkipDesc] = useState('');
+  const [skipAmt, setSkipAmt] = useState('');
+  const [motivMsg, setMotivMsg] = useState(null);
+
+  const goals = account.goals || [];
+  const earmarked = getAccountEarmarked(account);
+
+  const resetGoalForm = () => {
+    setGoalName(''); setGoalTarget(''); setGoalDeadline(''); setGoalInitial('');
+    setEditGoal(null); setShowGoalModal(false);
+  };
+
+  const saveGoal = () => {
+    if(!goalName.trim() || !+goalTarget) return;
+    setAccounts(prev=>prev.map(a=>{
+      if(a.id!==account.id) return a;
+      let newGoals = [...(a.goals||[])];
+      if(editGoal) {
+        newGoals = newGoals.map(g=>g.id===editGoal.id?{...g, name:goalName.trim(), target:+goalTarget, deadline:goalDeadline||null}:g);
+      } else {
+        newGoals.push({
+          id:'g'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+          name:goalName.trim(),
+          target:+goalTarget,
+          saved:+goalInitial||0,
+          deadline:goalDeadline||null,
+          createdAt:new Date().toISOString().slice(0,10)
+        });
+      }
+      return {...a, goals:newGoals};
+    }));
+    showToast(editGoal ? 'Updated goal: '+goalName.trim() : 'Goal created: '+goalName.trim());
+    resetGoalForm();
+  };
+
+  const deleteGoal = (gid) => {
+    if(!confirm('Delete this savings goal?')) return;
+    setAccounts(prev=>prev.map(a=>{
+      if(a.id!==account.id) return a;
+      return {...a, goals:(a.goals||[]).filter(g=>g.id!==gid)};
+    }));
+    showToast('Goal deleted');
+  };
+
+  const startEditGoal = (g) => {
+    setGoalName(g.name); setGoalTarget(String(g.target)); setGoalDeadline(g.deadline||''); setGoalInitial('');
+    setEditGoal(g); setShowGoalModal(true);
+  };
+
+  const addToGoal = (gid) => {
+    const amt = +addToGoalAmt;
+    if(!amt || amt<=0) return;
+    setAccounts(prev=>prev.map(a=>{
+      if(a.id!==account.id) return a;
+      const newGoals = (a.goals||[]).map(g=>g.id===gid?{...g,saved:g.saved+amt}:g);
+      return {...a, goals:newGoals};
+    }));
+    const goal = goals.find(g=>g.id===gid);
+    const newSaved = (goal?goal.saved:0)+amt;
+    const pct = goal?Math.min(100,Math.round((newSaved/goal.target)*100)):0;
+    showToast('Added '+fmt(amt)+' to '+((goal&&goal.name)||'goal')+' ('+pct+'%)');
+    setAddToGoalId(null); setAddToGoalAmt('');
+  };
+
+  const doSkipSave = (gid) => {
+    const amt = +skipAmt;
+    if(!amt || amt<=0) return;
+    setAccounts(prev=>prev.map(a=>{
+      if(a.id!==account.id) return a;
+      const newGoals = (a.goals||[]).map(g=>g.id===gid?{...g,saved:g.saved+amt}:g);
+      return {...a, goals:newGoals};
+    }));
+    const goal = goals.find(g=>g.id===gid);
+    const newSaved = (goal?goal.saved:0)+amt;
+    const pct = goal?Math.min(100,Math.round((newSaved/goal.target)*100)):0;
+    setMotivMsg({gid, text:'Nice! You\'re now '+pct+'% to your goal.'});
+    setTimeout(()=>setMotivMsg(null), 4000);
+    setSkipSaveId(null); setSkipDesc(''); setSkipAmt('');
+  };
+
+  // Spending-based suggestions
+  const spendingSuggestion = useMemo(()=>{
+    const acctTxns = transactions.filter(t=>t.accountId===account.id && t.amount<0);
+    if(acctTxns.length < 10) return null;
+    const catTotals = {};
+    acctTxns.forEach(t=>{
+      const cat = catMap[t.category];
+      const catType = t.catType || (cat&&cat.catType) || 'discretionary';
+      if(catType!=='discretionary') return;
+      const name = t.category||'Uncategorized';
+      catTotals[name] = (catTotals[name]||0) + Math.abs(t.amount);
+    });
+    const sorted = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+    if(sorted.length===0) return null;
+    const months = new Set(acctTxns.map(t=>getYearMonth(t.date)));
+    const monthCount = Math.max(1, months.size);
+    const top = sorted[0];
+    const monthlyAvg = top[1]/monthCount;
+    if(monthlyAvg < 20) return null;
+    return {category:top[0], monthly:monthlyAvg, halfSaving:monthlyAvg*0.5};
+  },[transactions, account.id, catMap]);
+
+  // Monthly/weekly needed calculation for modal
+  const modalRateCalc = useMemo(()=>{
+    if(!goalDeadline || !+goalTarget) return null;
+    const now = new Date();
+    const dl = new Date(goalDeadline);
+    if(dl<=now) return null;
+    const remaining = +goalTarget - (+goalInitial||0);
+    if(remaining<=0) return null;
+    const months = Math.max(0.5,(dl-now)/(1000*60*60*24*30.44));
+    const weeks = Math.max(0.5,(dl-now)/(1000*60*60*24*7));
+    return {perMonth: remaining/months, perWeek: remaining/weeks};
+  },[goalDeadline, goalTarget, goalInitial]);
+
+  if(goals.length===0 && !showGoalModal) {
+    return h('div',{style:{marginTop:8}},
+      h('button',{className:'btn sm',onClick:()=>{resetGoalForm();setShowGoalModal(true);},style:{fontSize:11}}, '+ Add Savings Goal'),
+      showGoalModal && null
+    );
+  }
+
+  return h('div',{style:{marginTop:4}},
+    // Earmark summary
+    goals.length>0 && h('div',{className:'goals-earmark'},
+      h('span',null,'Available: ',h('strong',{style:{color:'var(--green)'}},fmt((account._runningBal||0)-earmarked))),
+      h('span',null,'Earmarked: ',h('strong',{style:{color:'var(--accent2)'}},fmt(earmarked)))
+    ),
+
+    // Goal cards
+    goals.map(g=>{
+      const pct = goalProgress(g);
+      const status = goalStatus(g);
+      const statusInfo = goalStatusLabel(status);
+      const monthly = goalMonthlyNeeded(g);
+      return h('div',{key:g.id, className:'goal-card'},
+        h('div',{className:'goal-header'},
+          h('div',null,
+            h('span',{className:'goal-name'}, g.name),
+            g.deadline && h('span',{className:'goal-meta',style:{marginLeft:8}}, 'by '+g.deadline)
+          ),
+          h('div',{className:'goal-actions'},
+            h('button',{className:'btn sm',onClick:()=>setSkipSaveId(skipSaveId===g.id?null:g.id),title:'Skip & Save',style:{background:'rgba(72,216,136,0.1)',color:'var(--green)',borderColor:'rgba(72,216,136,0.3)'}},'Skip & Save'),
+            h('button',{className:'btn sm',onClick:()=>setAddToGoalId(addToGoalId===g.id?null:g.id),title:'Add to goal'},'+ Add'),
+            h('button',{className:'btn sm',onClick:()=>startEditGoal(g),title:'Edit goal'},'Edit'),
+            h('button',{className:'btn sm',onClick:()=>deleteGoal(g.id),title:'Delete goal',style:{color:'var(--red)',borderColor:'var(--red)'}},'Del')
+          )
+        ),
+        // Progress bar
+        h('div',{className:'goal-progress-track'},
+          h('div',{className:'goal-progress-fill '+goalProgressClass(status), style:{width:pct+'%'}})
+        ),
+        h('div',{className:'goal-stats'},
+          h('span',null, fmt(g.saved)+' of '+fmt(g.target)+' ('+pct+'%)'),
+          h('span',{style:{color:statusInfo.color,fontWeight:600}}, statusInfo.text,
+            monthly && pct<100 ? ' \u2022 '+fmt(monthly)+'/mo needed' : null)
+        ),
+
+        // Motivational message
+        motivMsg && motivMsg.gid===g.id && h('div',{style:{fontSize:12,color:'var(--green)',fontWeight:600,marginTop:4,padding:'4px 8px',background:'rgba(72,216,136,0.08)',borderRadius:6}}, motivMsg.text),
+
+        // Add to goal inline input
+        addToGoalId===g.id && h('div',{className:'skip-save-input'},
+          h('input',{className:'input',type:'number',placeholder:'Amount',value:addToGoalAmt,onChange:e=>setAddToGoalAmt(e.target.value),style:{width:90},min:'0',step:'0.01',autoFocus:true,onKeyDown:e=>{if(e.key==='Enter')addToGoal(g.id);}}),
+          h('button',{className:'btn sm green',onClick:()=>addToGoal(g.id),disabled:!+addToGoalAmt},'Add'),
+          h('button',{className:'btn sm',onClick:()=>{setAddToGoalId(null);setAddToGoalAmt('');}},'Cancel')
+        ),
+
+        // Skip & Save inline input
+        skipSaveId===g.id && h('div',{className:'skip-save-input'},
+          h('input',{className:'input',type:'text',placeholder:'What did you skip?',value:skipDesc,onChange:e=>setSkipDesc(e.target.value),style:{width:130,flex:'1 1 100px'}}),
+          h('input',{className:'input',type:'number',placeholder:'$',value:skipAmt,onChange:e=>setSkipAmt(e.target.value),style:{width:70},min:'0',step:'0.01',onKeyDown:e=>{if(e.key==='Enter')doSkipSave(g.id);}}),
+          h('button',{className:'btn sm green',onClick:()=>doSkipSave(g.id),disabled:!+skipAmt},'Save'),
+          h('button',{className:'btn sm',onClick:()=>{setSkipSaveId(null);setSkipDesc('');setSkipAmt('');}},'Cancel')
+        ),
+
+        // Spending suggestion
+        spendingSuggestion && pct<100 && g===goals[0] && h('div',{className:'spending-suggestion'},
+          'Based on your spending, you average ',h('strong',null,fmt(spendingSuggestion.monthly)+'/mo'),' on ',h('strong',null,spendingSuggestion.category),'. ',
+          'Cutting that by 50% could save ',h('strong',null,fmt(spendingSuggestion.halfSaving)+'/mo'),' toward this goal.'
+        )
+      );
+    }),
+
+    // Add goal button
+    h('button',{className:'btn sm',onClick:()=>{resetGoalForm();setShowGoalModal(true);},style:{marginTop:8,fontSize:11}}, '+ Add Goal'),
+
+    // Add/Edit Goal Modal
+    showGoalModal && h(Modal,{onClose:resetGoalForm},
+      h('h3',null, editGoal?'Edit Savings Goal':'New Savings Goal'),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:12}},
+        h('div',null,
+          h('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Goal Name'),
+          h('input',{className:'input',value:goalName,onChange:e=>setGoalName(e.target.value),placeholder:'e.g. New Laptop',style:{width:'100%'},autoFocus:true})
+        ),
+        h('div',null,
+          h('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Target Amount ($)'),
+          h('input',{className:'input',type:'number',value:goalTarget,onChange:e=>setGoalTarget(e.target.value),placeholder:'e.g. 1200',style:{width:'100%'},min:'0',step:'0.01'})
+        ),
+        h('div',null,
+          h('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Target Date (optional)'),
+          h('input',{className:'input',type:'date',value:goalDeadline,onChange:e=>setGoalDeadline(e.target.value),style:{width:'100%'}})
+        ),
+        !editGoal && h('div',null,
+          h('label',{style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Initial Amount to Earmark ($)'),
+          h('input',{className:'input',type:'number',value:goalInitial,onChange:e=>setGoalInitial(e.target.value),placeholder:'0',style:{width:'100%'},min:'0',step:'0.01'})
+        ),
+        // Rate calculation
+        modalRateCalc && h('div',{style:{padding:'8px 12px',background:'rgba(72,216,136,0.06)',borderRadius:6,fontSize:12,color:'var(--green)'}},
+          'That\'s ',h('strong',null,fmt(modalRateCalc.perMonth)+'/month'),' or ',h('strong',null,fmt(modalRateCalc.perWeek)+'/week')
+        ),
+        // Spending suggestion in modal
+        spendingSuggestion && h('div',{className:'spending-suggestion'},
+          'Based on your spending, you average ',h('strong',null,fmt(spendingSuggestion.monthly)+'/mo'),' on ',h('strong',null,spendingSuggestion.category),'. ',
+          'Cutting that by 50% could save ~',h('strong',null,fmt(spendingSuggestion.halfSaving)+'/mo'),'.'
+        ),
+        h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}},
+          h('button',{className:'btn',onClick:resetGoalForm},'Cancel'),
+          h('button',{className:'btn primary',onClick:saveGoal,disabled:!goalName.trim()||!+goalTarget}, editGoal?'Update Goal':'Create Goal')
+        )
+      )
+    )
+  );
+}
+
 // ── Accounts Page ──────────────────────────────────────
 function AccountsPage({accounts, setAccounts, transactions, setTransactions, catMap, showToast, accountLimit, tier, isDemo}) {
   const [showAdd, setShowAdd] = useState(false);
@@ -6161,6 +6564,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
   const [payFreq, setPayFreq] = useState('monthly');
   const [editIdx, setEditIdx] = useState(null);
   const isDebtType = type==='credit_card'||type==='loan'||type==='student_loan'||type==='mortgage';
+  const [goalsHintDismissed, setGoalsHintDismissed] = useState(()=>localStorage.getItem('ambit_goals_hint_dismissed')==='1');
 
   const resetForm = () => { setName(''); setType('checking'); setStartBal(0); setLast4(''); setInterestRate(''); setMinimumPayment(''); setCreditLimit(''); setPlannedPay(''); setPayFreq('monthly'); setEditIdx(null); setShowAdd(false); };
 
@@ -6358,7 +6762,10 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
               h('div',{style:{borderTop:'1px solid var(--border)',paddingTop:10,display:'flex',justifyContent:'space-between'}},
                 h('span',{style:{fontSize:12,color:'var(--text2)'}},txnCount+' transactions'),
                 h('span',{style:{fontSize:13,fontWeight:600,color:'var(--text2)'}}, 'Net Activity: '+(net>=0?'+':'')+fmt(net))
-              )
+              ),
+              // Savings Goals (non-debt accounts, Plus+ tier)
+              (a.type==='checking'||a.type==='savings') && (isDemo || tier?.savingsGoals) &&
+                h(AccountGoals, {account:{...a, _runningBal:runningBal}, setAccounts, transactions, catMap, showToast, tier, isDemo})
             );
           })
         ),
@@ -6370,6 +6777,21 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
         ),
         h('a',{href:'https://ambitbudget.com/#pricing',target:'_blank',rel:'noopener',
           style:{color:'var(--accent2)',textDecoration:'underline',fontSize:13,fontWeight:600}}, 'Upgrade for more accounts →')
+      ),
+
+    // Savings Goals: Starter tier upgrade hint
+    !isDemo && tier && !tier.savingsGoals && tier.label==='Starter' && accounts.some(a=>a.type==='checking'||a.type==='savings') &&
+      h('div',{style:{textAlign:'center',padding:'12px 16px',marginTop:12,background:'rgba(232,160,32,0.04)',border:'1px dashed var(--border)',borderRadius:8,fontSize:12,color:'var(--card-text2)'}},
+        'Upgrade to Plus to set savings goals on your accounts ',
+        h('a',{href:'https://ambitbudget.com/#pricing',target:'_blank',rel:'noopener',style:{color:'var(--accent2)',fontWeight:600}},'($19.99)')
+      ),
+
+    // Savings Goals: First-time hint for Plus+ users with no goals
+    (isDemo || tier?.savingsGoals) && !goalsHintDismissed && accounts.some(a=>(a.type==='checking'||a.type==='savings')&&(!a.goals||a.goals.length===0)) &&
+      h('div',{className:'goals-hint',style:{marginTop:12}},
+        h('span',{'aria-hidden':'true',style:{fontSize:18,flexShrink:0}},'💡'),
+        h('span',null,'Set a savings goal on any account. Earmark part of your balance for something you\'re saving for — no need to open a new account.'),
+        h('span',{className:'dismiss','aria-label':'Dismiss hint',...a11yClick(()=>{localStorage.setItem('ambit_goals_hint_dismissed','1');setGoalsHintDismissed(true);})}, '✕')
       ),
 
     // Debt Payoff Planner (shown when user has debt accounts)
