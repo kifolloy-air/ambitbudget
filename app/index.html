@@ -1686,7 +1686,7 @@ function App({idbData}) {
       const data = await res.json();
       if(data.activated) {
         const pName = (data.meta?.product_name || data.meta?.variant_name || '').toLowerCase();
-        const tierName = pName.includes('pro') ? 'Pro' : pName.includes('plus') ? 'Plus' : 'Starter';
+        const tierName = pName.endsWith('- pro') || pName === 'pro' ? 'Pro' : pName.endsWith('- plus') || pName === 'plus' ? 'Plus' : pName.endsWith('- starter') || pName === 'starter' ? 'Starter' : pName.includes('pro') && !pName.includes('starter') && !pName.includes('plus') ? 'Pro' : pName.includes('plus') ? 'Plus' : 'Starter';
         const lic = {valid:true, key:key.trim(), tier:tierName, instance_id:data.instance?.id, at:new Date().toISOString()};
         localStorage.setItem('ambit_license', JSON.stringify(lic));
         setLicense(lic);
