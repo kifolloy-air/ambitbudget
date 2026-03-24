@@ -30,6 +30,8 @@
   --orange: #f09040;
   --blue: #70a8f0;
   --pink: #e080b8;
+  --sidebar-bg: #101850;
+  --sidebar-border: #2a3580;
   --radius: 10px;
   --shadow: 0 4px 24px rgba(0,0,0,0.3);
   font-size: 16px;
@@ -68,7 +70,7 @@ code { font-family: 'JetBrains Mono', monospace; }
 
 /* Layout */
 .app { display: flex; min-height: 100vh; }
-.sidebar { width: 220px; background: #101850; border-right: 1px solid #2a3580; padding: 20px 0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10; color: var(--text); }
+.sidebar { width: 220px; background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-border); padding: 20px 0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10; color: var(--text); }
 .main { flex: 1; margin-left: 220px; padding: 28px 36px; min-height: 100vh; }
 
 /* Mode tabs (Demo / My Budget) */
@@ -90,7 +92,7 @@ code { font-family: 'JetBrains Mono', monospace; }
 .nav-item.active { color: var(--accent2); background: rgba(232,160,32,0.12); border-left-color: var(--accent); font-weight: 600; }
 .nav-item .icon { font-size: 1rem; width: 22px; text-align: center; }
 
-.nav-sep { height: 1px; background: var(--border); margin: 12px 20px; }
+.nav-sep { height: 1px; background: var(--sidebar-border); margin: 12px 20px; }
 
 /* Cards */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; color: var(--card-text); --text: var(--card-text); --text2: var(--card-text2); }
@@ -198,12 +200,12 @@ a:focus-visible, button:focus-visible, .btn:focus-visible { outline: 3px solid v
 .budget-tab:focus-visible { outline: 3px solid var(--accent2); outline-offset: -3px; }
 
 /* ── Bottom Tab Bar ── */
-.bottom-tabs { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 56px; background: #101850; border-top: 1px solid #2a3580; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
+.bottom-tabs { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 56px; background: var(--sidebar-bg); border-top: 1px solid var(--sidebar-border); z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
 .bottom-tabs .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.6875rem; color: rgba(255,255,255,0.75); cursor: pointer; transition: color 0.15s; }
 .bottom-tabs .tab-item.active { color: var(--accent2); }
 .bottom-tabs .tab-item .tab-icon { font-size: 1.25rem; }
 .more-menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
-.more-menu { position: fixed; bottom: 56px; left: 0; right: 0; background: #101850; border-top: 1px solid #2a3580; border-radius: 16px 16px 0 0; padding: 16px 0 8px; z-index: 61; }
+.more-menu { position: fixed; bottom: 56px; left: 0; right: 0; background: var(--sidebar-bg); border-top: 1px solid var(--sidebar-border); border-radius: 16px 16px 0 0; padding: 16px 0 8px; z-index: 61; }
 .more-menu .more-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; color: rgba(255,255,255,0.7); font-size: 0.875rem; cursor: pointer; }
 .more-menu .more-item:hover, .more-menu .more-item.active { color: var(--accent2); background: rgba(232,160,32,0.08); }
 .more-menu .more-item .icon { font-size: 1.125rem; }
@@ -1335,7 +1337,7 @@ function Toast({message, onDone}) {
 }
 
 // ── License Gate ──────────────────────────────────────
-function LicenseGate({onActivate, onCancel}) {
+function LicenseGate({onActivate, onCancel, upgradeContext}) {
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1346,13 +1348,34 @@ function LicenseGate({onActivate, onCancel}) {
     setLoading(false);
     if(!result.success) setError(result.error);
   };
-  return h('div',{className:'modal-overlay'},
-    h('div',{className:'modal animate-in', role:'dialog', 'aria-modal':'true', style:{maxWidth:420,textAlign:'center'}},
-      h(ShieldLogo, {size:60}),
-      h('h3',{style:{marginTop:12,marginBottom:4}}, 'Activate Ambit Budget Pro'),
-      h('p',{style:{color:'var(--text2)',fontSize:13,marginBottom:20}},
-        'Enter your license key to unlock the full app.'),
-      h('div',{style:{display:'flex',flexDirection:'column',gap:12}},
+  const tiers = [
+    {name:'Starter',price:'$9.99',accounts:'2 accounts',features:['Payee rules & auto-categorization','Budget targets per category','Bill tracking with due dates','Category groups'],color:'var(--green)'},
+    {name:'Plus',price:'$19.99',accounts:'3 accounts',features:['Everything in Starter','Balance forecast','Monthly budget review','Calendar year view','Per-account budgets'],color:'var(--blue)'},
+    {name:'Pro',price:'$29.99',accounts:'Unlimited',features:['Everything in Plus','Day-by-day projections','Debt planner','All future features'],color:'var(--accent2)'}
+  ];
+  return h('div',{className:'modal-overlay', onClick:e=>{if(e.target===e.currentTarget && onCancel) onCancel();}},
+    h('div',{className:'modal animate-in', role:'dialog', 'aria-modal':'true', style:{maxWidth:560,textAlign:'center'}},
+      h(ShieldLogo, {size:48}),
+      h('h3',{style:{marginTop:8,marginBottom:4}}, 'Upgrade Ambit Budget'),
+      upgradeContext && h('p',{style:{color:'var(--accent2)',fontSize:12,fontWeight:600,marginBottom:4}}, upgradeContext),
+      h('p',{style:{color:'var(--text2)',fontSize:12,marginBottom:16}},
+        'You\'re on the Free plan. Enter a license key to unlock more features.'),
+
+      // Tier comparison
+      h('div',{style:{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap',justifyContent:'center'}},
+        tiers.map(t=>
+          h('div',{key:t.name,style:{flex:1,minWidth:140,padding:'10px 12px',borderRadius:8,border:'1px solid var(--border)',textAlign:'left',background:'rgba(255,255,255,0.02)'}},
+            h('div',{style:{fontWeight:700,fontSize:14,color:t.color,marginBottom:2}},t.name),
+            h('div',{style:{fontSize:16,fontWeight:700,marginBottom:2}},t.price),
+            h('div',{style:{fontSize:10,color:'var(--text2)',marginBottom:8}},t.accounts),
+            t.features.map(f=>h('div',{key:f,style:{fontSize:10,color:'var(--card-text2)',padding:'1px 0',display:'flex',gap:4}},
+              h('span',{style:{color:t.color,flexShrink:0}},'✓'), f
+            ))
+          )
+        )
+      ),
+
+      h('div',{style:{display:'flex',flexDirection:'column',gap:10}},
         h('input',{
           className:'input', value:key, onChange:e=>setKey(e.target.value),
           placeholder:'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX',
@@ -1363,13 +1386,13 @@ function LicenseGate({onActivate, onCancel}) {
         }),
         error && h('div',{id:'license-error',style:{color:'var(--red)',fontSize:12},role:'alert'}, error),
         h('button',{className:'btn primary', onClick:submit, disabled:loading||!key.trim(), style:{width:'100%'}},
-          loading ? 'Validating...' : '🔑 Activate License'),
-        h('div',{style:{fontSize:12,color:'var(--text2)',marginTop:8}},
+          loading ? 'Validating...' : 'Activate License'),
+        h('div',{style:{fontSize:12,color:'var(--text2)',marginTop:4}},
           'Don\'t have a key? ',
           h('a',{href:'https://ambitbudget.com/#pricing', target:'_blank', rel:'noopener',
             style:{color:'var(--accent2)',textDecoration:'underline'}}, 'Purchase here')
         ),
-        onCancel && h('button',{className:'btn', onClick:onCancel, style:{marginTop:4,fontSize:12}}, 'Continue with Demo')
+        onCancel && h('button',{className:'btn', onClick:onCancel, style:{marginTop:4,fontSize:12}}, 'Continue with Free Plan')
       )
     )
   );
@@ -1437,9 +1460,23 @@ function OnboardingTour({step, setStep, onClose}) {
 }
 
 // ── First-Run Setup Wizard ──────────────────────────────
-function FirstRunWizard({setPage, onDismiss}) {
+function FirstRunWizard({setPage, onDismiss, isFree}) {
   const [step, setStep] = useState(0);
-  const steps = [
+  const freeSteps = [
+    { icon:'👋', title:'Welcome to Ambit Budget!',
+      desc:'You\'re on the Free plan — track your spending across 1 account. Your data stays 100% on this device — nothing is sent to any server.',
+      action:null },
+    { icon:'📥', title:'Step 1: Import Bank Data',
+      desc:'Export a CSV from your bank\'s website, then use Import Bank Data in the sidebar to load it. The system auto-detects columns and creates your account.',
+      action:'import', actionLabel:'Go to Import →' },
+    { icon:'📊', title:'Step 2: Categorize Transactions',
+      desc:'After importing, categorize your transactions on the Transactions page. Use the category dropdown to assign each transaction. Upgrade to Starter ($9.99) for auto-categorization with payee rules.',
+      action:'transactions', actionLabel:'Go to Transactions →' },
+    { icon:'🎉', title:'You\'re All Set!',
+      desc:'Head to the Dashboard to see your spending breakdown by category. Upgrade anytime to unlock budget targets, bill tracking, forecasting, and more.',
+      action:'dashboard', actionLabel:'Go to Dashboard →' }
+  ];
+  const fullSteps = [
     { icon:'👋', title:'Welcome to Ambit Budget!',
       desc:'Let\'s get you set up in 4 quick steps. Your data stays 100% on this device — nothing is sent to any server.',
       action:null },
@@ -1459,6 +1496,7 @@ function FirstRunWizard({setPage, onDismiss}) {
       desc:'Head to the Dashboard to see your budget overview, bills tracker, and spending analysis. You can always access help by clicking the "?" bar on any page.',
       action:'dashboard', actionLabel:'Go to Dashboard →' }
   ];
+  const steps = isFree ? freeSteps : fullSteps;
   const s = steps[step];
   const isLast = step === steps.length - 1;
   return h('div',{className:'modal-overlay'},
@@ -1606,17 +1644,19 @@ function App({idbData}) {
 
   // ── License / Tier system ──
   const TIERS = useMemo(()=>({
-    Starter: { limit:1, label:'Starter', forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false },
-    Plus:    { limit:3, label:'Plus',    forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false },
-    Pro:     { limit:Infinity, label:'Pro', forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true }
+    Free:    { limit:1, label:'Free', price:0, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:false, payeeRules:false, groups:false, autoCategorize:false },
+    Starter: { limit:2, label:'Starter', price:9.99, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true },
+    Plus:    { limit:3, label:'Plus', price:19.99, forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true },
+    Pro:     { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true }
   }),[]);
   const [license, setLicense] = useState(()=>{ try { return JSON.parse(localStorage.getItem('ambit_license'))||null; } catch{ return null; } });
   const [showLicenseGate, setShowLicenseGate] = useState(false);
   const [licenseDismissed, setLicenseDismissed] = useState(()=> localStorage.getItem('ambit_license_dismissed')==='1');
   const isLicensed = license && license.valid;
+  const isFreeTier = !isLicensed && !urlMode;
   // In demo mode with ?tier= param, use that tier's feature gates (for landing page tier-specific demos)
   const demoTier = (urlMode === 'demo' && urlTier) ? TIERS[urlTier] : null;
-  const tier = isLicensed ? (TIERS[license.tier]||TIERS.Starter) : demoTier;
+  const tier = isLicensed ? (TIERS[license.tier]||TIERS.Starter) : (isFreeTier ? TIERS.Free : demoTier);
   const accountLimit = tier ? tier.limit : 0;
   // isDemo should be false when viewing a tier-specific demo (so feature gates apply)
   const isTierDemo = !!(urlMode === 'demo' && urlTier);
@@ -1662,15 +1702,16 @@ function App({idbData}) {
   const deactivateLicense = () => {
     localStorage.removeItem('ambit_license');
     setLicense(null);
-    setMode('demo'); setPage('dashboard');
-    showToast('License deactivated.');
+    setMode('mine'); setPage('dashboard');
+    showToast('License deactivated. You\'re now on the Free plan.');
   };
 
   const [demoHidden, setDemoHidden] = useState(()=> urlMode ? false : localStorage.getItem('ambit_demo_hidden')==='1');
   const [mode, setMode] = useState(()=> {
     if(urlMode === 'demo') return 'demo';
-    if(!isLicensed) return 'demo';
-    return localStorage.getItem('ambit_demo_hidden')==='1' ? 'mine' : 'demo';
+    if(isLicensed) return localStorage.getItem('ambit_demo_hidden')==='1' ? 'mine' : 'demo';
+    // No license, no URL mode: Free tier — go straight to 'mine' mode
+    return 'mine';
   });
 
   // ── "My Budget" state (persisted to localStorage) ──
@@ -1709,6 +1750,10 @@ function App({idbData}) {
   const groupColors = useMemo(()=>{const m={};groups.forEach(g=>{m[g.name]=g.color;});return m;},[groups]);
 
   const [page, setPage] = useState('dashboard');
+  // Redirect away from locked pages for free tier
+  useEffect(()=>{
+    if(isFreeTier && (page==='budget' || page==='accounts')) setPage('dashboard');
+  },[page, isFreeTier]);
   const defaultAcct = localStorage.getItem('ambit_default_account') || 'all';
   const [moreOpen, setMoreOpen] = useState(false);
   const [highContrast, setHighContrast] = useState(()=>localStorage.getItem('ambit_high_contrast')==='1');
@@ -1716,7 +1761,15 @@ function App({idbData}) {
     document.documentElement.classList.toggle('high-contrast', highContrast);
     localStorage.setItem('ambit_high_contrast', highContrast?'1':'0');
   },[highContrast]);
+
+  // ── Theme System (Dark / Light / Warm) ──
+  const THEMES={dark:{bg:'#0c1445',surface:'#fdf6e3',surface2:'#f5ecd0',border:'#e8dbb8',text:'#eef0ff',text2:'#c0c8e8',cardText:'#1a1510',cardText2:'#504838',accent:'#e8a020',accent2:'#f0c050',sidebarBg:'#101850',sidebarBorder:'#2a3580',sidebarText:'#eef0ff',sidebarText2:'#c0c8e8',green:'#48d888',red:'#f07070',yellow:'#f0b030',orange:'#f09040',blue:'#70a8f0',pink:'#e080b8'},light:{bg:'#FAFAFA',surface:'#FFFFFF',surface2:'#F5F5F5',border:'#E0E0E0',text:'#1a1a2e',text2:'#666680',cardText:'#1a1a2e',cardText2:'#666680',accent:'#e8a020',accent2:'#f0c050',sidebarBg:'#1a1a2e',sidebarBorder:'#2e2e48',sidebarText:'#eef0ff',sidebarText2:'#a0a0c0',green:'#48d888',red:'#f07070',yellow:'#f0b030',orange:'#f09040',blue:'#70a8f0',pink:'#e080b8'},warm:{bg:'#FDF6E3',surface:'#FFFFFF',surface2:'#F5ECD0',border:'#E8DBB8',text:'#2a2520',text2:'#6b6356',cardText:'#2a2520',cardText2:'#6b6356',accent:'#e8a020',accent2:'#f0c050',sidebarBg:'#3a2a18',sidebarBorder:'#5a4a38',sidebarText:'#fdf6e3',sidebarText2:'#c8b898',green:'#48d888',red:'#f07070',yellow:'#f0b030',orange:'#f09040',blue:'#70a8f0',pink:'#e080b8'}};
+  const [theme, setTheme] = useState(()=>localStorage.getItem('ambit_theme')||'dark');
+  useEffect(()=>{const t=THEMES[theme]||THEMES.dark;const s=document.documentElement.style;s.setProperty('--bg',t.bg);s.setProperty('--surface',t.surface);s.setProperty('--surface2',t.surface2);s.setProperty('--border',t.border);s.setProperty('--text',t.text);s.setProperty('--text2',t.text2);s.setProperty('--card-text',t.cardText);s.setProperty('--card-text2',t.cardText2);s.setProperty('--accent',t.accent);s.setProperty('--accent2',t.accent2);s.setProperty('--green',t.green);s.setProperty('--red',t.red);s.setProperty('--yellow',t.yellow);s.setProperty('--orange',t.orange);s.setProperty('--blue',t.blue);s.setProperty('--pink',t.pink);s.setProperty('--sidebar-bg',t.sidebarBg);s.setProperty('--sidebar-border',t.sidebarBorder);localStorage.setItem('ambit_theme',theme);},[theme]);
+  const currentTheme=THEMES[theme]||THEMES.dark;
+
   const [toast, setToast] = useState(null);
+  const [freeWelcomeDismissed, setFreeWelcomeDismissed] = useState(()=>localStorage.getItem('ambit_free_welcome_dismissed')==='1');
   const [showReview, setShowReview] = useState(false);
   const [showFirstRun, setShowFirstRun] = useState(false);
   // Backup reminder
@@ -1780,14 +1833,14 @@ function App({idbData}) {
     localStorage.setItem('ambit_transfer_migration_v1','done');
   },[mode]);
 
-  // First-run wizard — show when My Budget has no accounts
+  // First-run wizard — show when My Budget has no accounts (works for free tier too)
   useEffect(()=>{
-    if(mode==='mine' && isLicensed && myAccounts.length===0 && !localStorage.getItem('ambit_firstrun_done')) {
+    if(mode==='mine' && (isLicensed || isFreeTier) && myAccounts.length===0 && !localStorage.getItem('ambit_firstrun_done')) {
       setShowFirstRun(true);
     }
   },[mode]);
 
-  // Monthly budget review — trigger once per month on first open in 'mine' mode
+  // Monthly budget review — trigger once per month on first open in 'mine' mode (paid tiers only)
   useEffect(()=>{
     if(mode !== 'mine' || !isLicensed || !tier?.review) return;
     const now = new Date();
@@ -1833,23 +1886,19 @@ function App({idbData}) {
     return null;
   },[dictionary, catMap]);
 
-  const navItems = [
+  const allNavItems = [
     { id:'dashboard', icon:'📊', label:'Dashboard' },
-    { id:'accounts', icon:'🏦', label:'Accounts' },
-    { id:'budget', icon:'💰', label:'Budget' },
+    { id:'accounts', icon:'🏦', label:'Accounts', requiresTier:'budget' },
+    { id:'budget', icon:'💰', label:'Budget', requiresTier:'budget' },
     { id:'transactions', icon:'📋', label:'Transactions' },
   ];
+  const navItems = allNavItems.filter(n => !n.requiresTier || (tier && tier[n.requiresTier] !== false));
 
   // Splash screen on first load
   if(showSplash) return h(SplashScreen, {onDone:()=>setShowSplash(false)});
 
-  // License gate — full-screen on first launch (no license, no URL mode, not previously dismissed)
-  if(!isLicensed && !urlMode && !licenseDismissed) {
-    return h(LicenseGate, {
-      onActivate: activateLicense,
-      onCancel: ()=>{ localStorage.setItem('ambit_license_dismissed','1'); setLicenseDismissed(true); setMode('demo'); }
-    });
-  }
+  // License gate — no longer blocks on first launch; Free tier users go straight in
+  // Gate only shows when explicitly triggered (Upgrade button or locked feature click)
 
   return h('div',{className:'app'},
     // License gate modal (when triggered from "My Budget" click without license)
@@ -1876,13 +1925,13 @@ function App({idbData}) {
     }),
 
     // First-run setup wizard
-    showFirstRun && h(FirstRunWizard, {setPage, onDismiss:()=>{
+    showFirstRun && h(FirstRunWizard, {setPage, isFree:isFreeTier, onDismiss:()=>{
       localStorage.setItem('ambit_firstrun_done','1');
       setShowFirstRun(false);
     }}),
 
     // Sidebar
-    h('nav',{className:'sidebar', 'aria-label':'Main navigation'},
+    h('nav',{className:'sidebar', 'aria-label':'Main navigation', style:{background:currentTheme.sidebarBg,borderRightColor:currentTheme.sidebarBorder,color:currentTheme.sidebarText}},
       h('h1',{className:'logo', style:{display:'flex',alignItems:'center',gap:10}},
         h(ShieldLogo, {size:34}),
         h('div',null, 'Ambit', h('span',{style:{display:'block',fontSize:10,letterSpacing:1,textTransform:'uppercase',color:'var(--text2)',marginTop:1}},'Budget Pro'))
@@ -1893,7 +1942,6 @@ function App({idbData}) {
           h('span',{className:'mode-dot demo','aria-hidden':'true'}), 'Demo'
         ),
         h('div',{className:'mode-tab'+(mode==='mine'?' active':''), ...a11yClick(()=>{
-          if(!isLicensed){setShowLicenseGate(true);return;}
           setMode('mine');setPage('dashboard');
         }), role:'tab', 'aria-selected':mode==='mine'},
           h('span',{className:'mode-dot mine','aria-hidden':'true'}), 'My Budget'
@@ -1943,6 +1991,7 @@ function App({idbData}) {
         h('span',{className:'icon','aria-hidden':'true'},'🔲'),
         h('span',null, highContrast?'Standard Mode':'High Contrast')
       ),
+      h('div',{style:{padding:'8px 20px',display:'flex',alignItems:'center',gap:10}},h('span',{style:{fontSize:11,color:currentTheme.sidebarText2,fontWeight:500}},'Theme'),h('div',{style:{display:'flex',gap:6}},[['dark','#0c1445'],['light','#FAFAFA'],['warm','#FDF6E3']].map(function(item){var k=item[0],c=item[1];return h('div',{key:k,...a11yClick(function(){setTheme(k);},'Switch to '+k+' theme'),style:{width:20,height:20,borderRadius:'50%',background:c,border:theme===k?'2px solid var(--accent)':'2px solid '+(k==='dark'?'#2a3580':'#ccc'),cursor:'pointer',transition:'border-color 0.15s',boxShadow:theme===k?'0 0 0 2px rgba(232,160,32,0.3)':'none'}});}))),
       h('div',{className:'nav-sep'}),
       isLicensed
         ? h('div',{style:{padding:'8px 16px',fontSize:11,display:'flex',flexDirection:'column',gap:4}},
@@ -1951,11 +2000,17 @@ function App({idbData}) {
               h('span',{style:{color:'var(--text2)',fontWeight:600,letterSpacing:0.5,textTransform:'uppercase'}}, tier ? tier.label : 'Licensed')
             ),
             h('span',{style:{cursor:'pointer',color:'var(--text2)',opacity:0.5,fontSize:10}, ...a11yClick(()=>{
-              if(confirm('Deactivate your license? You\'ll return to demo mode.')) deactivateLicense();
+              if(confirm('Deactivate your license? You\'ll return to the Free plan.')) deactivateLicense();
             }, 'Deactivate license')}, 'Deactivate License')
           )
-        : h('div',{className:'nav-item', style:{fontSize:12}, ...a11yClick(()=>setShowLicenseGate(true))},
-            h('span',{className:'icon','aria-hidden':'true'},'🔑'), h('span',null,'Activate License')
+        : h('div',{style:{display:'flex',flexDirection:'column',gap:4}},
+            h('div',{style:{padding:'4px 16px',fontSize:10,display:'flex',alignItems:'center',gap:6}},
+              h('span',{style:{color:'var(--text2)',fontWeight:600,letterSpacing:0.5,textTransform:'uppercase'}}, 'Free Plan'),
+              h('span',{style:{fontSize:9,color:'var(--text2)',opacity:0.6}},'1 account')
+            ),
+            h('div',{className:'nav-item', style:{fontSize:12,color:'var(--accent2)',fontWeight:600}, ...a11yClick(()=>setShowLicenseGate(true))},
+              h('span',{className:'icon','aria-hidden':'true'},'⬆'), h('span',null,'Upgrade')
+            )
           ),
       demoHidden && h('div',{className:'nav-sep'}),
       demoHidden && h('div',{className:'nav-item', style:{fontSize:12,opacity:0.5}, ...a11yClick(()=>{
@@ -1967,15 +2022,16 @@ function App({idbData}) {
     // Bottom Tab Bar (hidden on desktop via CSS, shown at ≤768px)
     h('nav',{className:'bottom-tabs', 'aria-label':'Mobile navigation'},
       [{id:'dashboard',icon:'📊',label:'Dashboard'},
-       {id:'accounts',icon:'🏦',label:'Accounts'},
-       {id:'budget',icon:'💰',label:'Budget'},
+       ...(tier && tier.budget !== false ? [{id:'accounts',icon:'🏦',label:'Accounts'},{id:'budget',icon:'💰',label:'Budget'}] : []),
        {id:'transactions',icon:'📋',label:'Txns'},
-       {id:'import',icon:'📥',label:'Import'}
+       {id:'import',icon:'📥',label:'Import'},
+       ...(!isLicensed && isFreeTier ? [{id:'_upgrade',icon:'⬆',label:'Upgrade'}] : [])
       ].map(t => h('div',{
         key:t.id,
-        className:'tab-item'+(page===t.id?' active':''),
-        ...a11yClick(()=>setPage(t.id)),
-        role:'tab', 'aria-selected':page===t.id
+        className:'tab-item'+(page===t.id?' active':'')+(t.id==='_upgrade'?' upgrade-tab':''),
+        ...a11yClick(()=>{ if(t.id==='_upgrade'){setShowLicenseGate(true);return;} setPage(t.id); }),
+        role:'tab', 'aria-selected':page===t.id,
+        style:t.id==='_upgrade'?{color:'var(--accent2)'}:undefined
       }, h('span',{className:'tab-icon','aria-hidden':'true'},t.icon), t.label))
     ),
 
@@ -1996,7 +2052,6 @@ function App({idbData}) {
       isDemo && !demoHidden && h('div',{className:'demo-banner'},
         h('span',null,'💡'),
         h('span',null,'You\'re viewing sample data. Switch to '), h('strong',{style:{cursor:'pointer',textDecoration:'underline'}, ...a11yClick(()=>{
-          if(!isLicensed){setShowLicenseGate(true);return;}
           setMode('mine');setPage('dashboard');
         })},'My Budget'), h('span',null,' to start fresh.'),
         h('span',{style:{marginLeft:'auto',display:'flex',gap:12,alignItems:'center'}},
@@ -2007,7 +2062,6 @@ function App({idbData}) {
             showToast('✅ Demo data restored');
           }, 'Reset demo data')},'🔄 Reset'),
           h('span',{style:{cursor:'pointer',opacity:0.8,fontSize:12,whiteSpace:'nowrap'}, ...a11yClick(()=>{
-            if(!isLicensed){setShowLicenseGate(true);return;}
             localStorage.setItem('ambit_demo_hidden','1');
             setDemoHidden(true); setMode('mine'); setPage('dashboard');
             showToast('Demo hidden. Restore it from the sidebar.');
@@ -2033,8 +2087,8 @@ function App({idbData}) {
         h('span',{'aria-hidden':'true'},'🔒'),
         h('span',{style:{flex:1}},
           backupNeeded.never
-            ? 'Your data is stored locally on this device. Create a backup to protect against data loss.'
-            : 'Last backup: '+backupNeeded.days+' days ago. Your data is stored locally on this device.'
+            ? 'Your local data file needs updating. Export a backup now to prevent data loss. For extra protection, save your backup to OneDrive, Google Drive, or iCloud.'
+            : 'Last backup: '+backupNeeded.days+' days ago. Your local data file needs updating. Export a backup now to prevent data loss. For extra protection, save your backup to OneDrive, Google Drive, or iCloud.'
         ),
         h('button',{className:'btn sm primary',onClick:()=>{
           const blob = new Blob([JSON.stringify({accounts,categories,dictionary,transactions,groups},null,2)],{type:'application/json'});
@@ -2050,9 +2104,20 @@ function App({idbData}) {
         h('button',{style:{background:'none',border:'none',cursor:'pointer',color:'var(--text2)',fontSize:16,padding:2},'aria-label':'Dismiss backup reminder',onClick:()=>setBackupDismissed(true)},'✕')
       ),
 
-      page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, groupColors, defaultAcct, setPage}),
-      page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors}),
-      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage}),
+      // Free tier welcome banner
+      isFreeTier && mode==='mine' && !freeWelcomeDismissed && h('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',marginBottom:12,background:'rgba(126,200,227,0.1)',border:'1px solid rgba(126,200,227,0.25)',borderRadius:8,fontSize:13,color:'var(--text)'},role:'status'},
+        h('span',{'aria-hidden':'true'},'👋'),
+        h('span',{style:{flex:1}},
+          'Welcome to Ambit Budget! You\'re on the ',h('strong',null,'Free plan'),'. Track your spending across 1 account. ',
+          h('span',{style:{cursor:'pointer',color:'var(--accent2)',fontWeight:600,textDecoration:'underline'}, ...a11yClick(()=>setShowLicenseGate(true))},'Upgrade'),
+          ' to unlock budgets, auto-categorization, and more.'
+        ),
+        h('button',{style:{background:'none',border:'none',cursor:'pointer',color:'var(--text2)',fontSize:16,padding:2},'aria-label':'Dismiss welcome banner',onClick:()=>{localStorage.setItem('ambit_free_welcome_dismissed','1');setFreeWelcomeDismissed(true);}},'✕')
+      ),
+
+      page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, groupColors, defaultAcct, setPage, onUpgrade:()=>setShowLicenseGate(true)}),
+      page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors, tier, onUpgrade:()=>setShowLicenseGate(true)}),
+      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage, tier}),
       page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns, setTransactions, catMap, dictionary, setDictionary, groupColors, accounts, defaultAcct, groups, setGroups, groupList, showToast}),
       page==='accounts' && h(AccountsPage, {accounts, setAccounts, transactions:liveTxns, setTransactions, catMap, showToast, accountLimit, tier, isDemo}),
     ),
@@ -2672,7 +2737,8 @@ function detectColumns(headers, sampleRows) {
 // (UnmatchedRow removed — Import is now a pure data utility)
 
 // ── Import Page ─────────────────────────────────────────
-function ImportPage({transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage}) {
+function ImportPage({transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage, tier}) {
+  const isFree = tier && tier.autoCategorize === false;
   const [csv, setCsv] = useState('');
   const [preview, setPreview] = useState(null);
   const [parsedData, setParsedData] = useState(null);
@@ -2804,7 +2870,7 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
         continue;
       }
 
-      const match = categorize(desc);
+      const match = isFree ? null : categorize(desc);
       let txn;
 
       if(match) {
@@ -3246,7 +3312,8 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
 }
 
 // ── Transactions Page ───────────────────────────────────
-function TransactionsPage({transactions, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors}) {
+function TransactionsPage({transactions, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors, tier, onUpgrade}) {
+  const isFree = tier && tier.budget === false;
   const [filter, setFilter] = useState(()=>{
     const saved = localStorage.getItem('ambit_txn_search');
     if(saved) { localStorage.removeItem('ambit_txn_search'); return saved; }
@@ -3543,7 +3610,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
 
     h('div',{style:{display:'flex',gap:10,marginBottom:14,flexWrap:'wrap'}},
       filteredBals.map(b=>{
-        const isDebt = b.type==='credit_card'||b.type==='loan';
+        const isDebt = b.type==='credit_card'||b.type==='loan'||b.type==='student_loan'||b.type==='mortgage';
         const displayBal = isDebt ? -Math.abs(b.cleared) : b.cleared;
         const displayProj = isDebt ? -Math.abs(b.projected) : b.projected;
         return h('div',{key:b.id,style:{
@@ -3638,7 +3705,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
                           h('select',{className:'input',value:editCat,onChange:e=>handleCatDropdown(e.target.value,'inline'),style:{fontSize:12,padding:'3px 6px'}},
                             h('option',{value:''},'Select...'),
                             Object.keys(catMap).sort((a,b)=>a.localeCompare(b)).map(c=>h('option',{key:c,value:c},c)),
-                            h('option',{value:'__new__',style:{fontWeight:600,color:'#e8a020'}},'＋ New Category...')
+                            !isFree && h('option',{value:'__new__',style:{fontWeight:600,color:'#e8a020'}},'＋ New Category...')
                           ),
                           h('button',{className:'btn sm',onClick:()=>saveCat(t.id)},'✓'),
                           h('button',{className:'btn sm',onClick:()=>{setEditId(null);setShowNewCat(false);}},'✗'),
@@ -3728,7 +3795,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
             h('select',{id:'txn-category',className:'input',value:newTxn.category,onChange:e=>handleCatDropdown(e.target.value,'modal'),style:{width:'100%'}},
               h('option',{value:''},'Uncategorized'),
               Object.keys(catMap).sort((a,b)=>a.localeCompare(b)).map(c=>h('option',{key:c,value:c},c)),
-              h('option',{value:'__new__',style:{fontWeight:600,color:'#e8a020'}},'＋ New Category...')
+              !isFree && h('option',{value:'__new__',style:{fontWeight:600,color:'#e8a020'}},'＋ New Category...')
             )
           )
         ),
@@ -4361,7 +4428,8 @@ function BudgetMonthlyTab({categories, setCategories, transactions, dictionary, 
 }
 
 // ── Dashboard Page ──────────────────────────────────────
-function DashboardPage({categories, transactions, catMap, accounts, dictionary, setDictionary, onStartTour, tier, isDemo, groupColors, defaultAcct, setPage}) {
+function DashboardPage({categories, transactions, catMap, accounts, dictionary, setDictionary, onStartTour, tier, isDemo, groupColors, defaultAcct, setPage, onUpgrade}) {
+  const isFree = tier && tier.budget === false;
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedAcct, setSelectedAcctRaw] = useState(defaultAcct||'all');
   const setSelectedAcct = (v) => { setSelectedAcctRaw(v); localStorage.setItem('ambit_default_account', v); };
@@ -4904,11 +4972,11 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
         h('div',{style:{fontSize:24,marginBottom:6}},'🔮'),
         h('div',{style:{fontSize:13,fontWeight:600,color:'var(--accent2)',marginBottom:4}},'Balance Forecast'),
         h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:8}},'See where your balance is headed — end of month and next month projections.'),
-        h('a',{href:'https://ambitbudget.com/#pricing',style:{fontSize:11,fontWeight:600,color:'var(--accent2)',textDecoration:'none'}},'Upgrade to Plus →')
+        h('span',{style:{fontSize:11,fontWeight:600,color:'var(--accent2)',cursor:'pointer',textDecoration:'none'}, ...a11yClick(onUpgrade)},'Upgrade to Plus ($19.99) →')
     )),
 
-    // ── Budget Comparison: Current vs Previous Month ──
-    prevMonthBudget.budget > 0 && h('div',{style:{display:'flex',gap:12,marginBottom:14,flexWrap:'wrap'}},
+    // ── Budget Comparison: Current vs Previous Month (hidden for free tier) ──
+    !isFree && prevMonthBudget.budget > 0 && h('div',{style:{display:'flex',gap:12,marginBottom:14,flexWrap:'wrap'}},
       // Current month
       h('div',{className:'card',style:{flex:1,minWidth:200,padding:'12px 16px'}},
         h('div',{style:{fontSize:11,fontWeight:600,color:'var(--accent2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}},
@@ -5023,7 +5091,7 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
         h('div',{style:{fontSize:24,marginBottom:6}},'📅'),
         h('div',{style:{fontSize:13,fontWeight:600,color:'var(--blue)',marginBottom:4}},'Day-by-Day Projections'),
         h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:8}},'See a detailed daily breakdown of your balance — every bill, income, and budget event mapped out.'),
-        h('a',{href:'https://ambitbudget.com/#pricing',style:{fontSize:11,fontWeight:600,color:'var(--blue)',textDecoration:'none'}},'Upgrade to Pro →')
+        h('span',{style:{fontSize:11,fontWeight:600,color:'var(--blue)',cursor:'pointer',textDecoration:'none'}, ...a11yClick(onUpgrade)},'Upgrade to Pro ($29.99) →')
       )
     ),
 
@@ -5115,8 +5183,27 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
               )
             ),
 
-            // Right column: This Month's Bills
-            h('div',{className:'dash-right',style:{flex:1,minWidth:300,display:'flex',flexDirection:'column',gap:16}},
+            // Right column: This Month's Bills (hidden for free tier, show upgrade prompt)
+            isFree
+            ? h('div',{className:'dash-right',style:{flex:1,minWidth:300}},
+                h('div',{className:'card',style:{textAlign:'center',padding:'24px 20px'}},
+                  h('div',{style:{fontSize:32,marginBottom:8}},'💰'),
+                  h('div',{style:{fontSize:15,fontWeight:700,marginBottom:6,color:'var(--card-text)'}},'Budget & Bill Tracking'),
+                  h('div',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:12,lineHeight:1.6}},
+                    'Track monthly bills, set budget targets, auto-categorize transactions, and see your spending by group.'),
+                  h('button',{className:'btn primary',style:{fontSize:13},onClick:onUpgrade},'Unlock with Starter ($9.99)'),
+                  h('div',{style:{marginTop:16,textAlign:'left'}},
+                    [['Payee rules & auto-categorization','Starter'],['Budget targets per category','Starter'],['Bill tracking & due dates','Starter'],['Balance forecast','Plus'],['Day-by-day projections','Pro']].map(([feat,t])=>
+                      h('div',{key:feat,style:{display:'flex',alignItems:'center',gap:8,padding:'4px 0',fontSize:11,color:'var(--card-text2)'}},
+                        h('span',{style:{color:'var(--accent2)'}},'🔒'),
+                        h('span',null,feat),
+                        h('span',{style:{marginLeft:'auto',fontSize:9,fontWeight:600,color:'var(--text2)',textTransform:'uppercase',letterSpacing:0.5}},t)
+                      )
+                    )
+                  )
+                )
+              )
+            : h('div',{className:'dash-right',style:{flex:1,minWidth:300,display:'flex',flexDirection:'column',gap:16}},
 
               // Bills
               h('div',{className:'card'},
@@ -5340,7 +5427,7 @@ function DashboardPage({categories, transactions, catMap, accounts, dictionary, 
             h('div',{style:{fontSize:28,marginBottom:8}},'\uD83D\uDCC5'),
             h('div',{style:{fontSize:14,fontWeight:600,color:'var(--accent2)',marginBottom:4}},'Calendar Year View'),
             h('div',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:10}},'See a 12-month grid of spending by category with budget color-coding and drilldown.'),
-            h('a',{href:'https://ambitbudget.com/#pricing',style:{fontSize:12,fontWeight:600,color:'var(--accent2)',textDecoration:'none'}},'Upgrade to Plus \u2192')
+            h('span',{style:{fontSize:12,fontWeight:600,color:'var(--accent2)',cursor:'pointer',textDecoration:'none'}, ...a11yClick(onUpgrade)},'Upgrade to Plus ($19.99) \u2192')
           )
         : null,
 
@@ -5464,7 +5551,7 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
   // Get debt accounts with current balances + effective monthly
   const debtAccounts = useMemo(()=>{
     return accounts
-      .filter(a=>a.type==='credit_card'||a.type==='loan')
+      .filter(a=>a.type==='credit_card'||a.type==='loan'||a.type==='student_loan'||a.type==='mortgage')
       .map(a=>{
         const minPay = a.minimumPayment||0;
         const planned = a.plannedPayment||0;
@@ -5932,7 +6019,7 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
                 h('td',{style:{padding:'8px 10px',fontWeight:700,color:'var(--accent2)'}},i+1),
                 h('td',{style:{padding:'8px 10px'}},
                   h('div',{style:{fontWeight:600}},d.name),
-                  h('div',{style:{fontSize:11,color:'var(--text2)'}},d.type==='credit_card'?'💳 Credit Card':'🏦 Loan', d.last4?' ••••'+d.last4:'')
+                  h('div',{style:{fontSize:11,color:'var(--text2)'}},d.type==='credit_card'?'💳 Credit Card':d.type==='student_loan'?'🎓 Student Loan':d.type==='mortgage'?'🏠 Mortgage':'🏦 Loan', d.last4?' ••••'+d.last4:'')
                 ),
                 h('td',{style:{padding:'8px 10px',textAlign:'right',fontWeight:600,color:'var(--red)'}},'$'+d.balance.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})),
                 h('td',{style:{padding:'8px 10px',textAlign:'right'}},d.rate+'%'),
@@ -5974,7 +6061,7 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
             h('div',{style:{height:20,background:'var(--bg2)',borderRadius:6,overflow:'hidden',position:'relative'}},
               h('div',{style:{
                 height:'100%',width:pct+'%',borderRadius:6,
-                background:d.type==='credit_card'?'linear-gradient(90deg,var(--red),var(--pink))':'linear-gradient(90deg,var(--accent2),#f0c050)',
+                background:d.type==='credit_card'?'linear-gradient(90deg,var(--red),var(--pink))':d.type==='student_loan'?'linear-gradient(90deg,var(--blue),#a0d0f0)':d.type==='mortgage'?'linear-gradient(90deg,var(--green),#80e8b0)':'linear-gradient(90deg,var(--accent2),#f0c050)',
                 transition:'width 0.5s ease'
               }}),
               h('span',{style:{position:'absolute',left:8,top:2,fontSize:10,color:'#fff',fontWeight:600}},
@@ -6073,14 +6160,14 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
   const [plannedPay, setPlannedPay] = useState('');
   const [payFreq, setPayFreq] = useState('monthly');
   const [editIdx, setEditIdx] = useState(null);
-  const isDebtType = type==='credit_card'||type==='loan';
+  const isDebtType = type==='credit_card'||type==='loan'||type==='student_loan'||type==='mortgage';
 
   const resetForm = () => { setName(''); setType('checking'); setStartBal(0); setLast4(''); setInterestRate(''); setMinimumPayment(''); setCreditLimit(''); setPlannedPay(''); setPayFreq('monthly'); setEditIdx(null); setShowAdd(false); };
 
   const save = () => {
     if(!name.trim()) return;
     if(editIdx !== null) {
-      const debtFields = (type==='credit_card'||type==='loan') ? {interestRate:+interestRate||0, minimumPayment:+minimumPayment||0, creditLimit:type==='credit_card'?+creditLimit||0:undefined, plannedPayment:+plannedPay||undefined, paymentFrequency:payFreq!=='monthly'?payFreq:undefined} : {interestRate:undefined, minimumPayment:undefined, creditLimit:undefined, plannedPayment:undefined, paymentFrequency:undefined};
+      const debtFields = isDebtType ? {interestRate:+interestRate||0, minimumPayment:+minimumPayment||0, creditLimit:type==='credit_card'?+creditLimit||0:undefined, plannedPayment:+plannedPay||undefined, paymentFrequency:payFreq!=='monthly'?payFreq:undefined} : {interestRate:undefined, minimumPayment:undefined, creditLimit:undefined, plannedPayment:undefined, paymentFrequency:undefined};
       setAccounts(prev=>prev.map((a,i)=>i===editIdx?{...a, name:name.trim(), type, startingBalance:+startBal, last4:last4.trim(), ...debtFields}:a));
       showToast('✅ Updated: '+name.trim());
     } else {
@@ -6088,7 +6175,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
         showToast('⚡ Account limit reached. Upgrade your plan at ambitbudget.com');
         resetForm(); return;
       }
-      const debtFields = (type==='credit_card'||type==='loan') ? {interestRate:+interestRate||0, minimumPayment:+minimumPayment||0, creditLimit:type==='credit_card'?+creditLimit||0:undefined, plannedPayment:+plannedPay||undefined, paymentFrequency:payFreq!=='monthly'?payFreq:undefined} : {};
+      const debtFields = isDebtType ? {interestRate:+interestRate||0, minimumPayment:+minimumPayment||0, creditLimit:type==='credit_card'?+creditLimit||0:undefined, plannedPayment:+plannedPay||undefined, paymentFrequency:payFreq!=='monthly'?payFreq:undefined} : {};
       setAccounts(prev=>[...prev, {id:Date.now()+'_'+Math.random().toString(36).slice(2,6), name:name.trim(), type, startingBalance:+startBal, last4:last4.trim(), ...debtFields}]);
       showToast('✅ Added: '+name.trim());
     }
@@ -6218,7 +6305,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
       h(Stat,{label:'Accounts', value:accounts.length, color:'var(--accent2)'}),
       h(Stat,{label:'Checking', value:accounts.filter(a=>a.type==='checking').length, color:'var(--blue)'}),
       h(Stat,{label:'Savings', value:accounts.filter(a=>a.type==='savings').length, color:'var(--pink)'}),
-      accounts.some(a=>a.type==='credit_card'||a.type==='loan') && h(Stat,{label:'Debt', value:accounts.filter(a=>a.type==='credit_card'||a.type==='loan').length, color:'var(--red)'})
+      accounts.some(a=>a.type==='credit_card'||a.type==='loan'||a.type==='student_loan'||a.type==='mortgage') && h(Stat,{label:'Debt', value:accounts.filter(a=>a.type==='credit_card'||a.type==='loan'||a.type==='student_loan'||a.type==='mortgage').length, color:'var(--red)'})
     ),
 
     accounts.length===0
@@ -6238,7 +6325,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
               h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}},
                 h('div',null,
                   h('div',{style:{fontSize:17,fontWeight:600}}, a.name),
-                  h('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}}, a.type==='checking'?'🏦 Checking':a.type==='savings'?'💰 Savings':a.type==='credit_card'?'💳 Credit Card':'🏦 Loan', a.last4 ? ' ••••'+a.last4 : '', a.interestRate ? ' • '+a.interestRate+'% APR' : ''),
+                  h('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}}, a.type==='checking'?'🏦 Checking':a.type==='savings'?'💰 Savings':a.type==='credit_card'?'💳 Credit Card':a.type==='student_loan'?'🎓 Student Loan':a.type==='mortgage'?'🏠 Mortgage':'🏦 Loan', a.last4 ? ' ••••'+a.last4 : '', a.interestRate ? ' • '+a.interestRate+'% APR' : ''),
                   a.plannedPayment && h('div',{style:{fontSize:11,color:'var(--green)',marginTop:2}},'📋 Plan: $'+a.plannedPayment+(a.paymentFrequency==='biweekly'?' bi-weekly':'/mo'), a.paymentFrequency==='biweekly'?' (≈$'+Math.round(a.plannedPayment*26/12)+'/mo)':'')
                 ),
                 h('div',{style:{display:'flex',gap:4}},
@@ -6286,7 +6373,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
       ),
 
     // Debt Payoff Planner (shown when user has debt accounts)
-    accounts.some(a=>a.type==='credit_card'||a.type==='loan') && h(DebtPlannerSection, {accounts, setAccounts, transactions, tier, isDemo, showToast}),
+    accounts.some(a=>a.type==='credit_card'||a.type==='loan'||a.type==='student_loan'||a.type==='mortgage') && h(DebtPlannerSection, {accounts, setAccounts, transactions, tier, isDemo, showToast}),
 
     showAdd && h(Modal,{onClose:resetForm},
       h('h3',null, editIdx!==null?'✏️ Edit Account':'➕ New Account'),
@@ -6301,7 +6388,9 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
             h('option',{value:'checking'},'Checking'),
             h('option',{value:'savings'},'Savings'),
             h('option',{value:'credit_card'},'Credit Card'),
-            h('option',{value:'loan'},'Loan')
+            h('option',{value:'loan'},'Loan'),
+            h('option',{value:'student_loan'},'Student Loan'),
+            h('option',{value:'mortgage'},'Mortgage')
           )
         ),
         h('div',null,

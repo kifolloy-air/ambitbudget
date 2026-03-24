@@ -4,98 +4,465 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Privacy Policy — Ambit Budget Pro</title>
-<meta name="description" content="Ambit Budget Pro privacy policy. Your data stays on your device.">
+<meta name="description" content="Ambit Budget Pro privacy policy. Your financial data stays on your device. We don't collect, store, or transmit your personal financial information.">
 <meta name="theme-color" content="#0c1445">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cpath d='M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z' fill='%237ec8e3' stroke='%235ba8c8' stroke-width='2'/%3E%3Cg transform='translate(10,8) scale(0.8)'%3E%3Cpolygon points='50,2 56,40 50,47 44,40' fill='%23e87820'/%3E%3Cpolygon points='98,50 60,56 53,50 60,44' fill='%23e87820'/%3E%3Cpolygon points='50,98 44,60 50,53 56,60' fill='%23e87820'/%3E%3Cpolygon points='2,50 40,44 47,50 40,56' fill='%23e87820'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23e87820'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="canonical" href="https://ambitbudget.com/privacy.html">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 115'%3E%3Cdefs%3E%3ClinearGradient id='sg' x1='0' y1='0' x2='0.3' y2='1'%3E%3Cstop offset='0%25' stop-color='%231a2870'/%3E%3Cstop offset='40%25' stop-color='%230c1445'/%3E%3Cstop offset='100%25' stop-color='%23080e30'/%3E%3C/linearGradient%3E%3ClinearGradient id='se' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%237ec8e3'/%3E%3Cstop offset='50%25' stop-color='%235ba8c8'/%3E%3Cstop offset='100%25' stop-color='%233a8ab0'/%3E%3C/linearGradient%3E%3Cpath id='ba' d='M15,85 Q50,108 85,85' fill='none'/%3E%3C/defs%3E%3Cpath d='M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z' fill='url(%23sg)' stroke='url(%23se)' stroke-width='2.5'/%3E%3Ctext x='50' y='20' text-anchor='middle' fill='%23f0c050' font-size='11' font-weight='700' font-family='Arial' letter-spacing='4' opacity='0.9'%3EAMBIT%3C/text%3E%3Cpolygon points='50,26 55,50 50,55 45,50' fill='%23e87820'/%3E%3Cpolygon points='50,88 45,60 50,55 55,60' fill='%23f0c050'/%3E%3Cpolygon points='90,55 55,50 50,55 55,60' fill='%23e87820' opacity='0.85'/%3E%3Cpolygon points='10,55 45,60 50,55 45,50' fill='%23f0c050' opacity='0.85'/%3E%3Ccircle cx='50' cy='55' r='5' fill='%23b05810'/%3E%3Ccircle cx='50' cy='55' r='2.5' fill='%238a4510'/%3E%3Ctext x='52' y='72' text-anchor='middle' fill='%23000' font-size='52' font-weight='800' font-family='Arial' opacity='0.4'%3EA%3C/text%3E%3Ctext x='48.5' y='69.5' text-anchor='middle' fill='%23fff' font-size='52' font-weight='800' font-family='Arial' opacity='0.2'%3EA%3C/text%3E%3Ctext x='50' y='71' text-anchor='middle' fill='%237ec8e3' font-size='52' font-weight='800' font-family='Arial'%3EA%3C/text%3E%3Ctext fill='%237ec8e3' font-size='9' font-weight='600' font-family='Arial' letter-spacing='2' opacity='0.8'%3E%3CtextPath href='%23ba' startOffset='50%25' text-anchor='middle'%3EBUDGET%3C/textPath%3E%3C/text%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%233a8ab0' opacity='0.5'/%3E%3Ccircle cx='84' cy='16' r='2.5' fill='%233a8ab0' opacity='0.5'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0c1445; --bg2: #101850; --text: #eef0ff; --text2: #9da5d0;
-  --accent: #e8a020; --accent2: #f0c050; --blue: #7ec8e3;
+  --navy: #0C1445;
+  --navy-light: #101850;
+  --amber: #E8A020;
+  --amber-hover: #d09018;
+  --amber-light: #f0c050;
+  --blue: #7ec8e3;
+  --orange: #e87820;
+  --green: #40c080;
+  --red: #e05050;
+  --bg: #FDF6E3;
+  --bg-alt: #EDE4C8;
+  --text: #1a1a2e;
+  --text2: #5a5f7a;
+  --text3: #8a8fa8;
+  --radius: 12px;
+  --sidebar-w: 240px;
 }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
-.container { max-width: 740px; margin: 0 auto; padding: 0 24px; }
-.back { display: inline-flex; align-items: center; gap: 6px; color: var(--accent2); text-decoration: none; font-size: 14px; font-weight: 600; margin: 40px 0 32px; }
-.back:hover { text-decoration: underline; }
-h1 { font-size: 36px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
-.updated { color: var(--text2); font-size: 13px; margin-bottom: 40px; }
-h2 { font-size: 20px; font-weight: 700; margin: 36px 0 12px; color: var(--accent2); }
-p, li { font-size: 15px; color: var(--text2); margin-bottom: 12px; }
-ul { padding-left: 20px; }
-li { margin-bottom: 8px; }
-a { color: var(--accent2); }
-.footer { border-top: 1px solid rgba(255,255,255,0.08); padding: 40px 0; margin-top: 60px; text-align: center; }
-.footer a { color: var(--text2); text-decoration: none; font-size: 13px; margin: 0 12px; }
-.footer a:hover { color: var(--text); }
-.footer-copy { color: var(--text2); font-size: 12px; opacity: 0.6; margin-top: 16px; }
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+/* ── Sidebar ── */
+.sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-w); background: var(--navy);
+  display: flex; flex-direction: column;
+  z-index: 100; padding: 28px 20px 24px;
+  border-right: 1px solid rgba(126,200,227,0.12);
+}
+.sidebar-logo { display: flex; flex-direction: column; align-items: center; margin-bottom: 8px; text-decoration: none; }
+.sidebar-logo svg { height: 100px; width: auto; }
+.sidebar-brand {
+  color: var(--amber-light); font-size: 16px; font-weight: 700;
+  text-align: center; margin-top: 10px; letter-spacing: 0.3px;
+}
+.sidebar-brand span { display: block; font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 500; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+.sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; margin-top: 28px; }
+.sidebar-nav a {
+  display: flex; align-items: center; gap: 12px;
+  color: rgba(255,255,255,0.7); text-decoration: none;
+  font-size: 14px; font-weight: 500; padding: 10px 14px;
+  border-radius: 8px; transition: all 0.2s;
+}
+.sidebar-nav a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.sidebar-nav a.active { color: #fff; background: rgba(255,255,255,0.1); }
+.sidebar-nav a .nav-icon {
+  width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+  font-size: 15px; opacity: 0.8;
+}
+.sidebar-nav a:hover .nav-icon { opacity: 1; }
+
+.sidebar-bottom { margin-top: auto; }
+.sidebar-cta {
+  display: block; width: 100%; padding: 12px 16px;
+  background: var(--amber); color: #fff;
+  font-size: 14px; font-weight: 700; text-align: center;
+  border-radius: 8px; text-decoration: none; border: none;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.sidebar-cta:hover { background: var(--amber-hover); transform: translateY(-1px); }
+
+/* ── Mobile top bar ── */
+.mobile-topbar {
+  display: none; position: fixed; top: 0; left: 0; right: 0;
+  height: 56px; background: var(--navy); z-index: 200;
+  padding: 0 16px; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(126,200,227,0.12);
+}
+.mobile-topbar-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.mobile-topbar-logo svg { height: 36px; width: auto; }
+.mobile-topbar-logo span { color: var(--amber-light); font-size: 16px; font-weight: 700; }
+.hamburger {
+  background: none; border: none; cursor: pointer; padding: 8px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px; background: #fff;
+  border-radius: 2px; transition: all 0.3s;
+}
+.hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+.mobile-nav-overlay {
+  display: none; position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
+  background: var(--navy); z-index: 199; padding: 20px 24px;
+  flex-direction: column; gap: 6px;
+}
+.mobile-nav-overlay.active { display: flex; }
+.mobile-nav-overlay a {
+  color: rgba(255,255,255,0.8); text-decoration: none;
+  font-size: 17px; font-weight: 600; padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: color 0.2s;
+}
+.mobile-nav-overlay a:hover { color: var(--amber-light); }
+.mobile-nav-overlay .mobile-cta {
+  margin-top: 16px; display: block; padding: 14px;
+  background: var(--amber); color: #fff; font-weight: 700;
+  text-align: center; border-radius: 10px; font-size: 16px;
+  border: none;
+}
+
+/* ── Main content area ── */
+.main-content { margin-left: var(--sidebar-w); min-height: 100vh; }
+.container { max-width: 1060px; margin: 0 auto; padding: 0 32px; }
+
+/* ── Page Header ── */
+.page-header {
+  padding: 60px 0 40px; text-align: center;
+  background: linear-gradient(180deg, #FDF6E3 0%, var(--bg) 100%);
+  border-bottom: 1px solid #E8DBB8;
+}
+.page-header h1 {
+  font-size: 38px; font-weight: 800; color: var(--navy);
+  letter-spacing: -1px; line-height: 1.2; margin-bottom: 12px;
+}
+.page-header .subtitle {
+  font-size: 16px; color: var(--text2); max-width: 560px;
+  margin: 0 auto; line-height: 1.7;
+}
+.page-header .last-updated {
+  font-size: 13px; color: var(--text3); margin-top: 12px; font-weight: 500;
+}
+
+/* ── Legal Content ── */
+.legal-content { padding: 48px 0 72px; }
+.legal-inner { max-width: 760px; margin: 0 auto; }
+.highlight-box {
+  background: rgba(64,192,128,0.08); border: 1px solid rgba(64,192,128,0.15);
+  border-radius: var(--radius); padding: 24px 28px; margin-bottom: 40px;
+}
+.highlight-box p {
+  font-size: 15px; color: var(--green); font-weight: 600; line-height: 1.7; margin: 0;
+}
+.legal-inner h2 {
+  font-size: 22px; font-weight: 700; color: var(--navy);
+  margin: 36px 0 14px; padding-bottom: 8px;
+  border-bottom: 2px solid #E8DBB8;
+}
+.legal-inner h2:first-of-type { margin-top: 0; }
+.legal-inner p {
+  font-size: 15px; color: var(--text2); line-height: 1.8; margin-bottom: 14px;
+}
+.legal-inner ul { margin: 10px 0 18px 24px; }
+.legal-inner li {
+  font-size: 15px; color: var(--text2); line-height: 1.8; margin-bottom: 6px;
+}
+.legal-inner a {
+  color: var(--amber); text-decoration: none; font-weight: 600; transition: color 0.2s;
+}
+.legal-inner a:hover { color: var(--amber-hover); }
+.legal-inner strong { color: var(--text); font-weight: 600; }
+
+.legal-nav {
+  display: flex; gap: 12px; justify-content: center; margin-top: 48px;
+  padding-top: 32px; border-top: 1px solid #E8DBB8; flex-wrap: wrap;
+}
+.legal-nav a {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 22px; border-radius: 8px; font-size: 14px;
+  font-weight: 600; text-decoration: none; transition: all 0.2s;
+}
+.legal-nav .nav-back { background: var(--navy); color: #fff; }
+.legal-nav .nav-back:hover { background: #1a2870; }
+.legal-nav .nav-other { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
+.legal-nav .nav-other:hover { background: var(--navy); color: #fff; }
+
+/* ── Footer ── */
+.footer { border-top: 1px solid #E8DBB8; padding: 40px 0; background: #F5ECD0; }
+.footer-inner {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; font-weight: 700; color: var(--navy);
+}
+.footer-logo span { color: var(--text3); font-weight: 400; font-size: 12px; }
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+.footer-links a { color: var(--text2); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+.footer-links a:hover { color: var(--navy); }
+.footer-copy { color: var(--text3); font-size: 12px; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .mobile-topbar { display: flex; }
+  .main-content { margin-left: 0; padding-top: 56px; }
+  .page-header { padding: 40px 0 28px; }
+  .page-header h1 { font-size: 28px; }
+  .legal-content { padding: 32px 0 48px; }
+  .container { padding: 0 20px; }
+  .footer-inner { flex-direction: column; text-align: center; }
+}
 </style>
 </head>
 <body>
-<div class="container">
-  <a href="/" class="back">← Back to Ambit Budget Pro</a>
-  <h1>Privacy Policy</h1>
-  <p class="updated">Last updated: February 27, 2026</p>
 
-  <h2>The Short Version</h2>
-  <p>Ambit Budget Pro is designed with privacy as a core principle. Your financial data never leaves your device. We don't collect, store, or have access to your budgets, transactions, or account information.</p>
+<!-- ======== SIDEBAR (desktop) ======== -->
+<aside class="sidebar">
+  <a href="./index.html" class="sidebar-logo">
+    <svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sbSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
+        <linearGradient id="sbSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
+        <path id="sbBa" d="M15,85 Q50,108 85,85" fill="none"/>
+      </defs>
+      <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#sbSg)" stroke="url(#sbSe)" stroke-width="2.5"/>
+      <text x="50" y="20" text-anchor="middle" fill="#f0c050" font-size="11" font-weight="700" font-family="Arial" letter-spacing="4" opacity="0.9">AMBIT</text>
+      <polygon points="50,26 55,50 50,55 45,50" fill="#e87820"/>
+      <polygon points="50,88 45,60 50,55 55,60" fill="#f0c050"/>
+      <polygon points="90,55 55,50 50,55 55,60" fill="#e87820" opacity="0.85"/>
+      <polygon points="10,55 45,60 50,55 45,50" fill="#f0c050" opacity="0.85"/>
+      <circle cx="50" cy="55" r="5" fill="#b05810"/>
+      <circle cx="50" cy="55" r="2.5" fill="#8a4510"/>
+      <text x="52" y="72" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
+      <text x="48.5" y="69.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
+      <text x="50" y="71" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
+      <text fill="#7ec8e3" font-size="9" font-weight="600" font-family="Arial" letter-spacing="2" opacity="0.8"><textPath href="#sbBa" startOffset="50%" text-anchor="middle">BUDGET</textPath></text>
+      <circle cx="16" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+      <circle cx="84" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+    </svg>
+    <div class="sidebar-brand">Ambit Budget Pro</div>
+  </a>
 
-  <h2>Data Storage</h2>
-  <p>All your financial data — accounts, transactions, budgets, categories, and payee rules — is stored locally on your device using your browser's built-in storage (localStorage). This data:</p>
-  <ul>
-    <li>Never leaves your computer</li>
-    <li>Is never transmitted to our servers or any third party</li>
-    <li>Is never backed up by us (we recommend using the built-in Export feature)</li>
-    <li>Can be deleted at any time by clearing your browser data</li>
-  </ul>
+  <nav class="sidebar-nav">
+    <a href="./index.html"><span class="nav-icon">&#x2302;</span> Home</a>
+    <a href="./index.html#features"><span class="nav-icon">&#x2726;</span> Features</a>
+    <a href="./index.html#pricing"><span class="nav-icon">&#x2606;</span> Pricing</a>
+    <a href="./index.html#download"><span class="nav-icon">&#x2913;</span> Download</a>
+    <a href="./privacy.html" class="active"><span class="nav-icon">&#x1F6E1;</span> Privacy</a>
+    <a href="./terms.html"><span class="nav-icon">&#x1F4C4;</span> Terms</a>
+  </nav>
 
-  <h2>License Activation</h2>
-  <p>When you activate your license key, the app makes a single API call to our server, which forwards the request to LemonSqueezy's license validation API. This call transmits only:</p>
-  <ul>
-    <li>Your license key</li>
-    <li>An instance identifier (a random string, not tied to your identity)</li>
-  </ul>
-  <p>No personal information, financial data, or device identifiers are sent during activation. After activation, the app works entirely offline.</p>
+  <div class="sidebar-bottom">
+    <a href="./app/index.html?mode=demo&tier=free" class="sidebar-cta">Try Free</a>
+  </div>
+</aside>
 
-  <h2>Payment Processing</h2>
-  <p>All purchases are processed by <a href="https://www.lemonsqueezy.com/privacy" target="_blank" rel="noopener">LemonSqueezy</a>, our payment provider. When you make a purchase, LemonSqueezy collects your email address and payment information. We do not have access to your full payment details. Please refer to LemonSqueezy's privacy policy for details on how they handle your data.</p>
+<!-- ======== MOBILE TOP BAR ======== -->
+<header class="mobile-topbar" id="mobile-topbar">
+  <a href="./index.html" class="mobile-topbar-logo">
+    <svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="mbSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
+        <linearGradient id="mbSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
+      </defs>
+      <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#mbSg)" stroke="url(#mbSe)" stroke-width="2.5"/>
+      <polygon points="50,22 55,48 50,53 45,48" fill="#e87820"/>
+      <polygon points="50,86 45,58 50,53 55,58" fill="#f0c050"/>
+      <polygon points="90,53 55,48 50,53 55,58" fill="#e87820" opacity="0.85"/>
+      <polygon points="10,53 45,58 50,53 45,48" fill="#f0c050" opacity="0.85"/>
+      <circle cx="50" cy="53" r="5" fill="#b05810"/>
+      <circle cx="50" cy="53" r="2.5" fill="#8a4510"/>
+      <text x="52" y="80" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
+      <text x="48.5" y="77.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
+      <text x="50" y="79" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
+    </svg>
+    <span>Ambit</span>
+  </a>
+  <button class="hamburger" id="hamburger-btn" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</header>
 
-  <h2>Cookies & Tracking</h2>
-  <p>The Ambit Budget Pro application uses no cookies, no analytics, and no tracking scripts. We do not use Google Analytics, Facebook Pixel, or any similar service. The marketing website (ambitbudget.com) does not set any cookies.</p>
-
-  <h2>Third-Party Services</h2>
-  <p>The only third-party services involved are:</p>
-  <ul>
-    <li><strong>LemonSqueezy</strong> — Payment processing and license key delivery</li>
-    <li><strong>Vercel</strong> — Website and API hosting</li>
-    <li><strong>Google Fonts</strong> — Font delivery for the marketing website</li>
-  </ul>
-  <p>None of these services have access to your financial data within the app.</p>
-
-  <h2>Data We Don't Collect</h2>
-  <p>To be explicit, we do <strong>not</strong> collect:</p>
-  <ul>
-    <li>Bank account information or credentials</li>
-    <li>Transaction data or spending history</li>
-    <li>Budget amounts or financial goals</li>
-    <li>Usage analytics or behavioral data</li>
-    <li>Device fingerprints or IP addresses</li>
-  </ul>
-
-  <h2>Changes to This Policy</h2>
-  <p>If we make changes to this privacy policy, we will update the "Last updated" date above. Since the app runs locally on your device, changes to our privacy practices would only apply to future versions of the software.</p>
-
-  <h2>Contact</h2>
-  <p>If you have questions about this privacy policy, contact us at <a href="mailto:support@ambitbudget.com">support@ambitbudget.com</a>.</p>
+<!-- Mobile nav overlay -->
+<div class="mobile-nav-overlay" id="mobile-nav">
+  <a href="./index.html" onclick="closeMobileNav()">Home</a>
+  <a href="./index.html#features" onclick="closeMobileNav()">Features</a>
+  <a href="./index.html#pricing" onclick="closeMobileNav()">Pricing</a>
+  <a href="./index.html#download" onclick="closeMobileNav()">Download</a>
+  <a href="./privacy.html" onclick="closeMobileNav()">Privacy Policy</a>
+  <a href="./terms.html" onclick="closeMobileNav()">Terms of Service</a>
+  <a href="./app/index.html?mode=demo&tier=free" class="mobile-cta">Try Free</a>
 </div>
 
-<footer class="footer">
-  <div>
-    <a href="/">Home</a>
-    <a href="./terms.html">Terms of Service</a>
-    <a href="mailto:support@ambitbudget.com">Contact</a>
-  </div>
-  <div class="footer-copy">© 2026 Ambit Budget Pro. All rights reserved.</div>
-</footer>
+<!-- ======== MAIN CONTENT ======== -->
+<main class="main-content">
+
+  <!-- ── Page Header ── -->
+  <section class="page-header">
+    <div class="container">
+      <h1>Privacy Policy</h1>
+      <p class="subtitle">We built Ambit Budget Pro with privacy at its core. Here's exactly what that means for your data.</p>
+      <p class="last-updated">Last updated: March 2026</p>
+    </div>
+  </section>
+
+  <!-- ── Legal Content ── -->
+  <section class="legal-content">
+    <div class="container">
+      <div class="legal-inner">
+
+        <div class="highlight-box">
+          <p>The short version: Your financial data never leaves your device. We don't collect it, we don't store it, we don't transmit it. Period.</p>
+        </div>
+
+        <h2>1. Overview</h2>
+        <p>Ambit Budget Pro is a personal finance tracking application that runs entirely in your web browser. We designed it from the ground up to keep your financial information private. This policy explains our approach to data and the very limited information involved when you use our product.</p>
+
+        <h2>2. Data That Stays on Your Device</h2>
+        <p>All of your financial data &mdash; transactions, account balances, budgets, categories, bills, forecasts, and any other information you enter into Ambit Budget Pro &mdash; is stored <strong>exclusively on your device</strong> using your browser's local storage.</p>
+        <p>This means:</p>
+        <ul>
+          <li>Your data is never uploaded to our servers or any third-party servers</li>
+          <li>Your data is never transmitted over the internet</li>
+          <li>We have no ability to access, view, or read your financial information</li>
+          <li>If you clear your browser data, your Ambit data is removed &mdash; because it only exists locally</li>
+        </ul>
+
+        <h2>3. What We Don't Collect</h2>
+        <p>We want to be crystal clear about what we do <strong>not</strong> do:</p>
+        <ul>
+          <li><strong>No financial data collection</strong> &mdash; We never see your transactions, balances, budgets, or any financial figures</li>
+          <li><strong>No analytics on financial data</strong> &mdash; We don't track how you use your money or what categories you create</li>
+          <li><strong>No third-party tracking</strong> &mdash; We don't use Google Analytics, Facebook Pixel, or any third-party tracking scripts on the app</li>
+          <li><strong>No advertising</strong> &mdash; We don't serve ads or share data with ad networks</li>
+          <li><strong>No data mining</strong> &mdash; Your information is not used for profiling, marketing, or any other purpose</li>
+          <li><strong>No device fingerprinting</strong> &mdash; We don't collect IP addresses, device identifiers, or behavioral data</li>
+        </ul>
+
+        <h2>4. License Key Validation</h2>
+        <p>The <strong>only server interaction</strong> in Ambit Budget Pro is license key validation. When you activate a purchased license, the app sends your license key to ambitbudget.com to verify it is valid.</p>
+        <p>During this process:</p>
+        <ul>
+          <li>Only the license key itself is transmitted &mdash; no financial data, no personal information</li>
+          <li>An instance identifier (a random string, not tied to your identity) is included</li>
+          <li>The server responds with the license status (valid/invalid) and your tier</li>
+          <li>No other data is sent or received during this exchange</li>
+          <li>After activation, the app works entirely offline</li>
+        </ul>
+
+        <h2>5. Local Storage and Cookies</h2>
+        <p>Ambit Budget Pro uses your browser's <strong>localStorage</strong> to save:</p>
+        <ul>
+          <li>Your app preferences and settings (theme, display options, etc.)</li>
+          <li>Your financial data (stored entirely on your device)</li>
+          <li>Your license activation status</li>
+        </ul>
+        <p>We do <strong>not</strong> use traditional HTTP cookies, third-party cookies, or any cross-site tracking mechanisms. The marketing website (ambitbudget.com) does not set any cookies. Everything stays in your browser on your device.</p>
+
+        <h2>6. Third-Party Services</h2>
+        <p>We do not share, sell, rent, or provide your data to any third parties. The only external services involved are:</p>
+        <ul>
+          <li><strong>Lemon Squeezy</strong> &mdash; Our payment processor for license purchases. They handle payment information directly; we never see or store your credit card details. Their privacy policy governs any data you provide during checkout.</li>
+          <li><strong>Vercel</strong> &mdash; Website and API hosting (for the license validation endpoint only)</li>
+          <li><strong>Google Fonts</strong> &mdash; The landing page loads the DM Sans font from Google Fonts. This is a standard web font request and does not involve any of your financial data.</li>
+        </ul>
+        <p>None of these services have access to your financial data within the app.</p>
+
+        <h2>7. Data Sharing</h2>
+        <p>We do not share your data with third parties because <strong>we don't have your data</strong>. There is nothing to share. Your financial information exists only on your device and is under your complete control.</p>
+
+        <h2>8. Data Security</h2>
+        <p>Because your data never leaves your device, traditional server-side security concerns don't apply. Your data is as secure as your device and browser. We recommend:</p>
+        <ul>
+          <li>Keeping your device and browser up to date</li>
+          <li>Using a device password or biometric lock</li>
+          <li>Regularly backing up your Ambit data using the app's built-in export feature</li>
+        </ul>
+
+        <h2>9. GDPR and CCPA Compliance</h2>
+        <p>Since Ambit Budget Pro does not collect, process, or store personal data on any server, most provisions of the GDPR (General Data Protection Regulation) and CCPA (California Consumer Privacy Act) do not apply to us in the traditional sense.</p>
+        <p>That said, we fully support the principles behind these regulations:</p>
+        <ul>
+          <li><strong>Data minimization</strong> &mdash; We collect nothing beyond what's needed for license validation</li>
+          <li><strong>User control</strong> &mdash; You have complete control over your data at all times</li>
+          <li><strong>Right to deletion</strong> &mdash; You can delete all your data anytime by clearing your browser storage or using the app's data management features</li>
+          <li><strong>Transparency</strong> &mdash; This policy tells you everything about how data is handled</li>
+        </ul>
+
+        <h2>10. Children's Privacy</h2>
+        <p>Ambit Budget Pro is a general audience application for personal finance tracking. We do not knowingly collect any personal information from anyone, including children under 13. Since the app stores all data locally and we have no data collection mechanism, there is no risk of inadvertently collecting children's data.</p>
+
+        <h2>11. Changes to This Policy</h2>
+        <p>If we make changes to this privacy policy, we will update the "Last updated" date at the top of this page. Since we are committed to a privacy-first approach, any changes will maintain or strengthen our privacy protections &mdash; never weaken them.</p>
+
+        <h2>12. Contact Us</h2>
+        <p>If you have any questions about this privacy policy or how Ambit Budget Pro handles data, we'd love to hear from you:</p>
+        <p><a href="mailto:support@ambitbudget.com">support@ambitbudget.com</a></p>
+
+        <!-- Navigation -->
+        <div class="legal-nav">
+          <a href="./index.html" class="nav-back">&#x2190; Back to Home</a>
+          <a href="./terms.html" class="nav-other">Terms of Service &#x2192;</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <svg width="20" height="23" viewBox="0 0 100 115">
+            <defs>
+              <linearGradient id="ftSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
+              <linearGradient id="ftSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
+              <path id="ftBa" d="M15,85 Q50,108 85,85" fill="none"/>
+            </defs>
+            <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#ftSg)" stroke="url(#ftSe)" stroke-width="2.5"/>
+            <text x="50" y="20" text-anchor="middle" fill="#f0c050" font-size="11" font-weight="700" font-family="Arial" letter-spacing="4" opacity="0.9">AMBIT</text>
+            <polygon points="50,26 55,50 50,55 45,50" fill="#e87820"/>
+            <polygon points="50,88 45,60 50,55 55,60" fill="#f0c050"/>
+            <polygon points="90,55 55,50 50,55 55,60" fill="#e87820" opacity="0.85"/>
+            <polygon points="10,55 45,60 50,55 45,50" fill="#f0c050" opacity="0.85"/>
+            <circle cx="50" cy="55" r="5" fill="#b05810"/>
+            <circle cx="50" cy="55" r="2.5" fill="#8a4510"/>
+            <text x="52" y="72" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
+            <text x="48.5" y="69.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
+            <text x="50" y="71" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
+            <text fill="#7ec8e3" font-size="9" font-weight="600" font-family="Arial" letter-spacing="2" opacity="0.8"><textPath href="#ftBa" startOffset="50%" text-anchor="middle">BUDGET</textPath></text>
+            <circle cx="16" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+            <circle cx="84" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+          </svg>
+          Ambit <span>Budget Pro</span>
+        </div>
+        <div class="footer-links">
+          <a href="./index.html">Home</a>
+          <a href="./index.html#features">Features</a>
+          <a href="./index.html#pricing">Pricing</a>
+          <a href="./faq.html">FAQ</a>
+          <a href="mailto:support@ambitbudget.com">Contact</a>
+          <a href="./privacy.html">Privacy</a>
+          <a href="./terms.html">Terms</a>
+        </div>
+        <div class="footer-copy">&copy; 2026 Ambit Budget Pro. All rights reserved.</div>
+      </div>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+var hamburger = document.getElementById('hamburger-btn');
+var mobileNav = document.getElementById('mobile-nav');
+hamburger.addEventListener('click', function() {
+  hamburger.classList.toggle('active');
+  mobileNav.classList.toggle('active');
+  document.body.style.overflow = mobileNav.classList.contains('active') ? 'hidden' : '';
+});
+function closeMobileNav() {
+  hamburger.classList.remove('active');
+  mobileNav.classList.remove('active');
+  document.body.style.overflow = '';
+}
+</script>
 </body>
 </html>
