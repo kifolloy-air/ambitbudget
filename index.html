@@ -641,21 +641,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="tagline">Your money. Your device. Your business.</div>
       </div>
 
-      <!-- Side-by-side: iframe + tier cards -->
+      <!-- Side-by-side: tier cards + iframe -->
       <div class="hero-body">
 
-        <!-- LEFT: Live demo iframe -->
-        <div class="hero-demo" id="demo">
-          <div class="hero-demo-frame">
-            <div class="hero-demo-bar">
-              <div class="hero-demo-dots"><i></i><i></i><i></i></div>
-              <span>ambitbudget.com/app</span>
-            </div>
-            <iframe id="hero-iframe" src="./app/index.html?mode=demo&tier=free" loading="lazy" title="Ambit Budget Pro Demo"></iframe>
-          </div>
-        </div>
-
-        <!-- RIGHT: Tier selector cards -->
+        <!-- LEFT: Tier selector cards -->
         <div class="hero-tiers">
           <div class="tier-card tier-free active" data-tier="free" data-src="./app/index.html?mode=demo&tier=free" onclick="selectTier(this)">
             <div class="tier-info">
@@ -709,6 +698,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <div class="hero-cta-area">
             <a href="./app/index.html" class="hero-cta-btn">Get Started Free &#x2192;</a>
             <p class="hero-cta-sub">No sign-up required. Your data stays on your device.</p>
+          </div>
+        </div>
+
+        <!-- RIGHT: Live demo iframe -->
+        <div class="hero-demo" id="demo">
+          <div class="hero-demo-frame">
+            <div class="hero-demo-bar">
+              <div class="hero-demo-dots"><i></i><i></i><i></i></div>
+              <span>ambitbudget.com/app</span>
+            </div>
+            <iframe id="hero-iframe" src="./app/index.html?mode=demo&tier=free" loading="lazy" title="Ambit Budget Pro Demo"></iframe>
           </div>
         </div>
 
