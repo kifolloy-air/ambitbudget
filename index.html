@@ -159,13 +159,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 /* Demo iframe frame */
 .hero-demo {
-  flex: 0 0 60%; min-width: 0;
+  flex: 0 0 68%; min-width: 0; display: flex; flex-direction: column;
 }
 .hero-demo-frame {
   background: var(--navy); border-radius: 14px;
   overflow: hidden; border: 3px solid var(--navy);
   box-shadow: 0 20px 60px rgba(12,20,69,0.15), 0 4px 20px rgba(0,0,0,0.08);
-  height: 100%;
+  flex: 1;
   display: flex; flex-direction: column;
 }
 .hero-demo-bar {
@@ -186,13 +186,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 /* Tier selector cards */
 .hero-tiers {
-  flex: 0 0 40%; display: flex; flex-direction: column; gap: 10px;
+  flex: 0 0 30%; display: flex; flex-direction: column; gap: 10px;
 }
 .tier-card {
   display: flex; align-items: center; gap: 14px;
   padding: 14px 16px; border-radius: 10px;
   background: #F5ECD0; border: 2px solid #E8DBB8;
   cursor: pointer; transition: all 0.2s; user-select: none;
+  flex: 1;
 }
 .tier-card:hover { border-color: var(--amber); }
 .tier-card.active { border-color: var(--amber); background: #FDF6E3; box-shadow: 0 4px 16px rgba(232,160,32,0.12); }
@@ -211,7 +212,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .tier-accounts { font-size: 12px; color: var(--amber); font-weight: 600; }
 .tier-desc { font-size: 12px; color: var(--text2); font-style: italic; margin-top: 2px; }
 
-.hero-cta-area { margin-top: auto; padding-top: 16px; }
+.hero-cta-area { padding-top: 16px; }
 .hero-cta-btn {
   display: block; width: 100%; padding: 16px 24px;
   background: var(--green); color: #fff;
@@ -694,11 +695,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
             <button class="tier-demo-btn" onclick="event.stopPropagation(); selectTier(this.parentElement)">View Demo &#x2192;</button>
           </div>
 
-          <!-- CTA -->
-          <div class="hero-cta-area">
-            <a href="./app/index.html" class="hero-cta-btn">Get Started Free &#x2192;</a>
-            <p class="hero-cta-sub">No sign-up required. Your data stays on your device.</p>
-          </div>
         </div>
 
         <!-- RIGHT: Live demo iframe -->
@@ -709,6 +705,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
               <span>ambitbudget.com/app</span>
             </div>
             <iframe id="hero-iframe" src="./app/index.html?mode=demo&tier=free" loading="lazy" title="Ambit Budget Pro Demo"></iframe>
+          </div>
+          <!-- CTA -->
+          <div class="hero-cta-area">
+            <a href="./app/index.html" class="hero-cta-btn">Get Started Free &#x2192;</a>
+            <p class="hero-cta-sub">No sign-up required. Your data stays on your device.</p>
           </div>
         </div>
 
