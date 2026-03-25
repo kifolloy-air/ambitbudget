@@ -230,56 +230,85 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 /* ── Pricing ── */
 .pricing-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 20px; align-items: start;
+  display: flex; flex-direction: column;
+  gap: 18px;
 }
 .price-card {
   background: #F5ECD0; border: 2px solid #E8DBB8;
-  border-radius: 16px; padding: 28px 24px;
-  text-align: center; transition: all 0.25s;
+  border-radius: 16px; padding: 28px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 32px; transition: all 0.25s;
   position: relative;
 }
 .price-card:hover { border-color: var(--amber); box-shadow: 0 8px 30px rgba(232,160,32,0.12); }
 .price-card.popular { border-color: var(--amber); }
 .price-card .pop-badge {
-  position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: -13px; left: 32px;
   background: var(--amber); color: #fff; font-size: 11px; font-weight: 700;
   padding: 3px 14px; border-radius: 99px; text-transform: uppercase;
   letter-spacing: 0.5px; white-space: nowrap;
 }
-.price-card-tier { font-size: 14px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-.price-card-price { font-size: 42px; font-weight: 800; color: var(--navy); letter-spacing: -2px; margin-bottom: 4px; }
-.price-card-price sup { font-size: 18px; font-weight: 600; vertical-align: super; }
-.price-card-price .period { font-size: 14px; font-weight: 500; color: var(--text3); letter-spacing: 0; }
-.price-card-accounts { font-size: 13px; color: var(--amber); font-weight: 600; margin-bottom: 16px; }
-.price-card-features { list-style: none; text-align: left; margin-bottom: 20px; }
-.price-card-features li {
-  padding: 7px 0; font-size: 13px; color: var(--text2);
-  display: flex; align-items: center; gap: 8px;
-  border-bottom: 1px solid #E8DBB8;
+.price-card-info {
+  flex: 1; min-width: 0;
 }
-.price-card-features li:last-child { border-bottom: none; }
+.price-card-header {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.price-card-tier { font-size: 14px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 1px; }
+.price-card-price { font-size: 36px; font-weight: 800; color: var(--navy); letter-spacing: -2px; line-height: 1; }
+.price-card-price sup { font-size: 16px; font-weight: 600; vertical-align: super; }
+.price-card-price .period { font-size: 14px; font-weight: 500; color: var(--text3); letter-spacing: 0; }
+.price-card-accounts { font-size: 13px; color: var(--amber); font-weight: 600; }
+.price-card-divider { width: 1px; height: 28px; background: #E8DBB8; flex-shrink: 0; }
+.price-card-features { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.price-card-features li {
+  padding: 3px 0; font-size: 13px; color: var(--text2);
+  display: flex; align-items: center; gap: 6px;
+}
 .price-card-features .check { color: var(--green); font-weight: 700; flex-shrink: 0; }
 .price-card-features .x-mark { color: var(--text3); font-weight: 700; flex-shrink: 0; opacity: 0.4; }
 
+.price-card-cta-wrap {
+  flex-shrink: 0; display: flex; align-items: center;
+}
 .price-card-cta {
-  display: block; width: 100%; padding: 12px 16px;
-  border-radius: 8px; font-size: 14px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 16px 32px; white-space: nowrap;
+  border-radius: 12px; font-size: 16px; font-weight: 700;
   text-decoration: none; text-align: center; transition: all 0.2s;
   font-family: inherit; cursor: pointer; border: none;
+  letter-spacing: 0.3px;
 }
-.price-card-cta.cta-primary { background: var(--amber); color: #fff; }
-.price-card-cta.cta-primary:hover { background: var(--amber-hover); }
-.price-card-cta.cta-outline { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
-.price-card-cta.cta-outline:hover { background: var(--navy); color: #fff; }
-.price-card-cta.cta-green { background: var(--green); color: #fff; font-weight: 700; font-size: 15px; }
-.price-card-cta.cta-green:hover { background: #35a86d; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(64,192,128,0.3); }
+.price-card-cta.cta-primary {
+  background: var(--amber); color: #fff;
+  box-shadow: 0 4px 16px rgba(232,160,32,0.25);
+}
+.price-card-cta.cta-primary:hover { background: var(--amber-hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(232,160,32,0.35); }
+.price-card-cta.cta-outline {
+  background: transparent; color: var(--navy); border: 2px solid var(--navy);
+}
+.price-card-cta.cta-outline:hover { background: var(--navy); color: #fff; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(12,20,69,0.2); }
+.price-card-cta.cta-green {
+  background: var(--green); color: #fff; font-weight: 700; font-size: 16px;
+  box-shadow: 0 4px 16px rgba(64,192,128,0.25);
+}
+.price-card-cta.cta-green:hover { background: #35a86d; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(64,192,128,0.35); }
+.price-card-cta.cta-navy {
+  background: var(--navy); color: #fff;
+  box-shadow: 0 4px 16px rgba(12,20,69,0.2);
+}
+.price-card-cta.cta-navy:hover { background: #1a2870; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(12,20,69,0.3); }
+.price-card-cta.cta-amber {
+  background: var(--amber); color: #fff;
+  box-shadow: 0 4px 16px rgba(232,160,32,0.25);
+}
+.price-card-cta.cta-amber:hover { background: var(--amber-hover); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(232,160,32,0.35); }
 
 /* Free tier card green accent */
-.price-card.free-card { border-color: var(--green); background: linear-gradient(180deg, #e8f8f0 0%, #F5ECD0 40%); }
+.price-card.free-card { border-color: var(--green); background: linear-gradient(90deg, #e8f8f0 0%, #F5ECD0 40%); }
 .price-card.free-card:hover { border-color: var(--green); box-shadow: 0 8px 30px rgba(64,192,128,0.15); }
 .free-badge { background: var(--green) !important; }
-.price-card-tagline { font-size: 13px; color: var(--text2); font-style: italic; margin-bottom: 16px; }
+.price-card-tagline { font-size: 13px; color: var(--text2); font-style: italic; }
 
 .pricing-note {
   text-align: center; margin-top: 28px; padding: 16px 24px;
@@ -396,7 +425,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .features-grid { grid-template-columns: repeat(2, 1fr); }
-  .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+  .price-card { padding: 24px 20px; gap: 20px; }
+  .price-card-cta { padding: 14px 24px; font-size: 15px; }
 }
 
 @media (max-width: 768px) {
@@ -408,7 +438,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   .hero .summary { font-size: 15px; }
   .hero-mockup iframe { height: 360px; }
   .features-grid { grid-template-columns: 1fr; }
-  .pricing-grid { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto; }
+  .price-card {
+    flex-direction: column; text-align: center; gap: 16px; padding: 24px 20px;
+  }
+  .price-card-header { justify-content: center; }
+  .price-card-features { justify-content: center; }
+  .price-card-cta-wrap { width: 100%; }
+  .price-card-cta { width: 100%; }
+  .price-card .pop-badge { left: 50%; transform: translateX(-50%); }
+  .price-card-divider { width: 40px; height: 1px; }
   .privacy-block { flex-direction: column; text-align: center; gap: 24px; }
   .privacy-badges { justify-content: center; }
   .install-grid { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto; }
@@ -597,72 +635,97 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <!-- Free -->
         <div class="price-card free-card">
           <div class="pop-badge free-badge">Get Started</div>
-          <div class="price-card-tier">Free</div>
-          <div class="price-card-price">$0</div>
-          <div class="price-card-accounts">1 Account</div>
-          <div class="price-card-tagline">See where your money goes</div>
-          <ul class="price-card-features">
-            <li><span class="check">&#x2713;</span> Import bank data</li>
-            <li><span class="check">&#x2713;</span> Manual categorization</li>
-            <li><span class="check">&#x2713;</span> Spending breakdown</li>
-            <li><span class="check">&#x2713;</span> 1 account</li>
-            <li><span class="x-mark">&#x2717;</span> Payee rules</li>
-            <li><span class="x-mark">&#x2717;</span> Budgets</li>
-            <li><span class="x-mark">&#x2717;</span> Savings goals</li>
-            <li><span class="x-mark">&#x2717;</span> Forecast</li>
-          </ul>
-          <a href="./app/index.html?mode=demo&tier=free" class="price-card-cta cta-green">Try Free Demo</a>
+          <div class="price-card-info">
+            <div class="price-card-header">
+              <div class="price-card-tier">Free</div>
+              <div class="price-card-price">$0</div>
+              <div class="price-card-divider"></div>
+              <div class="price-card-accounts">1 Account</div>
+            </div>
+            <ul class="price-card-features">
+              <li><span class="check">&#x2713;</span> Import bank data</li>
+              <li><span class="check">&#x2713;</span> Manual categorization</li>
+              <li><span class="check">&#x2713;</span> Spending breakdown</li>
+              <li><span class="x-mark">&#x2717;</span> Payee rules</li>
+              <li><span class="x-mark">&#x2717;</span> Budgets</li>
+              <li><span class="x-mark">&#x2717;</span> Savings goals</li>
+              <li><span class="x-mark">&#x2717;</span> Forecast</li>
+            </ul>
+          </div>
+          <div class="price-card-cta-wrap">
+            <a href="./app/index.html?mode=demo&tier=free" class="price-card-cta cta-green">Try Free Demo &#x2192;</a>
+          </div>
         </div>
 
         <!-- Starter -->
         <div class="price-card">
-          <div class="price-card-tier">Starter</div>
-          <div class="price-card-price"><sup>$</sup>9<sup>.99</sup></div>
-          <div class="price-card-accounts">2 Accounts</div>
-          <ul class="price-card-features">
-            <li><span class="check">&#x2713;</span> Everything in Free</li>
-            <li><span class="check">&#x2713;</span> Payee rules</li>
-            <li><span class="check">&#x2713;</span> Budget tracking</li>
-            <li><span class="check">&#x2713;</span> Category groups</li>
-            <li><span class="check">&#x2713;</span> Bill tracking</li>
-            <li><span class="x-mark">&#x2717;</span> Savings goals</li>
-            <li><span class="x-mark">&#x2717;</span> Forecast</li>
-            <li><span class="x-mark">&#x2717;</span> Debt planner</li>
-          </ul>
-          <a href="./app/index.html?mode=demo&tier=starter" class="price-card-cta cta-outline">Try Demo</a>
+          <div class="price-card-info">
+            <div class="price-card-header">
+              <div class="price-card-tier">Starter</div>
+              <div class="price-card-price"><sup>$</sup>9<sup>.99</sup></div>
+              <div class="price-card-divider"></div>
+              <div class="price-card-accounts">2 Accounts</div>
+            </div>
+            <ul class="price-card-features">
+              <li><span class="check">&#x2713;</span> Everything in Free</li>
+              <li><span class="check">&#x2713;</span> Payee rules</li>
+              <li><span class="check">&#x2713;</span> Budget tracking</li>
+              <li><span class="check">&#x2713;</span> Category groups</li>
+              <li><span class="check">&#x2713;</span> Bill tracking</li>
+              <li><span class="x-mark">&#x2717;</span> Savings goals</li>
+              <li><span class="x-mark">&#x2717;</span> Forecast</li>
+            </ul>
+          </div>
+          <div class="price-card-cta-wrap">
+            <a href="./app/index.html?mode=demo&tier=starter" class="price-card-cta cta-amber">Try Starter Demo &#x2192;</a>
+          </div>
         </div>
 
         <!-- Plus -->
         <div class="price-card popular">
           <div class="pop-badge">Most Popular</div>
-          <div class="price-card-tier">Plus</div>
-          <div class="price-card-price"><sup>$</sup>19<sup>.99</sup></div>
-          <div class="price-card-accounts">3 Accounts</div>
-          <ul class="price-card-features">
-            <li><span class="check">&#x2713;</span> Everything in Starter</li>
-            <li><span class="check">&#x2713;</span> Balance forecast</li>
-            <li><span class="check">&#x2713;</span> Monthly review</li>
-            <li><span class="check">&#x2713;</span> Calendar year view</li>
-            <li><span class="check">&#x2713;</span> Savings goals &amp; Skip-and-Save</li>
-            <li><span class="x-mark">&#x2717;</span> Debt planner</li>
-          </ul>
-          <a href="./app/index.html?mode=demo&tier=plus" class="price-card-cta cta-primary">Try Demo</a>
+          <div class="price-card-info">
+            <div class="price-card-header">
+              <div class="price-card-tier">Plus</div>
+              <div class="price-card-price"><sup>$</sup>19<sup>.99</sup></div>
+              <div class="price-card-divider"></div>
+              <div class="price-card-accounts">3 Accounts</div>
+            </div>
+            <ul class="price-card-features">
+              <li><span class="check">&#x2713;</span> Everything in Starter</li>
+              <li><span class="check">&#x2713;</span> Balance forecast</li>
+              <li><span class="check">&#x2713;</span> Monthly review</li>
+              <li><span class="check">&#x2713;</span> Calendar year view</li>
+              <li><span class="check">&#x2713;</span> Savings goals &amp; Skip-and-Save</li>
+              <li><span class="x-mark">&#x2717;</span> Debt planner</li>
+            </ul>
+          </div>
+          <div class="price-card-cta-wrap">
+            <a href="./app/index.html?mode=demo&tier=plus" class="price-card-cta cta-primary">Try Plus Demo &#x2192;</a>
+          </div>
         </div>
 
         <!-- Pro -->
         <div class="price-card">
-          <div class="price-card-tier">Pro</div>
-          <div class="price-card-price"><sup>$</sup>29<sup>.99</sup></div>
-          <div class="price-card-accounts">Unlimited Accounts</div>
-          <ul class="price-card-features">
-            <li><span class="check">&#x2713;</span> Everything in Plus</li>
-            <li><span class="check">&#x2713;</span> Savings goals &amp; Skip-and-Save</li>
-            <li><span class="check">&#x2713;</span> Day-by-day projections</li>
-            <li><span class="check">&#x2713;</span> Debt planner</li>
-            <li><span class="check">&#x2713;</span> Lump sum analyzer</li>
-            <li><span class="check">&#x2713;</span> All future features</li>
-          </ul>
-          <a href="./app/index.html?mode=demo&tier=pro" class="price-card-cta cta-outline">Try Demo</a>
+          <div class="price-card-info">
+            <div class="price-card-header">
+              <div class="price-card-tier">Pro</div>
+              <div class="price-card-price"><sup>$</sup>29<sup>.99</sup></div>
+              <div class="price-card-divider"></div>
+              <div class="price-card-accounts">Unlimited Accounts</div>
+            </div>
+            <ul class="price-card-features">
+              <li><span class="check">&#x2713;</span> Everything in Plus</li>
+              <li><span class="check">&#x2713;</span> Savings goals &amp; Skip-and-Save</li>
+              <li><span class="check">&#x2713;</span> Day-by-day projections</li>
+              <li><span class="check">&#x2713;</span> Debt planner</li>
+              <li><span class="check">&#x2713;</span> Lump sum analyzer</li>
+              <li><span class="check">&#x2713;</span> All future features</li>
+            </ul>
+          </div>
+          <div class="price-card-cta-wrap">
+            <a href="./app/index.html?mode=demo&tier=pro" class="price-card-cta cta-navy">Try Pro Demo &#x2192;</a>
+          </div>
         </div>
       </div>
 
