@@ -2399,7 +2399,7 @@ function App({idbData}) {
           h('a',{href:'../index.html#pricing',style:{cursor:'pointer',fontSize:12,whiteSpace:'nowrap',color:'inherit',textDecoration:'none',fontWeight:600}},'← Back to Pricing')
         )
       ),
-      isDemo && !demoHidden && h('div',{className:'demo-banner'},
+      isDemo && !demoHidden && !isTierDemo && h('div',{className:'demo-banner'},
         h('span',null,'💡'),
         h('span',null,'You\'re viewing sample data. Switch to '), h('strong',{style:{cursor:'pointer',textDecoration:'underline'}, ...a11yClick(()=>{
           setMode('mine');setPage('dashboard');
@@ -5751,7 +5751,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
       : null,
 
     // ── Collapsible "Other Plans" section (bottom of dashboard) ──
-    !isDemo && !demoBypass && tier && tier.label !== 'Pro' && (()=>{
+    (!isDemo || isTierDemo) && tier && tier.label !== 'Pro' && (()=>{
       const lockedFeatures = [];
       if(tier.label === 'Free') {
         lockedFeatures.push({name:'Budget targets',tier:'Starter',color:'#e8a020',bg:'rgba(232,160,32,0.10)'});
