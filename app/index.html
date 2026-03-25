@@ -4794,6 +4794,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
   const [dashView, setDashView] = useState('overview');
   const [yearViewYear, setYearViewYear] = useState(()=>new Date().getFullYear());
   const [yearViewDrilldown, setYearViewDrilldown] = useState(null);
+  const [plansExpanded, setPlansExpanded] = useState(false);
   const toggleCat = k => setExpandedCats(prev => { const s = new Set(prev); s.has(k)?s.delete(k):s.add(k); return s; });
 
   // ── Bills & Budget Window ──
@@ -5318,12 +5319,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
           h('span',{style:{fontSize:10,color:'var(--yellow)'}}, '-Disc: ',h('strong',null,fmt(bbWindow.remainingDiscBudget)))
         )
       )
-    : h('div',{style:{textAlign:'center',padding:'16px 20px',marginBottom:14,background:'rgba(232,160,32,0.06)',border:'1px dashed var(--accent2)',borderRadius:8}},
-        h('div',{style:{fontSize:24,marginBottom:6}},'🔮'),
-        h('div',{style:{fontSize:13,fontWeight:600,color:'var(--accent2)',marginBottom:4}},'Balance Forecast'),
-        h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:8}},'See where your balance is headed — end of month and next month projections.'),
-        h('span',{style:{fontSize:11,fontWeight:600,color:'var(--accent2)',cursor:'pointer',textDecoration:'none'}, ...a11yClick(onUpgrade)},'Upgrade to Plus ($19.99) →')
-    )),
+    : null),
 
     // ── Savings Goals Dashboard Widget (Plus+ tier) ──
     (demoBypass || tier?.savingsGoals) && h(DashboardGoalsWidget, {accounts, setAccounts, setPage, showToast:null}),
@@ -5440,13 +5436,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
         )
       )
     )
-    : h('div',{className:'card',style:{textAlign:'center',padding:'16px 20px',marginBottom:14,background:'rgba(126,200,227,0.06)',border:'1px dashed var(--blue)',borderRadius:8}},
-        h('div',{style:{fontSize:24,marginBottom:6}},'📅'),
-        h('div',{style:{fontSize:13,fontWeight:600,color:'var(--blue)',marginBottom:4}},'Day-by-Day Projections'),
-        h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:8}},'See a detailed daily breakdown of your balance — every bill, income, and budget event mapped out.'),
-        h('span',{style:{fontSize:11,fontWeight:600,color:'var(--blue)',cursor:'pointer',textDecoration:'none'}, ...a11yClick(onUpgrade)},'Upgrade to Pro ($29.99) →')
-      )
-    ),
+    : null),
 
     transactions.length===0
       ? h('div',{className:'card'},
@@ -5536,26 +5526,9 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
               )
             ),
 
-            // Right column: This Month's Bills (hidden for free tier, show upgrade prompt)
+            // Right column: This Month's Bills (hidden for free tier)
             isFree
-            ? h('div',{className:'dash-right',style:{flex:1,minWidth:300}},
-                h('div',{className:'card',style:{textAlign:'center',padding:'24px 20px'}},
-                  h('div',{style:{fontSize:32,marginBottom:8}},'💰'),
-                  h('div',{style:{fontSize:15,fontWeight:700,marginBottom:6,color:'var(--card-text)'}},'Budget & Bill Tracking'),
-                  h('div',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:12,lineHeight:1.6}},
-                    'Track monthly bills, set budget targets, auto-categorize transactions, and see your spending by group.'),
-                  h('button',{className:'btn primary',style:{fontSize:13},onClick:onUpgrade},'Unlock with Starter ($9.99)'),
-                  h('div',{style:{marginTop:16,textAlign:'left'}},
-                    [['Payee rules & auto-categorization','Starter'],['Budget targets per category','Starter'],['Bill tracking & due dates','Starter'],['Balance forecast','Plus'],['Day-by-day projections','Pro']].map(([feat,t])=>
-                      h('div',{key:feat,style:{display:'flex',alignItems:'center',gap:8,padding:'4px 0',fontSize:11,color:'var(--card-text2)'}},
-                        h('span',{style:{color:'var(--accent2)'}},'🔒'),
-                        h('span',null,feat),
-                        h('span',{style:{marginLeft:'auto',fontSize:9,fontWeight:600,color:'var(--text2)',textTransform:'uppercase',letterSpacing:0.5}},t)
-                      )
-                    )
-                  )
-                )
-              )
+            ? null
             : h('div',{className:'dash-right',style:{flex:1,minWidth:300,display:'flex',flexDirection:'column',gap:16}},
 
               // Bills
@@ -5775,14 +5748,56 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
             )
           )
         )
-      : dashView==='annual' && !(demoBypass || tier?.yearView)
-        ? h('div',{style:{textAlign:'center',padding:'40px 20px',background:'rgba(232,160,32,0.06)',border:'1px dashed var(--accent2)',borderRadius:8,marginTop:16}},
-            h('div',{style:{fontSize:28,marginBottom:8}},'\uD83D\uDCC5'),
-            h('div',{style:{fontSize:14,fontWeight:600,color:'var(--accent2)',marginBottom:4}},'Calendar Year View'),
-            h('div',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:10}},'See a 12-month grid of spending by category with budget color-coding and drilldown.'),
-            h('span',{style:{fontSize:12,fontWeight:600,color:'var(--accent2)',cursor:'pointer',textDecoration:'none'}, ...a11yClick(onUpgrade)},'Upgrade to Plus ($19.99) \u2192')
+      : null,
+
+    // ── Collapsible "Other Plans" section (bottom of dashboard) ──
+    !isDemo && !demoBypass && tier && tier.label !== 'Pro' && (()=>{
+      const lockedFeatures = [];
+      if(tier.label === 'Free') {
+        lockedFeatures.push({name:'Budget targets',tier:'Starter',color:'#e8a020',bg:'rgba(232,160,32,0.10)'});
+        lockedFeatures.push({name:'Auto-categorization',tier:'Starter',color:'#e8a020',bg:'rgba(232,160,32,0.10)'});
+        lockedFeatures.push({name:'Bill tracking',tier:'Starter',color:'#e8a020',bg:'rgba(232,160,32,0.10)'});
+        lockedFeatures.push({name:'Balance forecast',tier:'Plus',color:'#7ec8e3',bg:'rgba(126,200,227,0.10)'});
+        lockedFeatures.push({name:'Savings goals',tier:'Plus',color:'#7ec8e3',bg:'rgba(126,200,227,0.10)'});
+        lockedFeatures.push({name:'Day-by-day projections',tier:'Pro',color:'#40c080',bg:'rgba(64,192,128,0.10)'});
+        lockedFeatures.push({name:'Debt planner',tier:'Pro',color:'#40c080',bg:'rgba(64,192,128,0.10)'});
+      } else if(tier.label === 'Starter') {
+        lockedFeatures.push({name:'Balance forecast',tier:'Plus',color:'#7ec8e3',bg:'rgba(126,200,227,0.10)'});
+        lockedFeatures.push({name:'Savings goals',tier:'Plus',color:'#7ec8e3',bg:'rgba(126,200,227,0.10)'});
+        lockedFeatures.push({name:'Annual view',tier:'Plus',color:'#7ec8e3',bg:'rgba(126,200,227,0.10)'});
+        lockedFeatures.push({name:'Day-by-day projections',tier:'Pro',color:'#40c080',bg:'rgba(64,192,128,0.10)'});
+        lockedFeatures.push({name:'Debt planner',tier:'Pro',color:'#40c080',bg:'rgba(64,192,128,0.10)'});
+      } else if(tier.label === 'Plus') {
+        lockedFeatures.push({name:'Day-by-day projections',tier:'Pro',color:'#40c080',bg:'rgba(64,192,128,0.10)'});
+        lockedFeatures.push({name:'Debt planner',tier:'Pro',color:'#40c080',bg:'rgba(64,192,128,0.10)'});
+        lockedFeatures.push({name:'Lump sum analyzer',tier:'Pro',color:'#40c080',bg:'rgba(64,192,128,0.10)'});
+      }
+      const nextTierDemo = tier.label==='Free'?'starter':tier.label==='Starter'?'plus':'pro';
+      return h('div',{style:{marginTop:24,marginBottom:8}},
+        h('div',{style:{textAlign:'center',cursor:'pointer',userSelect:'none',padding:'8px 0'},
+          ...a11yClick(()=>setPlansExpanded(!plansExpanded),'Toggle plan features'),'aria-expanded':plansExpanded},
+          h('span',{style:{fontSize:12,color:'var(--card-text2)',letterSpacing:'0.3px'}},
+            'See what\'s available in other plans ',
+            h('span',{style:{display:'inline-block',transition:'transform 0.2s',transform:plansExpanded?'rotate(180deg)':'rotate(0)',fontSize:10}},'▾')
           )
-        : null,
+        ),
+        plansExpanded && h('div',{style:{background:'var(--surface2)',borderRadius:8,padding:'14px 18px',marginTop:4}},
+          h('div',{style:{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:12}},
+            lockedFeatures.map((f,i)=>
+              h('span',{key:f.name,style:{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:'var(--card-text)',padding:'3px 0'}},
+                h('span',null,f.name),
+                h('span',{style:{fontSize:9,fontWeight:700,color:f.color,background:f.bg,padding:'1px 6px',borderRadius:4,textTransform:'uppercase',letterSpacing:'0.5px'}},f.tier),
+                i < lockedFeatures.length-1 && h('span',{style:{color:'var(--border)',margin:'0 2px'}},'·')
+              )
+            )
+          ),
+          h('div',{style:{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}},
+            h('button',{className:'btn sm',style:{fontSize:12},onClick:()=>window.open('https://ambitbudget.vercel.app/#pricing','_blank')},'Compare Plans'),
+            h('button',{className:'btn sm',style:{fontSize:12,background:'transparent',border:'1px solid var(--border)'},onClick:()=>window.open('https://ambitbudget.vercel.app/app/?demo='+nextTierDemo,'_blank')},'View Demo \u2192')
+          )
+        )
+      );
+    })(),
 
     // Year View drilldown modal
     yearViewDrilldown && h(Modal, {onClose:()=>setYearViewDrilldown(null)},
@@ -7090,21 +7105,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
           })
         ),
 
-    !isDemo && accountLimit !== undefined && accountLimit !== Infinity && accounts.length >= accountLimit &&
-      h('div',{className:'card', style:{textAlign:'center',padding:'16px 20px',marginTop:12,background:'rgba(232,160,32,0.06)',border:'1px dashed var(--accent2)'}},
-        h('div',{style:{fontSize:13,color:'var(--text2)',marginBottom:6}},
-          '⚡ You\'re using ',h('strong',null,accounts.length+'/'+accountLimit),' account'+(accountLimit===1?'':'s')+' on the ',h('strong',null,tier?tier.label:'Starter'),' plan.'
-        ),
-        h('a',{href:'https://ambitbudget.com/#pricing',target:'_blank',rel:'noopener',
-          style:{color:'var(--accent2)',textDecoration:'underline',fontSize:13,fontWeight:600}}, 'Upgrade for more accounts →')
-      ),
-
-    // Savings Goals: Starter tier upgrade hint
-    !isDemo && tier && !tier.savingsGoals && tier.label==='Starter' && accounts.some(a=>a.type==='checking'||a.type==='savings') &&
-      h('div',{style:{textAlign:'center',padding:'12px 16px',marginTop:12,background:'rgba(232,160,32,0.04)',border:'1px dashed var(--border)',borderRadius:8,fontSize:12,color:'var(--card-text2)'}},
-        'Upgrade to Plus to set savings goals on your accounts ',
-        h('a',{href:'https://ambitbudget.com/#pricing',target:'_blank',rel:'noopener',style:{color:'var(--accent2)',fontWeight:600}},'($19.99)')
-      ),
+    // Account limit and savings goals upgrade hints removed — consolidated into Dashboard bottom section
 
     // Savings Goals: First-time hint for Plus+ users with no goals
     (demoBypass || tier?.savingsGoals) && !goalsHintDismissed && accounts.some(a=>(a.type==='checking'||a.type==='savings')&&(!a.goals||a.goals.length===0)) &&
