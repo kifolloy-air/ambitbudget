@@ -472,6 +472,31 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .footer-links a:hover { color: var(--navy); }
 .footer-copy { color: var(--text3); font-size: 12px; }
 
+/* ── Mobile-only hero CTA (hidden on desktop) ── */
+.hero-mobile-cta { display: none; }
+.hero-mobile-demo-btn {
+  display: flex; width: 100%; padding: 18px 24px;
+  background: var(--amber); color: #fff;
+  font-size: 18px; font-weight: 700; text-align: center;
+  border-radius: 12px; text-decoration: none;
+  transition: all 0.2s; letter-spacing: 0.3px;
+  box-shadow: 0 4px 16px rgba(232,160,32,0.3);
+  min-height: 56px; line-height: 1.2;
+  align-items: center; justify-content: center;
+}
+.hero-mobile-demo-btn:hover { background: var(--amber-hover); }
+
+/* ── Mobile tier card link (hidden on desktop, shown on mobile) ── */
+.tier-demo-link {
+  display: none; /* hidden on desktop */
+  background: var(--amber); color: #fff; border-radius: 6px;
+  padding: 10px 16px; font-size: 13px; font-weight: 600;
+  white-space: nowrap; text-decoration: none; text-align: center;
+  transition: all 0.15s; flex-shrink: 0; min-height: 44px;
+  align-items: center; justify-content: center;
+}
+.tier-demo-link:hover { background: var(--amber-hover); }
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .hero-branding svg { height: 150px; }
@@ -483,43 +508,130 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 }
 
 @media (max-width: 768px) {
+  /* Sidebar / topbar */
   .sidebar { display: none; }
   .mobile-topbar { display: flex; }
   .main-content { margin-left: 0; padding-top: 56px; }
-  .hero { min-height: auto; padding: 32px 0 40px; }
-  .hero-branding { margin-bottom: 20px; }
+
+  /* Container */
+  .container { padding: 0 16px; }
+  .section { padding: 48px 0; }
+  .section-title { font-size: 26px; }
+  .section-sub { font-size: 14px; }
+
+  /* Hero: stack vertically */
+  .hero { min-height: auto; padding: 24px 0 32px; }
+  .hero-branding { margin-bottom: 16px; }
   .hero-branding svg { height: 120px; }
   .hero-branding h1 { font-size: 26px; }
   .hero-branding .tagline { font-size: 15px; }
-  .hero-body { flex-direction: column; }
-  .hero-demo { display: none; }
-  .hero-tiers { flex: 1; }
-  .features-grid { grid-template-columns: 1fr; }
+  .hero-body { flex-direction: column; gap: 16px; }
+
+  /* Hide iframe on mobile */
+  .hero-demo { display: none !important; }
+
+  /* Show mobile CTA area */
+  .hero-mobile-cta {
+    display: flex; flex-direction: column; gap: 12px;
+    width: 100%; text-align: center;
+  }
+  .hero-mobile-cta .hero-cta-btn {
+    min-height: 56px; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Tier cards: full width, stacked vertically */
+  .hero-tiers {
+    flex: none; width: 100%;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .tier-card {
+    flex: none; padding: 12px 14px; gap: 12px;
+  }
+  /* Hide desktop iframe-switching button, show link on mobile */
+  .tier-demo-btn { display: none !important; }
+  .tier-demo-link {
+    display: flex;
+  }
+
+  /* Features: single column */
+  .features-grid { grid-template-columns: 1fr; gap: 16px; }
+  .feature-card { padding: 20px 18px; }
+  .feature-card h3 { font-size: 16px; }
+  .feature-card p { font-size: 13px; }
+
+  /* Pricing: single column, stacked */
   .price-card {
     flex-direction: column; text-align: center; gap: 16px; padding: 24px 20px;
   }
   .price-card-header { justify-content: center; }
   .price-card-features { justify-content: center; }
   .price-card-cta-wrap { width: 100%; }
-  .price-card-cta { width: 100%; }
+  .price-card-cta { width: 100%; min-height: 48px; }
   .price-card .pop-badge { left: 50%; transform: translateX(-50%); }
   .price-card-divider { width: 40px; height: 1px; }
+
+  /* Privacy */
   .privacy-block { flex-direction: column; text-align: center; gap: 24px; }
   .privacy-badges { justify-content: center; }
+  .privacy-icon-big { width: 80px; height: 80px; font-size: 36px; border-radius: 18px; margin: 0 auto; }
+  .privacy-text h2 { font-size: 22px; }
+  .privacy-text p { font-size: 14px; }
+
+  /* Install */
   .install-grid { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto; }
-  .footer-inner { flex-direction: column; text-align: center; }
-  .container { padding: 0 20px; }
-  .section { padding: 48px 0; }
-  .section-title { font-size: 26px; }
+  .install-card { padding: 24px 20px; }
+  .install-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+  /* Footer: stack vertically */
+  .footer-inner { flex-direction: column; text-align: center; gap: 20px; }
+  .footer-links { justify-content: center; gap: 16px; }
+  .footer-links a { font-size: 14px; min-height: 44px; display: inline-flex; align-items: center; }
+
+  /* Waitlist form */
+  .waitlist-form { flex-direction: column; }
+  .waitlist-form input[type="email"] { min-width: auto; width: 100%; }
+  .waitlist-form button { width: 100%; min-height: 48px; }
+
+  /* Beta download */
+  .beta-download { max-width: 100%; }
+  .beta-download .dl-row { flex-direction: column; gap: 8px; }
+  .beta-download .dl-row button { width: 100%; min-height: 44px; }
+
+  /* Prevent horizontal overflow */
+  html, body { overflow-x: hidden; }
 }
 
 @media (max-width: 480px) {
   .hero-branding svg { height: 100px; }
   .hero-branding h1 { font-size: 22px; }
   .hero-branding .tagline { font-size: 13px; }
+  .hero { padding: 16px 0 24px; }
+
+  /* Compact tier cards */
   .tier-card { padding: 10px 12px; gap: 10px; }
   .tier-name { font-size: 13px; }
   .tier-price { font-size: 13px; }
+  .tier-accounts { font-size: 11px; }
+  .tier-desc { font-size: 11px; }
+  .tier-demo-link { padding: 8px 12px; font-size: 12px; min-height: 40px; }
+
+  /* Smaller mobile CTA buttons */
+  .hero-mobile-demo-btn { font-size: 16px; padding: 16px 20px; min-height: 52px; }
+  .hero-mobile-cta .hero-cta-btn { font-size: 16px; padding: 14px 20px; min-height: 52px; }
+
+  /* Pricing */
+  .price-card { padding: 20px 16px; }
+  .price-card-price { font-size: 28px; }
+  .price-card-cta { font-size: 14px; padding: 14px 20px; }
+
+  /* Section */
+  .section-title { font-size: 22px; }
+  .section-sub { font-size: 13px; }
+  .container { padding: 0 14px; }
+
+  /* Footer */
+  .footer-links { gap: 12px; }
+  .footer-links a { font-size: 13px; }
 }
 </style>
 <script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
@@ -657,6 +769,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
               <div class="tier-desc">See where your money goes</div>
             </div>
             <button class="tier-demo-btn" onclick="event.stopPropagation(); selectTier(this.parentElement)">Viewing &#x2713;</button>
+            <a class="tier-demo-link" href="./app/index.html?mode=demo&tier=free" target="_blank" onclick="event.stopPropagation()">View Demo &#x2192;</a>
           </div>
 
           <div class="tier-card" data-tier="starter" data-src="./app/index.html?mode=demo&tier=starter" onclick="selectTier(this)">
@@ -669,6 +782,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
               <div class="tier-desc">Auto-categorize &amp; budget</div>
             </div>
             <button class="tier-demo-btn" onclick="event.stopPropagation(); selectTier(this.parentElement)">View Demo &#x2192;</button>
+            <a class="tier-demo-link" href="./app/index.html?mode=demo&tier=starter" target="_blank" onclick="event.stopPropagation()">View Demo &#x2192;</a>
           </div>
 
           <div class="tier-card" data-tier="plus" data-src="./app/index.html?mode=demo&tier=plus" onclick="selectTier(this)">
@@ -681,6 +795,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
               <div class="tier-desc">Forecast &amp; savings goals</div>
             </div>
             <button class="tier-demo-btn" onclick="event.stopPropagation(); selectTier(this.parentElement)">View Demo &#x2192;</button>
+            <a class="tier-demo-link" href="./app/index.html?mode=demo&tier=plus" target="_blank" onclick="event.stopPropagation()">View Demo &#x2192;</a>
           </div>
 
           <div class="tier-card" data-tier="pro" data-src="./app/index.html?mode=demo&tier=pro" onclick="selectTier(this)">
@@ -693,11 +808,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
               <div class="tier-desc">Full power, all features</div>
             </div>
             <button class="tier-demo-btn" onclick="event.stopPropagation(); selectTier(this.parentElement)">View Demo &#x2192;</button>
+            <a class="tier-demo-link" href="./app/index.html?mode=demo&tier=pro" target="_blank" onclick="event.stopPropagation()">View Demo &#x2192;</a>
           </div>
 
         </div>
 
-        <!-- RIGHT: Live demo iframe -->
+        <!-- RIGHT: Live demo iframe (hidden on mobile) -->
         <div class="hero-demo" id="demo">
           <div class="hero-demo-frame">
             <div class="hero-demo-bar">
@@ -711,6 +827,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
             <a href="./app/index.html" class="hero-cta-btn">Get Started Free &#x2192;</a>
             <p class="hero-cta-sub">No sign-up required. Your data stays on your device.</p>
           </div>
+        </div>
+
+        <!-- Mobile-only CTA (replaces iframe on small screens) -->
+        <div class="hero-mobile-cta">
+          <a href="./app/index.html?mode=demo&tier=free" target="_blank" class="hero-mobile-demo-btn">Try Free Demo &#x2192;</a>
+          <a href="./app/index.html" class="hero-cta-btn">Get Started Free &#x2192;</a>
+          <p class="hero-cta-sub">No sign-up required. Your data stays on your device.</p>
         </div>
 
       </div>
@@ -1034,6 +1157,9 @@ document.querySelectorAll('.sidebar-nav a').forEach(function(link) {
 
 // Tier card selection
 function selectTier(card) {
+  // On mobile, don't switch iframe (it's hidden) — let the link handle navigation
+  if (window.innerWidth <= 768) return;
+
   var cards = document.querySelectorAll('.tier-card');
   cards.forEach(function(c) {
     c.classList.remove('active');
