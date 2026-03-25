@@ -1942,8 +1942,8 @@ function App({idbData}) {
   const [demoGroups, setDemoGroups] = useState(DEFAULT_GROUPS);
 
   // ── Active data based on mode ──
-  // When viewing tier-specific demo (?tier=starter), isDemo is false so feature gates apply
-  const isDemo = mode === 'demo' && !isTierDemo;
+  // Tier demos use demo data but apply tier-specific feature gates via demoTier
+  const isDemo = mode === 'demo';
   const accounts = isDemo ? demoAccounts : myAccounts;
   const setAccounts = isDemo ? setDemoAccounts : setMyAccounts;
   const categories = isDemo ? demoCategories : myCategories;
