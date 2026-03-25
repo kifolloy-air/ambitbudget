@@ -819,6 +819,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
             <div class="hero-demo-bar">
               <div class="hero-demo-dots"><i></i><i></i><i></i></div>
               <span>ambitbudget.com/app</span>
+              <a id="demo-newtab" href="./app/index.html?mode=demo&tier=free" target="_blank" rel="noopener" style="margin-left:auto;color:#9da5d0;font-size:11px;text-decoration:none;display:flex;align-items:center;gap:4px;opacity:0.7;transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Open full ↗</a>
             </div>
             <iframe id="hero-iframe" src="./app/index.html?mode=demo&tier=free" loading="lazy" title="Ambit Budget Pro Demo"></iframe>
           </div>
@@ -1170,9 +1171,10 @@ function selectTier(card) {
   var activeBtn = card.querySelector('.tier-demo-btn');
   if (activeBtn) activeBtn.innerHTML = 'Viewing \u2713';
   var iframe = document.getElementById('hero-iframe');
-  if (iframe) {
-    iframe.src = card.getAttribute('data-src');
-  }
+  var newTabLink = document.getElementById('demo-newtab');
+  var src = card.getAttribute('data-src');
+  if (iframe) iframe.src = src;
+  if (newTabLink) newTabLink.href = src;
 }
 
 // Waitlist form
