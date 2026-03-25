@@ -369,6 +369,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible { outline: 3px solid v
 .onboard-card { background:var(--surface); border-radius:16px; max-width:680px; width:92%; max-height:90vh; overflow-y:auto; display:flex; flex-direction:row; position:relative; box-shadow:0 24px 80px rgba(0,0,0,0.5); color:var(--card-text); animation:fadeIn 0.3s; }
 .onboard-left { flex:0 0 180px; display:flex; align-items:center; justify-content:center; padding:32px 16px; background:rgba(0,0,0,0.03); border-radius:16px 0 0 16px; }
 .onboard-left img { height:150px; width:auto; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.2)); transition:opacity 0.3s; }
+.onboard-left img[src*="pointing.png"] { transform: scaleX(-1); }
 .onboard-right { flex:1; padding:32px 28px 24px; display:flex; flex-direction:column; min-height:320px; }
 .onboard-tts { position:absolute; top:12px; right:12px; background:none; border:1px solid var(--border); border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer; color:var(--card-text2); transition:background 0.2s, color 0.2s; }
 .onboard-tts:hover, .onboard-tts.active { background:var(--accent); color:#fff; border-color:var(--accent); }

@@ -271,6 +271,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .footer-links a:hover { color: var(--navy); }
 .footer-copy { color: var(--text3); font-size: 12px; }
 
+/* Flip pointing image so Mr. Ambit points toward the speech bubble */
+img[src*="pointing.png"] { transform: scaleX(-1); }
+
 @media (max-width: 768px) {
   .sidebar { display: none; }
   .mobile-topbar { display: flex; }
