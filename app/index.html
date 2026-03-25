@@ -316,6 +316,23 @@ a:focus-visible, button:focus-visible, .btn:focus-visible { outline: 3px solid v
 /* Toast */
 .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 20px; font-size: 0.8125rem; z-index: 200; animation: fadeIn 0.2s; box-shadow: var(--shadow); color: var(--card-text); }
 
+/* Feedback Widget */
+@keyframes feedbackSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+@keyframes feedbackFadeOut { from { opacity:1; } to { opacity:0; transform:translateY(10px); } }
+.feedback-widget { position:fixed; bottom:24px; right:24px; z-index:50; width:300px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); animation:feedbackSlideUp 0.3s ease; color:var(--card-text); }
+.feedback-widget.fade-out { animation:feedbackFadeOut 0.4s ease forwards; }
+.feedback-widget .fw-dismiss { position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer; color:var(--card-text2); font-size:14px; padding:2px 4px; line-height:1; }
+.feedback-widget .fw-question { font-size:0.8125rem; font-weight:600; margin-bottom:12px; padding-right:20px; }
+.feedback-widget .fw-emojis { display:flex; gap:10px; justify-content:center; }
+.feedback-widget .fw-emoji-btn { width:48px; height:48px; border-radius:50%; border:none; cursor:pointer; font-size:32px; line-height:1; display:flex; align-items:center; justify-content:center; transition:transform 0.15s, box-shadow 0.15s; }
+.feedback-widget .fw-emoji-btn:hover { transform:scale(1.12); box-shadow:0 2px 8px rgba(0,0,0,0.15); }
+.feedback-widget .fw-optout { display:block; text-align:center; margin-top:10px; font-size:0.6875rem; color:var(--card-text2); background:none; border:none; cursor:pointer; text-decoration:underline; opacity:0.7; }
+.feedback-widget .fw-optout:hover { opacity:1; }
+.feedback-widget .fw-thanks { font-size:0.8125rem; text-align:center; color:var(--green); font-weight:600; padding:8px 0; }
+.feedback-widget .fw-textarea { width:100%; min-height:60px; margin:8px 0; padding:8px; border:1px solid var(--border); border-radius:6px; font-size:0.75rem; font-family:inherit; background:var(--surface2); color:var(--card-text); resize:vertical; }
+.feedback-widget .fw-send { display:block; width:100%; padding:8px; border:none; border-radius:6px; background:var(--accent); color:#fff; font-size:0.8125rem; font-weight:600; cursor:pointer; }
+.feedback-widget .fw-send:hover { opacity:0.9; }
+
 /* AnimatedDemo */
 @keyframes helpPulse { 0%,100%{box-shadow:0 0 0 0 rgba(232,160,32,0.5);} 50%{box-shadow:0 0 0 8px rgba(232,160,32,0);} }
 @keyframes helpFadeIn { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
@@ -1398,6 +1415,92 @@ function Toast({message, onDone}) {
   );
 }
 
+// ── Feedback Widget ──────────────────────────────────
+const FEEDBACK_QUESTIONS = {
+  import: 'How was the import experience?',
+  monthly: 'How is Ambit Budget working for you?'
+};
+
+function FeedbackWidget({task, onDismiss}) {
+  const [phase, setPhase] = useState('ask'); // ask | comment | thanks | fadeout
+  const [comment, setComment] = useState('');
+  const [sending, setSending] = useState(false);
+  const containerRef = useRef(null);
+
+  const logFeedback = (rating, text) => {
+    const entry = {date: new Date().toISOString(), task, rating, comment: text || ''};
+    try {
+      const log = JSON.parse(localStorage.getItem('ambit_feedback_log') || '[]');
+      log.push(entry);
+      localStorage.setItem('ambit_feedback_log', JSON.stringify(log));
+      localStorage.setItem('ambit_feedback_last', new Date().toISOString().slice(0,10));
+    } catch(e) {}
+  };
+
+  const fadeAndDismiss = (msg) => {
+    setPhase('thanks');
+    setTimeout(()=>{ setPhase('fadeout'); setTimeout(onDismiss, 500); }, 2000);
+  };
+
+  const handleEmoji = (rating) => {
+    if(rating === 'sad') {
+      logFeedback('sad', '');
+      setPhase('comment');
+    } else {
+      logFeedback(rating, '');
+      fadeAndDismiss();
+    }
+  };
+
+  const handleSend = async () => {
+    setSending(true);
+    logFeedback('sad', comment);
+    try {
+      await fetch('https://formspree.io/f/YOUR_FORM_ID', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({task, rating:'sad', comment, _subject:'Ambit Feedback'})
+      });
+    } catch(e) {}
+    setSending(false);
+    fadeAndDismiss();
+  };
+
+  const handleOptout = () => {
+    localStorage.setItem('ambit_feedback_optout','1');
+    onDismiss();
+  };
+
+  const question = FEEDBACK_QUESTIONS[task] || 'How was your experience?';
+  const cls = 'feedback-widget' + (phase==='fadeout' ? ' fade-out' : '');
+
+  if(phase === 'thanks' || phase === 'fadeout') {
+    return h('div', {className:cls},
+      h('div', {className:'fw-thanks'}, phase === 'thanks' && task === 'monthly' ? 'Thanks! We\'ll work on it.' : 'Thanks!')
+    );
+  }
+
+  if(phase === 'comment') {
+    return h('div', {className:cls},
+      h('button', {className:'fw-dismiss', onClick:onDismiss, 'aria-label':'Dismiss'}, '\u00D7'),
+      h('div', {className:'fw-question'}, 'What went wrong?'),
+      h('textarea', {className:'fw-textarea', placeholder:'Tell us more...', value:comment, onInput:e=>setComment(e.target.value), autoFocus:true}),
+      h('button', {className:'fw-send', onClick:handleSend, disabled:sending}, sending ? 'Sending...' : 'Send'),
+      h('button', {className:'fw-optout', onClick:handleOptout}, 'Don\'t ask again')
+    );
+  }
+
+  return h('div', {className:cls},
+    h('button', {className:'fw-dismiss', onClick:onDismiss, 'aria-label':'Dismiss'}, '\u00D7'),
+    h('div', {className:'fw-question'}, question),
+    h('div', {className:'fw-emojis'},
+      h('button', {className:'fw-emoji-btn', style:{background:'#40c080'}, onClick:()=>handleEmoji('happy'), 'aria-label':'Happy', title:'Great'}, '\uD83D\uDE0A'),
+      h('button', {className:'fw-emoji-btn', style:{background:'#e8a020'}, onClick:()=>handleEmoji('neutral'), 'aria-label':'Neutral', title:'Okay'}, '\uD83D\uDE10'),
+      h('button', {className:'fw-emoji-btn', style:{background:'#e05050'}, onClick:()=>handleEmoji('sad'), 'aria-label':'Unhappy', title:'Not great'}, '\uD83D\uDE1F')
+    ),
+    h('button', {className:'fw-optout', onClick:handleOptout}, 'Don\'t ask again')
+  );
+}
+
 // ── License Gate ──────────────────────────────────────
 function LicenseGate({onActivate, onCancel, upgradeContext}) {
   const [key, setKey] = useState('');
@@ -2066,6 +2169,42 @@ function App({idbData}) {
   },[mode]);
 
   const showToast = (msg) => setToast(msg);
+
+  // ── Feedback widget state ──
+  const [feedbackTask, setFeedbackTask] = useState(null);
+  const [feedbackShown, setFeedbackShown] = useState(false); // session flag
+  const showFeedback = (task) => {
+    if(feedbackShown) return;
+    if(isDemo) return;
+    if(localStorage.getItem('ambit_feedback_optout') === '1') return;
+    setFeedbackTask(task);
+    setFeedbackShown(true);
+  };
+
+  // ── Set first-use date (non-demo only) ──
+  useEffect(()=>{
+    if(mode === 'mine' && !isDemo && !localStorage.getItem('ambit_feedback_firstuse')) {
+      localStorage.setItem('ambit_feedback_firstuse', new Date().toISOString().slice(0,10));
+    }
+  },[mode]);
+
+  // ── Monthly feedback check ──
+  useEffect(()=>{
+    if(mode !== 'mine' || isDemo) return;
+    if(localStorage.getItem('ambit_feedback_optout') === '1') return;
+    const firstUse = localStorage.getItem('ambit_feedback_firstuse');
+    if(!firstUse) return;
+    const daysSinceFirst = Math.floor((Date.now() - new Date(firstUse).getTime()) / 86400000);
+    if(daysSinceFirst < 7) return;
+    const lastFeedback = localStorage.getItem('ambit_feedback_last');
+    if(lastFeedback) {
+      const daysSinceLast = Math.floor((Date.now() - new Date(lastFeedback).getTime()) / 86400000);
+      if(daysSinceLast < 30) return;
+    }
+    // Delay slightly so it doesn't compete with splash/other modals
+    const timer = setTimeout(()=>showFeedback('monthly'), 3000);
+    return ()=>clearTimeout(timer);
+  },[mode]);
 
   // Derived: category lookup
   const catMap = useMemo(()=>{
