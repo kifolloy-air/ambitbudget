@@ -1868,8 +1868,9 @@ function App({idbData}) {
   const demoTier = (urlMode === 'demo' && urlTier) ? TIERS[urlTier] : null;
   const tier = isLicensed ? (TIERS[license.tier]||TIERS.Starter) : (isFreeTier ? TIERS.Free : demoTier);
   const accountLimit = tier ? tier.limit : 0;
-  // isDemo should be false when viewing a tier-specific demo (so feature gates apply)
+  // isTierDemo = tier-specific demo (feature gates apply). demoBypass = regular demo (all features).
   const isTierDemo = !!(urlMode === 'demo' && urlTier);
+  const demoBypass = isDemo && !isTierDemo;
   const API_BASE = 'https://ambitbudget.com';
 
   // Beta test keys — remove before public launch
@@ -5123,7 +5124,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
         h('p',null,'Budget performance and spending analysis.')
       ),
       h('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}},
-        (isDemo || tier?.yearView) && h('div',{style:{display:'flex',gap:0,borderRadius:8,overflow:'hidden',border:'1px solid var(--border)',marginRight:4}},
+        (demoBypass || tier?.yearView) && h('div',{style:{display:'flex',gap:0,borderRadius:8,overflow:'hidden',border:'1px solid var(--border)',marginRight:4}},
           h('button',{onClick:()=>setDashView('overview'),style:{padding:'5px 14px',fontSize:11,fontWeight:dashView==='overview'?700:400,border:'none',cursor:'pointer',background:dashView==='overview'?'var(--accent2)':'var(--surface2)',color:dashView==='overview'?'#fff':'var(--card-text)'}},'Dashboard'),
           h('button',{onClick:()=>setDashView('annual'),style:{padding:'5px 14px',fontSize:11,fontWeight:dashView==='annual'?700:400,border:'none',cursor:'pointer',background:dashView==='annual'?'var(--accent2)':'var(--surface2)',color:dashView==='annual'?'#fff':'var(--card-text)'}},'Annual View')
         ),
@@ -5143,7 +5144,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
     dashView==='overview' && h('div',null,
 
     // ── Balance Forecast (hero, top of page) ──
-    bbWindow.isCurrentMonth && accounts.length>0 && (isDemo || tier?.forecast
+    bbWindow.isCurrentMonth && accounts.length>0 && (demoBypass || tier?.forecast
     ? h('div',{className:'card',style:{padding:'10px 16px',marginBottom:14}},
         h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}},
           h('h3',{style:{margin:0,fontSize:13}}, h('span',{className:'icon'},'🔮'), 'Balance Forecast', h(InfoPill,{text:'End of Month = Current Balance + Remaining Income \u2212 Unpaid Bills \u2212 Remaining Discretionary Budget. \"Remaining Disc\" = your total discretionary budget minus what you have already spent this month. Next Month projects a full month of income, bills, and discretionary spending. Red means projected negative.'})),
@@ -5186,7 +5187,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
     )),
 
     // ── Savings Goals Dashboard Widget (Plus+ tier) ──
-    (isDemo || tier?.savingsGoals) && h(DashboardGoalsWidget, {accounts, setAccounts, setPage, showToast:null}),
+    (demoBypass || tier?.savingsGoals) && h(DashboardGoalsWidget, {accounts, setAccounts, setPage, showToast:null}),
 
     // ── Budget Comparison: Current vs Previous Month (hidden for free tier) ──
     !isFree && prevMonthBudget.budget > 0 && h('div',{style:{display:'flex',gap:12,marginBottom:14,flexWrap:'wrap'}},
@@ -5241,7 +5242,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
     ),
 
     // ── Day-by-Day Forecast (collapsible, current month only) ──
-    bbWindow.isCurrentMonth && accounts.length>0 && forecastRows.length>0 && (isDemo || tier?.dayByDay
+    bbWindow.isCurrentMonth && accounts.length>0 && forecastRows.length>0 && (demoBypass || tier?.dayByDay
     ? h('div',{className:'card',style:{marginBottom:14,padding:0,overflow:'hidden'}},
       h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 16px',cursor:'pointer',background:forecastExpanded?'var(--surface2)':'transparent',transition:'background 0.15s'},
         ...a11yClick(()=>setForecastExpanded(!forecastExpanded),'Toggle day-by-day forecast'),'aria-expanded':forecastExpanded},
@@ -5562,7 +5563,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
     )), // close overview wrapper
 
     // ── Annual View ──
-    dashView==='annual' && (isDemo || tier?.yearView)
+    dashView==='annual' && (demoBypass || tier?.yearView)
       ? h('div',{className:'animate-in'},
           h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:16,marginTop:8}},
             h('button',{className:'btn sm',onClick:()=>setYearViewYear(y=>y-1),disabled:availableYears.length>0&&yearViewYear<=availableYears[0],'aria-label':'Previous year',style:{padding:'6px 12px',fontSize:16}}, '\u2190'),
@@ -5635,7 +5636,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
             )
           )
         )
-      : dashView==='annual' && !(isDemo || tier?.yearView)
+      : dashView==='annual' && !(demoBypass || tier?.yearView)
         ? h('div',{style:{textAlign:'center',padding:'40px 20px',background:'rgba(232,160,32,0.06)',border:'1px dashed var(--accent2)',borderRadius:8,marginTop:16}},
             h('div',{style:{fontSize:28,marginBottom:8}},'\uD83D\uDCC5'),
             h('div',{style:{fontSize:14,fontWeight:600,color:'var(--accent2)',marginBottom:4}},'Calendar Year View'),
@@ -6944,7 +6945,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
                 h('span',{style:{fontSize:13,fontWeight:600,color:'var(--text2)'}}, 'Net Activity: '+(net>=0?'+':'')+fmt(net))
               ),
               // Savings Goals (non-debt accounts, Plus+ tier)
-              (a.type==='checking'||a.type==='savings') && (isDemo || tier?.savingsGoals) &&
+              (a.type==='checking'||a.type==='savings') && (demoBypass || tier?.savingsGoals) &&
                 h(AccountGoals, {account:{...a, _runningBal:runningBal}, setAccounts, transactions, catMap, showToast, tier, isDemo})
             );
           })
@@ -6967,7 +6968,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
       ),
 
     // Savings Goals: First-time hint for Plus+ users with no goals
-    (isDemo || tier?.savingsGoals) && !goalsHintDismissed && accounts.some(a=>(a.type==='checking'||a.type==='savings')&&(!a.goals||a.goals.length===0)) &&
+    (demoBypass || tier?.savingsGoals) && !goalsHintDismissed && accounts.some(a=>(a.type==='checking'||a.type==='savings')&&(!a.goals||a.goals.length===0)) &&
       h('div',{className:'goals-hint',style:{marginTop:12}},
         h('span',{'aria-hidden':'true',style:{fontSize:18,flexShrink:0}},'💡'),
         h('span',null,'Set a savings goal on any account. Earmark part of your balance for something you\'re saving for — no need to open a new account.'),
