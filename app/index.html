@@ -1971,9 +1971,7 @@ function App({idbData}) {
   const demoTier = (urlMode === 'demo' && urlTier) ? TIERS[urlTier] : null;
   const tier = isLicensed ? (TIERS[license.tier]||TIERS.Starter) : (isFreeTier ? TIERS.Free : demoTier);
   const accountLimit = tier ? tier.limit : 0;
-  // isTierDemo = tier-specific demo (feature gates apply). demoBypass = regular demo (all features).
-  const isTierDemo = !!(urlMode === 'demo' && urlTier);
-  const demoBypass = isDemo && !isTierDemo;
+  // isTierDemo and demoBypass are defined after isDemo (below) to avoid temporal dead zone
   const API_BASE = 'https://ambitbudget.com';
 
   // Beta test keys — remove before public launch
@@ -2049,6 +2047,8 @@ function App({idbData}) {
   // ── Active data based on mode ──
   // Tier demos use demo data but apply tier-specific feature gates via demoTier
   const isDemo = mode === 'demo';
+  const isTierDemo = !!(urlMode === 'demo' && urlTier);
+  const demoBypass = isDemo && !isTierDemo;
   const accounts = isDemo ? demoAccounts : myAccounts;
   const setAccounts = isDemo ? setDemoAccounts : setMyAccounts;
   const categories = isDemo ? demoCategories : myCategories;
