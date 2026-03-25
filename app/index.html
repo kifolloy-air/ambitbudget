@@ -2465,7 +2465,7 @@ function App({idbData}) {
         h('button',{style:{background:'none',border:'none',cursor:'pointer',color:'var(--text2)',fontSize:16,padding:2},'aria-label':'Dismiss welcome banner',onClick:()=>{localStorage.setItem('ambit_free_welcome_dismissed','1');setFreeWelcomeDismissed(true);}},'✕')
       ),
 
-      page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, demoBypass, groupColors, defaultAcct, setPage, onUpgrade:()=>setShowLicenseGate(true)}),
+      page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, demoBypass, isTierDemo, groupColors, defaultAcct, setPage, onUpgrade:()=>setShowLicenseGate(true)}),
       page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors, tier, onUpgrade:()=>setShowLicenseGate(true)}),
       page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage, tier}),
       page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns, setTransactions, catMap, dictionary, setDictionary, groupColors, accounts, defaultAcct, groups, setGroups, groupList, showToast}),
@@ -4778,7 +4778,7 @@ function BudgetMonthlyTab({categories, setCategories, transactions, dictionary, 
 }
 
 // ── Dashboard Page ──────────────────────────────────────
-function DashboardPage({categories, transactions, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour, tier, isDemo, demoBypass, groupColors, defaultAcct, setPage, onUpgrade}) {
+function DashboardPage({categories, transactions, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour, tier, isDemo, demoBypass, isTierDemo, groupColors, defaultAcct, setPage, onUpgrade}) {
   const isFree = tier && tier.budget === false;
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedAcct, setSelectedAcctRaw] = useState(defaultAcct||'all');
