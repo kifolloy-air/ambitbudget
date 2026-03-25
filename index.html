@@ -197,20 +197,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .tier-card:hover { border-color: var(--amber); }
 .tier-card.active { border-color: var(--amber); background: #FDF6E3; box-shadow: 0 4px 16px rgba(232,160,32,0.12); }
 .tier-card.active.tier-free { border-color: var(--green); box-shadow: 0 4px 16px rgba(64,192,128,0.12); }
-.tier-radio {
-  width: 20px; height: 20px; border-radius: 50%;
-  border: 2px solid #ccc; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
+.tier-demo-btn {
+  background: #E8A020; color: #fff; border: none; border-radius: 6px;
+  padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: all 0.15s; flex-shrink: 0;
 }
-.tier-card.active .tier-radio { border-color: var(--amber); }
-.tier-card.active.tier-free .tier-radio { border-color: var(--green); }
-.tier-radio-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: transparent; transition: all 0.2s;
-}
-.tier-card.active .tier-radio-dot { background: var(--amber); }
-.tier-card.active.tier-free .tier-radio-dot { background: var(--green); }
+.tier-demo-btn:hover { background: #D09018; box-shadow: 0 2px 8px rgba(232,160,32,0.3); }
+.tier-card.active .tier-demo-btn { background: #D09018; }
 .tier-info { flex: 1; min-width: 0; }
 .tier-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .tier-name { font-size: 15px; font-weight: 700; color: var(--navy); }
@@ -251,11 +244,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 }
 .btn-secondary:hover { background: var(--navy); color: #fff; }
 
-/* Mobile: tier demo button */
-.tier-demo-btn {
-  display: none; font-size: 12px; font-weight: 600; color: var(--amber);
-  text-decoration: none; white-space: nowrap; flex-shrink: 0;
-}
 
 /* ── Section common ── */
 .section { padding: 72px 0; }
@@ -505,7 +493,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   .hero-body { flex-direction: column; }
   .hero-demo { display: none; }
   .hero-tiers { flex: 1; }
-  .tier-demo-btn { display: inline; }
   .features-grid { grid-template-columns: 1fr; }
   .price-card {
     flex-direction: column; text-align: center; gap: 16px; padding: 24px 20px;
@@ -671,7 +658,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <!-- RIGHT: Tier selector cards -->
         <div class="hero-tiers">
           <div class="tier-card tier-free active" data-tier="free" data-src="./app/index.html?mode=demo&tier=free" onclick="selectTier(this)">
-            <div class="tier-radio"><div class="tier-radio-dot"></div></div>
             <div class="tier-info">
               <div class="tier-top">
                 <span class="tier-name">Free</span>
@@ -680,11 +666,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
               </div>
               <div class="tier-desc">See where your money goes</div>
             </div>
-            <a href="./app/index.html?mode=demo&tier=free" target="_blank" class="tier-demo-btn">Try Demo &#x2192;</a>
+            <button class="tier-demo-btn" onclick="event.stopPropagation(); selectTier(this.parentElement)">Viewing &#x2713;</button>
           </div>
 
           <div class="tier-card" data-tier="starter" data-src="./app/index.html?mode=demo&tier=starter" onclick="selectTier(this)">
-            <div class="tier-radio"><div class="tier-radio-dot"></div></div>
             <div class="tier-info">
               <div class="tier-top">
                 <span class="tier-name">Starter</span>
@@ -693,11 +678,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
               </div>
               <div class="tier-desc">Auto-categorize &amp; budget</div>
             </div>
-            <a href="./app/index.html?mode=demo&tier=starter" target="_blank" class="tier-demo-btn">Try Demo &#x2192;</a>
+            <button class="tier-demo-btn" onclick="event.stopPropagation(); selectTier(this.parentElement)">View Demo &#x2192;</button>
           </div>
 
           <div class="tier-card" data-tier="plus" data-src="./app/index.html?mode=demo&tier=plus" onclick="selectTier(this)">
-            <div class="tier-radio"><div class="tier-radio-dot"></div></div>
             <div class="tier-info">
               <div class="tier-top">
                 <span class="tier-name">Plus</span>
@@ -706,11 +690,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
               </div>
               <div class="tier-desc">Forecast &amp; savings goals</div>
             </div>
-            <a href="./app/index.html?mode=demo&tier=plus" target="_blank" class="tier-demo-btn">Try Demo &#x2192;</a>
+            <button class="tier-demo-btn" onclick="event.stopPropagation(); selectTier(this.parentElement)">View Demo &#x2192;</button>
           </div>
 
           <div class="tier-card" data-tier="pro" data-src="./app/index.html?mode=demo&tier=pro" onclick="selectTier(this)">
-            <div class="tier-radio"><div class="tier-radio-dot"></div></div>
             <div class="tier-info">
               <div class="tier-top">
                 <span class="tier-name">Pro</span>
@@ -719,7 +702,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
               </div>
               <div class="tier-desc">Full power, all features</div>
             </div>
-            <a href="./app/index.html?mode=demo&tier=pro" target="_blank" class="tier-demo-btn">Try Demo &#x2192;</a>
+            <button class="tier-demo-btn" onclick="event.stopPropagation(); selectTier(this.parentElement)">View Demo &#x2192;</button>
           </div>
 
           <!-- CTA -->
@@ -1051,8 +1034,14 @@ document.querySelectorAll('.sidebar-nav a').forEach(function(link) {
 // Tier card selection
 function selectTier(card) {
   var cards = document.querySelectorAll('.tier-card');
-  cards.forEach(function(c) { c.classList.remove('active'); });
+  cards.forEach(function(c) {
+    c.classList.remove('active');
+    var btn = c.querySelector('.tier-demo-btn');
+    if (btn) btn.innerHTML = 'View Demo \u2192';
+  });
   card.classList.add('active');
+  var activeBtn = card.querySelector('.tier-demo-btn');
+  if (activeBtn) activeBtn.innerHTML = 'Viewing \u2713';
   var iframe = document.getElementById('hero-iframe');
   if (iframe) {
     iframe.src = card.getAttribute('data-src');
