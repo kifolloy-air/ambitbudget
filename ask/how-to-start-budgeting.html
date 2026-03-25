@@ -548,28 +548,80 @@ function closeMobileNav() {
 
 // TTS
 var ttsBtn = document.getElementById('tts-btn');
-var speaking = false;
-ttsBtn.addEventListener('click', function() {
-  if (speaking) {
-    window.speechSynthesis.cancel();
-    speaking = false;
-    ttsBtn.classList.remove('speaking');
-    ttsBtn.innerHTML = '&#x1F50A; Read aloud';
-  } else {
-    var text = document.getElementById('article-body').innerText;
-    var utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.onend = function() {
+if (!window.speechSynthesis) {
+  ttsBtn.style.display = 'none';
+} else {
+  var speaking = false;
+  var voices = [];
+
+  function loadVoices() {
+    voices = speechSynthesis.getVoices();
+  }
+  loadVoices();
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+
+  function getVoice() {
+    var preferred = ['Google US English', 'Microsoft David', 'Daniel', 'Alex'];
+    for (var i = 0; i < preferred.length; i++) {
+      var v = voices.find(function(voice) { return voice.name.indexOf(preferred[i]) !== -1; });
+      if (v) return v;
+    }
+    // fallback to first English voice
+    var en = voices.find(function(voice) { return voice.lang && voice.lang.startsWith('en'); });
+    return en || null;
+  }
+
+  // Chrome stops speaking after ~15s on long text. Chunk it.
+  function speakText(text) {
+    var chunks = text.match(/[^.!?]+[.!?]+/g) || [text];
+    var merged = [];
+    var current = '';
+    for (var i = 0; i < chunks.length; i++) {
+      if ((current + chunks[i]).length > 200) {
+        if (current) merged.push(current.trim());
+        current = chunks[i];
+      } else {
+        current += chunks[i];
+      }
+    }
+    if (current.trim()) merged.push(current.trim());
+
+    var index = 0;
+    function speakNext() {
+      if (index >= merged.length || !speaking) {
+        speaking = false;
+        ttsBtn.classList.remove('speaking');
+        ttsBtn.innerHTML = '&#x1F50A; Read aloud';
+        return;
+      }
+      var utter = new SpeechSynthesisUtterance(merged[index]);
+      utter.rate = 0.95;
+      var voice = getVoice();
+      if (voice) utter.voice = voice;
+      utter.onend = function() { index++; speakNext(); };
+      utter.onerror = function() { index++; speakNext(); };
+      speechSynthesis.speak(utter);
+    }
+    speakNext();
+  }
+
+  ttsBtn.addEventListener('click', function() {
+    if (speaking) {
+      speechSynthesis.cancel();
       speaking = false;
       ttsBtn.classList.remove('speaking');
       ttsBtn.innerHTML = '&#x1F50A; Read aloud';
-    };
-    window.speechSynthesis.speak(utterance);
-    speaking = true;
-    ttsBtn.classList.add('speaking');
-    ttsBtn.innerHTML = '&#x23F9; Stop reading';
-  }
-});
+    } else {
+      var text = document.getElementById('article-body').innerText;
+      speaking = true;
+      ttsBtn.classList.add('speaking');
+      ttsBtn.innerHTML = '&#x23F9; Stop reading';
+      speakText(text);
+    }
+  });
+}
 
 // Suggestion form
 var sf = document.querySelector('.suggestion-form');
