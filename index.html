@@ -138,19 +138,102 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 /* ── Hero ── */
 .hero {
-  padding: 80px 0 60px; text-align: center;
+  min-height: 100vh; display: flex; align-items: center;
+  padding: 40px 0 40px; text-align: center;
   background: linear-gradient(180deg, #FDF6E3 0%, var(--bg) 100%);
 }
-.hero h1 {
-  font-size: 42px; font-weight: 800; color: var(--navy);
-  letter-spacing: -1px; line-height: 1.2; margin-bottom: 16px;
+.hero .container { width: 100%; }
+.hero-branding { margin-bottom: 32px; }
+.hero-branding svg { height: 200px; width: auto; }
+.hero-branding h1 {
+  font-size: 38px; font-weight: 800; color: var(--navy);
+  letter-spacing: -1px; line-height: 1.2; margin: 12px 0 6px;
 }
-.hero h1 .accent { color: var(--amber); }
-.hero .summary {
-  font-size: 17px; color: var(--text2); max-width: 580px;
-  margin: 0 auto 28px; line-height: 1.7;
+.hero-branding .tagline {
+  font-size: 18px; color: var(--text2); font-style: italic; font-weight: 500;
 }
-.hero-cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 36px; }
+
+.hero-body {
+  display: flex; gap: 28px; align-items: stretch; text-align: left;
+}
+
+/* Demo iframe frame */
+.hero-demo {
+  flex: 0 0 60%; min-width: 0;
+}
+.hero-demo-frame {
+  background: var(--navy); border-radius: 14px;
+  overflow: hidden; border: 3px solid var(--navy);
+  box-shadow: 0 20px 60px rgba(12,20,69,0.15), 0 4px 20px rgba(0,0,0,0.08);
+  height: 100%;
+  display: flex; flex-direction: column;
+}
+.hero-demo-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; background: rgba(16,24,80,0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.hero-demo-dots { display: flex; gap: 6px; }
+.hero-demo-dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+.hero-demo-dots i:nth-child(1) { background: #e05050; }
+.hero-demo-dots i:nth-child(2) { background: #f0c050; }
+.hero-demo-dots i:nth-child(3) { background: #40c080; }
+.hero-demo-bar span { font-size: 12px; color: rgba(255,255,255,0.5); margin-left: 8px; }
+.hero-demo-frame iframe {
+  width: 100%; flex: 1; min-height: 500px; border: none; display: block;
+}
+
+/* Tier selector cards */
+.hero-tiers {
+  flex: 0 0 40%; display: flex; flex-direction: column; gap: 10px;
+}
+.tier-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: 10px;
+  background: #F5ECD0; border: 2px solid #E8DBB8;
+  cursor: pointer; transition: all 0.2s; user-select: none;
+}
+.tier-card:hover { border-color: var(--amber); }
+.tier-card.active { border-color: var(--amber); background: #FDF6E3; box-shadow: 0 4px 16px rgba(232,160,32,0.12); }
+.tier-card.active.tier-free { border-color: var(--green); box-shadow: 0 4px 16px rgba(64,192,128,0.12); }
+.tier-radio {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid #ccc; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.tier-card.active .tier-radio { border-color: var(--amber); }
+.tier-card.active.tier-free .tier-radio { border-color: var(--green); }
+.tier-radio-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: transparent; transition: all 0.2s;
+}
+.tier-card.active .tier-radio-dot { background: var(--amber); }
+.tier-card.active.tier-free .tier-radio-dot { background: var(--green); }
+.tier-info { flex: 1; min-width: 0; }
+.tier-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tier-name { font-size: 15px; font-weight: 700; color: var(--navy); }
+.tier-price { font-size: 15px; font-weight: 800; color: var(--navy); }
+.tier-accounts { font-size: 12px; color: var(--amber); font-weight: 600; }
+.tier-desc { font-size: 12px; color: var(--text2); font-style: italic; margin-top: 2px; }
+
+.hero-cta-area { margin-top: auto; padding-top: 16px; }
+.hero-cta-btn {
+  display: block; width: 100%; padding: 16px 24px;
+  background: var(--green); color: #fff;
+  font-size: 18px; font-weight: 700; text-align: center;
+  border-radius: 12px; text-decoration: none; border: none;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 16px rgba(64,192,128,0.3);
+}
+.hero-cta-btn:hover { background: #35a86d; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(64,192,128,0.4); }
+.hero-cta-sub {
+  text-align: center; font-size: 12px; color: var(--text3); margin-top: 8px;
+}
+
+/* Legacy buttons still used elsewhere */
 .btn-primary {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 14px 32px; background: var(--amber); color: #fff;
@@ -168,32 +251,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 }
 .btn-secondary:hover { background: var(--navy); color: #fff; }
 
-.hero-trust { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin-bottom: 48px; }
-.hero-trust span {
-  font-size: 13px; color: var(--text2); font-weight: 500;
-  display: flex; align-items: center; gap: 6px;
-}
-.hero-trust .icon { font-size: 16px; }
-
-.hero-mockup {
-  max-width: 800px; margin: 0 auto;
-  background: var(--navy); border-radius: 14px;
-  overflow: hidden; border: 1px solid rgba(126,200,227,0.2);
-  box-shadow: 0 20px 60px rgba(12,20,69,0.15), 0 4px 20px rgba(0,0,0,0.08);
-}
-.hero-mockup-bar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 16px; background: rgba(16,24,80,0.95);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-.hero-mockup-dots { display: flex; gap: 6px; }
-.hero-mockup-dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
-.hero-mockup-dots i:nth-child(1) { background: #e05050; }
-.hero-mockup-dots i:nth-child(2) { background: #f0c050; }
-.hero-mockup-dots i:nth-child(3) { background: #40c080; }
-.hero-mockup-bar span { font-size: 12px; color: rgba(255,255,255,0.5); margin-left: 8px; }
-.hero-mockup iframe {
-  width: 100%; height: 480px; border: none; display: block;
+/* Mobile: tier demo button */
+.tier-demo-btn {
+  display: none; font-size: 12px; font-weight: 600; color: var(--amber);
+  text-decoration: none; white-space: nowrap; flex-shrink: 0;
 }
 
 /* ── Section common ── */
@@ -424,6 +485,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {
+  .hero-branding svg { height: 150px; }
+  .hero-branding h1 { font-size: 32px; }
+  .hero-demo-frame iframe { min-height: 400px; }
   .features-grid { grid-template-columns: repeat(2, 1fr); }
   .price-card { padding: 24px 20px; gap: 20px; }
   .price-card-cta { padding: 14px 24px; font-size: 15px; }
@@ -433,10 +497,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   .sidebar { display: none; }
   .mobile-topbar { display: flex; }
   .main-content { margin-left: 0; padding-top: 56px; }
-  .hero { padding: 48px 0 40px; }
-  .hero h1 { font-size: 30px; }
-  .hero .summary { font-size: 15px; }
-  .hero-mockup iframe { height: 360px; }
+  .hero { min-height: auto; padding: 32px 0 40px; }
+  .hero-branding { margin-bottom: 20px; }
+  .hero-branding svg { height: 120px; }
+  .hero-branding h1 { font-size: 26px; }
+  .hero-branding .tagline { font-size: 15px; }
+  .hero-body { flex-direction: column; }
+  .hero-demo { display: none; }
+  .hero-tiers { flex: 1; }
+  .tier-demo-btn { display: inline; }
   .features-grid { grid-template-columns: 1fr; }
   .price-card {
     flex-direction: column; text-align: center; gap: 16px; padding: 24px 20px;
@@ -457,10 +526,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 }
 
 @media (max-width: 480px) {
-  .hero h1 { font-size: 26px; }
-  .hero-trust { flex-direction: column; align-items: center; gap: 8px; }
-  .hero-cta-row { flex-direction: column; align-items: center; }
-  .hero-cta-row a { width: 100%; max-width: 280px; justify-content: center; }
+  .hero-branding svg { height: 100px; }
+  .hero-branding h1 { font-size: 22px; }
+  .hero-branding .tagline { font-size: 13px; }
+  .tier-card { padding: 10px 12px; gap: 10px; }
+  .tier-name { font-size: 13px; }
+  .tier-price { font-size: 13px; }
 }
 </style>
 <script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
@@ -555,26 +626,109 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <!-- ── HERO ── -->
   <section class="hero" id="hero">
     <div class="container">
-      <h1>Personal finance,<br><span class="accent">your way.</span></h1>
-      <p class="summary">Track spending, manage bills, set budgets, and forecast your balance — from a single file in your browser. No subscriptions. No cloud.</p>
-      <div class="hero-cta-row">
-        <a href="./app/index.html?mode=demo&tier=free" class="btn-primary">Try Free &#x2192;</a>
-        <a href="#pricing" class="btn-secondary">View Plans</a>
-      </div>
-      <div class="hero-trust">
-        <span><span class="icon">&#x1F512;</span> 100% Private</span>
-        <span><span class="icon">&#x1F4B3;</span> One-Time Purchase</span>
-        <span><span class="icon">&#x1F4F1;</span> Any Device</span>
-        <span><span class="icon">&#x26A1;</span> No Account Needed</span>
+
+      <!-- Branding: shield logo + name + tagline -->
+      <div class="hero-branding">
+        <svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="hSg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" stop-color="#1a2870"/><stop offset="40%" stop-color="#0c1445"/><stop offset="100%" stop-color="#080e30"/></linearGradient>
+            <linearGradient id="hSe" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7ec8e3"/><stop offset="50%" stop-color="#5ba8c8"/><stop offset="100%" stop-color="#3a8ab0"/></linearGradient>
+            <path id="hBa" d="M15,85 Q50,108 85,85" fill="none"/>
+          </defs>
+          <path d="M4,12Q4,4 12,4L88,4Q96,4 96,12L96,60Q96,85 50,112Q4,85 4,60Z" fill="url(#hSg)" stroke="url(#hSe)" stroke-width="2.5"/>
+          <text x="50" y="20" text-anchor="middle" fill="#f0c050" font-size="11" font-weight="700" font-family="Arial" letter-spacing="4" opacity="0.9">AMBIT</text>
+          <polygon points="50,26 55,50 50,55 45,50" fill="#e87820"/>
+          <polygon points="50,88 45,60 50,55 55,60" fill="#f0c050"/>
+          <polygon points="90,55 55,50 50,55 55,60" fill="#e87820" opacity="0.85"/>
+          <polygon points="10,55 45,60 50,55 45,50" fill="#f0c050" opacity="0.85"/>
+          <circle cx="50" cy="55" r="5" fill="#b05810"/>
+          <circle cx="50" cy="55" r="2.5" fill="#8a4510"/>
+          <text x="52" y="72" text-anchor="middle" fill="#000" font-size="52" font-weight="800" font-family="Arial" opacity="0.4">A</text>
+          <text x="48.5" y="69.5" text-anchor="middle" fill="#fff" font-size="52" font-weight="800" font-family="Arial" opacity="0.2">A</text>
+          <text x="50" y="71" text-anchor="middle" fill="#7ec8e3" font-size="52" font-weight="800" font-family="Arial">A</text>
+          <text fill="#7ec8e3" font-size="9" font-weight="600" font-family="Arial" letter-spacing="2" opacity="0.8"><textPath href="#hBa" startOffset="50%" text-anchor="middle">BUDGET</textPath></text>
+          <circle cx="16" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+          <circle cx="84" cy="16" r="2.5" fill="#3a8ab0" opacity="0.5"/>
+        </svg>
+        <h1>Ambit Budget Pro</h1>
+        <div class="tagline">Your money. Your device. Your business.</div>
       </div>
 
-      <!-- App mockup -->
-      <div class="hero-mockup" id="demo">
-        <div class="hero-mockup-bar">
-          <div class="hero-mockup-dots"><i></i><i></i><i></i></div>
-          <span>ambitbudget.com/app</span>
+      <!-- Side-by-side: iframe + tier cards -->
+      <div class="hero-body">
+
+        <!-- LEFT: Live demo iframe -->
+        <div class="hero-demo" id="demo">
+          <div class="hero-demo-frame">
+            <div class="hero-demo-bar">
+              <div class="hero-demo-dots"><i></i><i></i><i></i></div>
+              <span>ambitbudget.com/app</span>
+            </div>
+            <iframe id="hero-iframe" src="./app/index.html?mode=demo&tier=free" loading="lazy" title="Ambit Budget Pro Demo"></iframe>
+          </div>
         </div>
-        <iframe src="./app/index.html?mode=demo&tier=pro" loading="lazy" title="Ambit Budget Pro Demo"></iframe>
+
+        <!-- RIGHT: Tier selector cards -->
+        <div class="hero-tiers">
+          <div class="tier-card tier-free active" data-tier="free" data-src="./app/index.html?mode=demo&tier=free" onclick="selectTier(this)">
+            <div class="tier-radio"><div class="tier-radio-dot"></div></div>
+            <div class="tier-info">
+              <div class="tier-top">
+                <span class="tier-name">Free</span>
+                <span class="tier-price">$0</span>
+                <span class="tier-accounts">1 account</span>
+              </div>
+              <div class="tier-desc">See where your money goes</div>
+            </div>
+            <a href="./app/index.html?mode=demo&tier=free" target="_blank" class="tier-demo-btn">Try Demo &#x2192;</a>
+          </div>
+
+          <div class="tier-card" data-tier="starter" data-src="./app/index.html?mode=demo&tier=starter" onclick="selectTier(this)">
+            <div class="tier-radio"><div class="tier-radio-dot"></div></div>
+            <div class="tier-info">
+              <div class="tier-top">
+                <span class="tier-name">Starter</span>
+                <span class="tier-price">$9.99</span>
+                <span class="tier-accounts">2 accounts</span>
+              </div>
+              <div class="tier-desc">Auto-categorize &amp; budget</div>
+            </div>
+            <a href="./app/index.html?mode=demo&tier=starter" target="_blank" class="tier-demo-btn">Try Demo &#x2192;</a>
+          </div>
+
+          <div class="tier-card" data-tier="plus" data-src="./app/index.html?mode=demo&tier=plus" onclick="selectTier(this)">
+            <div class="tier-radio"><div class="tier-radio-dot"></div></div>
+            <div class="tier-info">
+              <div class="tier-top">
+                <span class="tier-name">Plus</span>
+                <span class="tier-price">$19.99</span>
+                <span class="tier-accounts">3 accounts</span>
+              </div>
+              <div class="tier-desc">Forecast &amp; savings goals</div>
+            </div>
+            <a href="./app/index.html?mode=demo&tier=plus" target="_blank" class="tier-demo-btn">Try Demo &#x2192;</a>
+          </div>
+
+          <div class="tier-card" data-tier="pro" data-src="./app/index.html?mode=demo&tier=pro" onclick="selectTier(this)">
+            <div class="tier-radio"><div class="tier-radio-dot"></div></div>
+            <div class="tier-info">
+              <div class="tier-top">
+                <span class="tier-name">Pro</span>
+                <span class="tier-price">$29.99</span>
+                <span class="tier-accounts">Unlimited</span>
+              </div>
+              <div class="tier-desc">Full power, all features</div>
+            </div>
+            <a href="./app/index.html?mode=demo&tier=pro" target="_blank" class="tier-demo-btn">Try Demo &#x2192;</a>
+          </div>
+
+          <!-- CTA -->
+          <div class="hero-cta-area">
+            <a href="./app/index.html" class="hero-cta-btn">Get Started Free &#x2192;</a>
+            <p class="hero-cta-sub">No sign-up required. Your data stays on your device.</p>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>
@@ -893,6 +1047,17 @@ document.querySelectorAll('.sidebar-nav a').forEach(function(link) {
     }
   });
 });
+
+// Tier card selection
+function selectTier(card) {
+  var cards = document.querySelectorAll('.tier-card');
+  cards.forEach(function(c) { c.classList.remove('active'); });
+  card.classList.add('active');
+  var iframe = document.getElementById('hero-iframe');
+  if (iframe) {
+    iframe.src = card.getAttribute('data-src');
+  }
+}
 
 // Waitlist form
 var wf = document.getElementById('waitlist-form');
