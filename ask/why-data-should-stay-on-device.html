@@ -127,16 +127,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 }
 .back-link:hover { color: var(--amber-hover); }
 
-.tts-toggle {
-  position: absolute; top: 48px; right: 32px;
-  background: #F5ECD0; border: 1px solid #E8DBB8;
-  border-radius: 8px; padding: 8px 14px; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 600;
-  color: var(--text2); transition: all 0.2s; display: flex;
-  align-items: center; gap: 6px;
-}
-.tts-toggle:hover { border-color: var(--amber); color: var(--navy); }
-.tts-toggle.speaking { background: var(--amber); color: #fff; border-color: var(--amber); }
+/* TTS removed */
 
 .post-meta {
   font-size: 13px; color: var(--text3); margin-bottom: 8px;
@@ -377,7 +368,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <article class="blog-article">
 
     <a href="./" class="back-link">&#x2190; Back to all questions</a>
-    <button class="tts-toggle" id="tts-btn" aria-label="Read aloud">&#x1F50A; Read aloud</button>
 
     <div class="post-meta">
       <span class="tag">All Tiers</span>
@@ -515,11 +505,8 @@ function closeMobileNav() {
   document.body.style.overflow = '';
 }
 
-// TTS
-var ttsBtn = document.getElementById('tts-btn');
-if (!window.speechSynthesis) {
-  ttsBtn.style.display = 'none';
-} else {
+// TTS removed
+if (false) {
   var speaking = false;
   var voices = [];
 
