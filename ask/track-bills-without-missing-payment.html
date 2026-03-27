@@ -127,8 +127,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 }
 .back-link:hover { color: var(--amber-hover); }
 
-/* TTS removed */
-
 .post-meta {
   font-size: 13px; color: var(--text3); margin-bottom: 8px;
   display: flex; align-items: center; gap: 12px;
@@ -278,7 +276,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   .mobile-topbar { display: flex; }
   .main-content { margin-left: 0; padding-top: 56px; }
   .blog-article { padding: 32px 20px 40px; }
-  .tts-toggle { position: static; margin-bottom: 20px; }
   .question-header { flex-direction: column; align-items: center; text-align: center; }
   .question-header img { width: 100px; height: 100px; }
   .question-header h1 { font-size: 26px; }
@@ -512,82 +509,6 @@ function closeMobileNav() {
   hamburger.classList.remove('active');
   mobileNav.classList.remove('active');
   document.body.style.overflow = '';
-}
-
-// TTS removed
-if (false) {
-  ttsBtn.style.display = 'none';
-} else {
-  var speaking = false;
-  var voices = [];
-
-  function loadVoices() {
-    voices = speechSynthesis.getVoices();
-  }
-  loadVoices();
-  if (speechSynthesis.onvoiceschanged !== undefined) {
-    speechSynthesis.onvoiceschanged = loadVoices;
-  }
-
-  function getVoice() {
-    var preferred = ['Google US English', 'Microsoft David', 'Daniel', 'Alex'];
-    for (var i = 0; i < preferred.length; i++) {
-      var v = voices.find(function(voice) { return voice.name.indexOf(preferred[i]) !== -1; });
-      if (v) return v;
-    }
-    // fallback to first English voice
-    var en = voices.find(function(voice) { return voice.lang && voice.lang.startsWith('en'); });
-    return en || null;
-  }
-
-  // Chrome stops speaking after ~15s on long text. Chunk it.
-  function speakText(text) {
-    var chunks = text.match(/[^.!?]+[.!?]+/g) || [text];
-    var merged = [];
-    var current = '';
-    for (var i = 0; i < chunks.length; i++) {
-      if ((current + chunks[i]).length > 200) {
-        if (current) merged.push(current.trim());
-        current = chunks[i];
-      } else {
-        current += chunks[i];
-      }
-    }
-    if (current.trim()) merged.push(current.trim());
-
-    var index = 0;
-    function speakNext() {
-      if (index >= merged.length || !speaking) {
-        speaking = false;
-        ttsBtn.classList.remove('speaking');
-        ttsBtn.innerHTML = '&#x1F50A; Read aloud';
-        return;
-      }
-      var utter = new SpeechSynthesisUtterance(merged[index]);
-      utter.rate = 0.95;
-      var voice = getVoice();
-      if (voice) utter.voice = voice;
-      utter.onend = function() { index++; speakNext(); };
-      utter.onerror = function() { index++; speakNext(); };
-      speechSynthesis.speak(utter);
-    }
-    speakNext();
-  }
-
-  ttsBtn.addEventListener('click', function() {
-    if (speaking) {
-      speechSynthesis.cancel();
-      speaking = false;
-      ttsBtn.classList.remove('speaking');
-      ttsBtn.innerHTML = '&#x1F50A; Read aloud';
-    } else {
-      var text = document.getElementById('article-body').innerText;
-      speaking = true;
-      ttsBtn.classList.add('speaking');
-      ttsBtn.innerHTML = '&#x23F9; Stop reading';
-      speakText(text);
-    }
-  });
 }
 
 // Suggestion form
