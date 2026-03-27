@@ -142,7 +142,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   display: flex; align-items: center; gap: 24px;
   margin-bottom: 40px;
 }
-.question-header img { width: 100px; height: 100px; object-fit: contain; flex-shrink: 0; }
+.question-header img { width: 140px; height: 140px; object-fit: contain; flex-shrink: 0; }
 .question-header h1 {
   font-size: 32px; font-weight: 800; color: var(--navy);
   line-height: 1.25; letter-spacing: -0.5px;
@@ -152,7 +152,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   display: flex; align-items: flex-start; gap: 24px;
   margin-bottom: 32px;
 }
-.ambit-section img { width: 80px; height: 80px; object-fit: contain; flex-shrink: 0; margin-top: 4px; }
+.ambit-section img { width: 120px; height: 120px; object-fit: contain; flex-shrink: 0; margin-top: 4px; }
 .speech-bubble {
   background: #F5ECD0; border: 1px solid #E8DBB8;
   border-radius: 16px; padding: 24px; position: relative; flex: 1;
@@ -200,7 +200,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   background: linear-gradient(135deg, rgba(12,20,69,0.04) 0%, rgba(232,160,32,0.06) 100%);
   border-radius: 16px; border: 1px solid #E8DBB8;
 }
-.cta-section img { width: 100px; height: 100px; object-fit: contain; flex-shrink: 0; }
+.cta-section img { width: 140px; height: 140px; object-fit: contain; flex-shrink: 0; }
 .cta-content { flex: 1; }
 .cta-content p { font-size: 17px; font-weight: 600; color: var(--navy); margin-bottom: 16px; line-height: 1.5; }
 .cta-btn {
@@ -230,7 +230,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 }
 .suggestion-box-inner { display: flex; align-items: flex-start; gap: 24px; }
 .suggestion-box img {
-  width: 150px; height: 150px; object-fit: contain;
+  width: 220px; height: 220px; object-fit: contain;
   flex-shrink: 0;
 }
 .suggestion-box-content { flex: 1; }
@@ -327,12 +327,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     <a href="../index.html#features"><span class="nav-icon">&#x2726;</span> Features</a>
     <a href="../index.html#pricing"><span class="nav-icon">&#x2606;</span> Pricing</a>
     <a href="../index.html#download"><span class="nav-icon">&#x2913;</span> Download</a>
-    <a href="./" class="active"><span class="nav-icon"><img src="../app/images/mr-ambit/headshot.png" alt="Mr. Ambit" style="width:20px;height:20px;vertical-align:middle;border-radius:50%"></span> Ask Ambit</a>
-    <a href="../privacy.html"><span class="nav-icon">&#x1F512;</span> Privacy</a>
-    <a href="../terms.html"><span class="nav-icon">&#x1F4C4;</span> Terms</a>
+    <a href="./" class="active"> Ask Ambit<img src="../app/images/mr-ambit/headshot.png" alt="Mr. Ambit" style="width:40px;height:40px;margin-left:auto"></a>
   </nav>
   <div class="sidebar-bottom">
     <a href="../app/index.html?mode=demo&tier=free" class="sidebar-cta">Try Free</a>
+    <div style="padding:12px 20px;font-size:11px;color:#9da5d0;display:flex;gap:12px">
+      <a href="../privacy.html" style="color:inherit;text-decoration:none">Privacy</a>
+      <a href="../terms.html" style="color:inherit;text-decoration:none">Terms</a>
+    </div>
   </div>
 </aside>
 
