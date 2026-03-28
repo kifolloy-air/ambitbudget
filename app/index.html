@@ -1516,9 +1516,9 @@ function LicenseGate({onActivate, onCancel, upgradeContext}) {
     if(!result.success) setError(result.error);
   };
   const tiers = [
-    {name:'Starter',price:'$9.99',accounts:'2 accounts',features:['Payee rules & auto-categorization','Budget targets per category','Bill tracking with due dates','Category groups'],color:'var(--green)',btnBg:'linear-gradient(135deg, #b8860b, #d4a017)',btnText:'#fff',buyUrl:'https://ambitbudget.lemonsqueezy.com/buy/starter-placeholder',popular:false},
-    {name:'Plus',price:'$19.99',accounts:'3 accounts',features:['Everything in Starter','Balance forecast','Monthly budget review','Calendar year view','Per-account budgets'],color:'var(--blue)',btnBg:'linear-gradient(135deg, #d4a017, #f0c040)',btnText:'#1a1a2e',buyUrl:'https://ambitbudget.lemonsqueezy.com/buy/plus-placeholder',popular:true},
-    {name:'Pro',price:'$29.99',accounts:'Unlimited',features:['Everything in Plus','Day-by-day projections','Debt planner','All future features'],color:'var(--accent2)',btnBg:'linear-gradient(135deg, #1a1a2e, #2a2a4e)',btnText:'#fff',buyUrl:'https://ambitbudget.lemonsqueezy.com/buy/pro-placeholder',popular:false}
+    {name:'Starter',price:'$9.99',accounts:'2 accounts',features:['Payee rules & auto-categorization','Budget targets per category','Bill tracking with due dates','Category groups'],color:'var(--green)',btnBg:'linear-gradient(135deg, #b8860b, #d4a017)',btnText:'#fff',buyUrl:'https://ambitbudget.lemonsqueezy.com/checkout/buy/dbe1c0db-ffe5-4f5e-b728-42342a9f6382',popular:false},
+    {name:'Plus',price:'$19.99',accounts:'3 accounts',features:['Everything in Starter','Balance forecast','Monthly budget review','Calendar year view','Per-account budgets'],color:'var(--blue)',btnBg:'linear-gradient(135deg, #d4a017, #f0c040)',btnText:'#1a1a2e',buyUrl:'https://ambitbudget.lemonsqueezy.com/checkout/buy/e0f46aa5-ae9a-4bf4-a3af-40d769cdda09',popular:true},
+    {name:'Pro',price:'$29.99',accounts:'Unlimited',features:['Everything in Plus','Day-by-day projections','Debt planner','All future features'],color:'var(--accent2)',btnBg:'linear-gradient(135deg, #1a1a2e, #2a2a4e)',btnText:'#fff',buyUrl:'https://ambitbudget.lemonsqueezy.com/checkout/buy/7b6093e6-c311-42d3-8413-614805933aa1',popular:false}
   ];
   return h('div',{className:'modal-overlay', onClick:e=>{if(e.target===e.currentTarget && onCancel) onCancel();}},
     h('div',{className:'modal animate-in', role:'dialog', 'aria-modal':'true', style:{maxWidth:620,textAlign:'center'}},
