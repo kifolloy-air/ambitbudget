@@ -877,6 +877,7 @@ function HelpBar({steps, diagram, bullets, title}) {
       ...a11yClick(()=>setOpen(!open), 'Toggle help section')
     },
       h('span',{style:{fontSize:16}},'?'),
+      h('img',{src:'images/mr-ambit/head.png',alt:'Mr. Ambit',style:{width:28,height:28,objectFit:'contain'}}),
       h('span',{style:{fontSize:13,fontWeight:500,color:'var(--text2)',flex:1}}, title||'How does this work?'),
       h('span',{style:{fontSize:12,color:'var(--text2)',transition:'transform 0.2s',transform:open?'rotate(180deg)':'rotate(0)'}}, '▾')
     ),
@@ -2448,6 +2449,7 @@ function App({idbData}) {
       // Backup reminder banner
       !isDemo && backupNeeded && h('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',marginBottom:12,background:'rgba(232,160,32,0.1)',border:'1px solid rgba(232,160,32,0.25)',borderRadius:8,fontSize:13,color:'var(--text)'},role:'status'},
         h('span',{'aria-hidden':'true'},'🔒'),
+        h('img',{src:'images/mr-ambit/thinking.png',alt:'Mr. Ambit',style:{width:24,height:24,objectFit:'contain'}}),
         h('span',{style:{flex:1}},
           backupNeeded.never
             ? 'Your local data file needs updating. Export a backup now to prevent data loss. For extra protection, save your backup to OneDrive, Google Drive, or iCloud.'
@@ -2470,6 +2472,7 @@ function App({idbData}) {
       // Free tier welcome banner
       isFreeTier && mode==='mine' && !freeWelcomeDismissed && h('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',marginBottom:12,background:'rgba(126,200,227,0.1)',border:'1px solid rgba(126,200,227,0.25)',borderRadius:8,fontSize:13,color:'var(--text)'},role:'status'},
         h('span',{'aria-hidden':'true'},'👋'),
+        h('img',{src:'images/mr-ambit/thumbs-up.png',alt:'Mr. Ambit',style:{width:30,height:30,objectFit:'contain'}}),
         h('span',{style:{flex:1}},
           'Welcome to Ambit Budget! You\'re on the ',h('strong',null,'Free plan'),'. Track your spending across 1 account. ',
           h('span',{style:{cursor:'pointer',color:'var(--accent2)',fontWeight:600,textDecoration:'underline'}, ...a11yClick(()=>setShowLicenseGate(true))},'Upgrade'),
@@ -2682,6 +2685,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast, group
     categories.length === 0
       ? h('div',{className:'card'},
           h('div',{className:'empty'},
+            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'📂'),
             h('p',null,'No categories yet. Click "New Category" to start building your budget structure.')
           )
@@ -2932,6 +2936,7 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast, group
       ),
       filtered.length === 0
         ? h('div',{className:'empty'},
+            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'📖'),
             h('p',null, dictionary.length===0 ? 'No payee rules yet. Add keywords above to auto-categorize transactions when you import them.' : 'No rules match your filter.')
           )
@@ -4028,6 +4033,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       ),
       sorted.length === 0
         ? h('div',{className:'empty'},
+            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'📋'),
             h('p',null, transactions.length===0 ? 'No transactions yet. Import some on the Import page.' : 'No transactions match your search.')
           )
@@ -4456,6 +4462,7 @@ function BudgetMonthlyTab({categories, setCategories, transactions, dictionary, 
     categories.length === 0
       ? h('div',{className:'card'},
           h('div',{className:'empty'},
+            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'\uD83D\uDCB0'),
             h('p',null,'Create categories first on the Categories page, then come back here to set budgets.')
           )
@@ -5454,6 +5461,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
     transactions.length===0
       ? h('div',{className:'card'},
           h('div',{className:'empty'},
+            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'📊'),
             h('p',null,'Import transactions to see your spending dashboard.')
           )
@@ -5789,7 +5797,8 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
       return h('div',{style:{marginTop:24,marginBottom:8}},
         h('div',{style:{textAlign:'center',cursor:'pointer',userSelect:'none',padding:'8px 0'},
           ...a11yClick(()=>setPlansExpanded(!plansExpanded),'Toggle plan features'),'aria-expanded':plansExpanded},
-          h('span',{style:{fontSize:12,color:'var(--card-text2)',letterSpacing:'0.3px'}},
+          h('span',{style:{fontSize:12,color:'var(--card-text2)',letterSpacing:'0.3px',display:'inline-flex',alignItems:'center',gap:6}},
+            plansExpanded && h('img',{src:'images/mr-ambit/idea.png',alt:'Mr. Ambit idea',style:{width:60,height:60,objectFit:'contain'}}),
             'See what\'s available in other plans ',
             h('span',{style:{display:'inline-block',transition:'transform 0.2s',transform:plansExpanded?'rotate(180deg)':'rotate(0)',fontSize:10}},'▾')
           )
@@ -6163,6 +6172,7 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
       h('div',{className:'page-header'},h('h2',null,'💳 Debt Reduction Planner')),
       h('div',{className:'card',style:{textAlign:'center',padding:'40px 20px'}},
         h('div',{className:'empty'},
+          h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
           h('div',{className:'icon'},'💳'),
           h('p',null,'No debt accounts found.'),
           h('p',{style:{fontSize:13,color:'var(--text2)'}},'Add a Credit Card or Loan account on the Accounts page to get started.')
@@ -7063,6 +7073,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
     accounts.length===0
       ? h('div',{className:'card'},
           h('div',{className:'empty'},
+            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'🏦'),
             h('p',null,'No accounts yet. Add your checking and savings accounts to start tracking.')
           )
@@ -7205,7 +7216,7 @@ class ErrorBoundary extends React.Component {
     if(this.state.hasError) {
       return h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#0c1445',color:'#eef0ff',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif'}},
         h('div',{style:{textAlign:'center',maxWidth:420,padding:40}},
-          h('div',{style:{fontSize:48,marginBottom:16}},'⚠️'),
+          h('img',{src:'images/mr-ambit/thinking.png',alt:'Mr. Ambit thinking',style:{width:100,height:100,objectFit:'contain',marginBottom:12}}),
           h('h2',{style:{marginBottom:12,fontSize:20}},'Something went wrong'),
           h('p',{style:{fontSize:14,color:'#c0c8e8',lineHeight:1.6,marginBottom:20}},
             'Ambit Budget encountered an error. Your data is safe — it\'s stored locally on your device.'),
