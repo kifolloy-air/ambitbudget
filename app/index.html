@@ -2483,7 +2483,7 @@ function App({idbData}) {
 
       page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, demoBypass, isTierDemo, groupColors, defaultAcct, setPage, onUpgrade:()=>setShowLicenseGate(true)}),
       page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors, tier, onUpgrade:()=>setShowLicenseGate(true)}),
-      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage, tier}),
+      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage, tier, groupColors}),
       page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns, setTransactions, catMap, dictionary, setDictionary, groupColors, accounts, defaultAcct, groups, setGroups, groupList, showToast}),
       page==='accounts' && h(AccountsPage, {accounts, setAccounts, transactions:liveTxns, setTransactions, catMap, showToast, accountLimit, tier, isDemo, demoBypass}),
     ),
@@ -3105,7 +3105,7 @@ function detectColumns(headers, sampleRows) {
 // (UnmatchedRow removed — Import is now a pure data utility)
 
 // ── Import Page ─────────────────────────────────────────
-function ImportPage({transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage, tier}) {
+function ImportPage({transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage, tier, groupColors}) {
   const isFree = tier && tier.autoCategorize === false;
   const [csv, setCsv] = useState('');
   const [preview, setPreview] = useState(null);
