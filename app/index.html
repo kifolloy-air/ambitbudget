@@ -2980,6 +2980,8 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast, group
                   h('select',{className:'input',value:d.frequency||'monthly',
                     onChange:e=>{const ri=dictionary.indexOf(d);if(ri>=0)setDictionary(prev=>prev.map((r,j)=>j===ri?{...r,frequency:e.target.value==='monthly'?undefined:e.target.value}:r));},
                     style:{fontSize:11,padding:'2px 4px',width:80}},
+                    h('option',{value:'biweekly'},'Biweekly'),
+                    h('option',{value:'semimonthly'},'Semimonthly'),
                     h('option',{value:'monthly'},'Monthly'),
                     h('option',{value:'quarterly'},'Quarterly'),
                     h('option',{value:'biannual'},'Biannual'),
