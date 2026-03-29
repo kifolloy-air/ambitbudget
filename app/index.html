@@ -2909,6 +2909,8 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast, group
                   h('div',{style:{minWidth:90}},
                     h('label',{htmlFor:'rule-frequency',style:{fontSize:11,color:'var(--text2)',display:'block',marginBottom:3}},'Frequency'),
                     h('select',{id:'rule-frequency',className:'input',value:frequency,onChange:e=>setFrequency(e.target.value),style:{width:100,fontSize:12,padding:'5px 8px'}},
+                      h('option',{value:'biweekly'},'Biweekly'),
+                      h('option',{value:'semimonthly'},'Semimonthly'),
                       h('option',{value:'monthly'},'Monthly'),
                       h('option',{value:'quarterly'},'Quarterly'),
                       h('option',{value:'biannual'},'Biannual'),
@@ -4895,6 +4897,8 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
     // Get frequency label for display
     const freqLabel = (rule) => {
       const f = rule.frequency||'monthly';
+      if(f==='biweekly') return 'Biweekly';
+      if(f==='semimonthly') return 'Semimonthly';
       if(f==='quarterly') return 'Quarterly';
       if(f==='biannual') return 'Biannual';
       if(f==='annual') return 'Annual';
