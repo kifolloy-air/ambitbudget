@@ -3167,14 +3167,15 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
   const detectTransferDest = useCallback((desc) => {
     const upper = desc.toUpperCase();
     // Look for transfer-like keywords
-    if(!/TRANSFER|XFER|TRNSFR|ONLINE.*TO|ACH.*TO/i.test(upper)) return null;
-    // Look for masked account number patterns containing a known last4
-    for(const [digits, acct] of Object.entries(last4Map)) {
-      // Match patterns like XXXXX3989, ****3989, or just the 4 digits at end of a number sequence
-      const pattern = new RegExp('[X*]+' + digits + '|\\b\\d*' + digits + '\\b');
-      if(pattern.test(upper) || upper.includes(digits)) {
-        return acct;
-      }
+    if(!/TRANSFER|XFER|TRNSFR|ONLINE.*(?:TO|FROM)|ACH.*(?:TO|FROM)/i.test(upper)) return null;
+    // Extract all 4-digit sequences from the description (from masked patterns like XXXXX3989, *3989, or standalone)
+    const allDigitMatches = desc.match(/\d{4,}/g);
+    if(!allDigitMatches || allDigitMatches.length===0) return null;
+    // Check each 4-digit sequence (last 4 chars of each match) against known accounts, starting from the end
+    for(let i = allDigitMatches.length - 1; i >= 0; i--) {
+      const match = allDigitMatches[i];
+      const last4 = match.slice(-4);
+      if(last4Map[last4]) return last4Map[last4];
     }
     return null;
   },[last4Map]);
@@ -3813,24 +3814,42 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     // in case catMap hasn't re-derived yet after a new category was just created
     const cat = catMap[editCat] || categories.find(c=>c.name===editCat);
     const txn = transactions.find(t=>t.id===id);
-    setTransactions(prev=>prev.map(t=>t.id===id?{...t, category:editCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'}:t));
     // Create or update dictionary rule so Dashboard bills/budget tracks this payee
-    if(txn && setDictionary) {
-      const keyword = (txn.description||'').trim().toUpperCase();
-      const cleanName = txn.cleanName || txn.description || '';
-      if(keyword) {
-        setDictionary(prev => {
-          const existing = prev.find(d=>d.keyword.toUpperCase()===keyword);
-          if(existing) {
-            // Update existing rule to point to the new category
-            return prev.map(d=>d.keyword.toUpperCase()===keyword?{...d, category:editCat}:d);
-          } else {
-            // Create new rule for this payee
-            return [...prev, {keyword, cleanName, category:editCat}];
-          }
-        });
-      }
+    const ruleKeyword = txn ? (txn.description||'').trim().toUpperCase() : '';
+    let ruleCleanName = txn ? (txn.cleanName || txn.description || '') : '';
+    if(txn && setDictionary && ruleKeyword) {
+      // Check if a rule already exists — if so, use its cleanName
+      const existingRule = dictionary.find(d=>d.keyword.toUpperCase()===ruleKeyword);
+      if(existingRule) ruleCleanName = existingRule.cleanName;
+      setDictionary(prev => {
+        const existing = prev.find(d=>d.keyword.toUpperCase()===ruleKeyword);
+        if(existing) {
+          // Update existing rule to point to the new category
+          return prev.map(d=>d.keyword.toUpperCase()===ruleKeyword?{...d, category:editCat}:d);
+        } else {
+          // Create new rule for this payee
+          return [...prev, {keyword:ruleKeyword, cleanName:ruleCleanName, category:editCat}];
+        }
+      });
     }
+    // Update transaction and auto-apply rule to all matching uncategorized transactions — never touch description
+    const normalizedKw = ruleKeyword ? normalizeForMatch(ruleKeyword) : '';
+    setTransactions(prev => {
+      let autoApplied = 0;
+      const updated = prev.map(t => {
+        if(t.id === id) {
+          return {...t, cleanName:ruleCleanName, category:editCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
+        }
+        // Auto-apply new rule to other uncategorized transactions with matching description
+        if(normalizedKw && t.category === 'Uncategorized' && normalizeForMatch(t.description).includes(normalizedKw)) {
+          autoApplied++;
+          return {...t, cleanName:ruleCleanName, category:editCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
+        }
+        return t;
+      });
+      if(autoApplied > 0) setTimeout(()=>showToast('✅ Rule applied to '+autoApplied+' matching transaction'+(autoApplied>1?'s':'')),100);
+      return updated;
+    });
     showToast('✅ Category updated: '+editCat);
     setEditId(null); setEditCat('');
   };
