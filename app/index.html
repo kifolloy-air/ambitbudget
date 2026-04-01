@@ -3655,6 +3655,8 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   const [newCatGroup, setNewCatGroup] = useState('Other');
   const [newCatType, setNewCatType] = useState('discretionary');
   const [newCatContext, setNewCatContext] = useState(null); // 'inline' or 'modal'
+  const [bulkApplyPrompt, setBulkApplyPrompt] = useState(null); // {txn, newCleanName, keyword, matchCount, needsCategory}
+  const [bulkApplyCat, setBulkApplyCat] = useState('');
   const createNewCategory = () => {
     if(!newCatName.trim()) return;
     if(categories && categories.find(c=>c.name.toLowerCase()===newCatName.trim().toLowerCase())) {
@@ -3855,45 +3857,29 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     // Extract a smart keyword from the description (strips prefixes, card #s, locations)
     const smartKeyword = txn ? extractKeyword(txn.description||'') : '';
     let ruleCleanName = txn ? (txn.cleanName || txn.description || '') : '';
-    let ruleKeyword = smartKeyword;
     if(txn && setDictionary && smartKeyword) {
-      // Check if a rule already exists for this keyword — if so, use its cleanName and keyword
+      // Check if a rule already exists for this keyword — if so, use its cleanName
       const existingRule = dictionary.find(d=>d.keyword.toUpperCase()===smartKeyword.toUpperCase());
       if(existingRule) {
         ruleCleanName = existingRule.cleanName;
-        ruleKeyword = existingRule.keyword;
       }
       setDictionary(prev => {
         const existing = prev.find(d=>d.keyword.toUpperCase()===smartKeyword.toUpperCase());
         if(existing) {
-          // Update existing rule to point to the new category
           return prev.map(d=>d.keyword.toUpperCase()===smartKeyword.toUpperCase()?{...d, category:editCat}:d);
         } else {
-          // Create new rule for this payee with the smart keyword
           return [...prev, {keyword:smartKeyword, cleanName:ruleCleanName, category:editCat}];
         }
       });
     }
-    // Update transaction and auto-apply rule to all matching uncategorized transactions
-    // Use the extracted keyword (substring match) so it matches other transactions from same vendor
-    const matchKeyword = ruleKeyword ? ruleKeyword.toUpperCase() : '';
-    setTransactions(prev => {
-      let autoApplied = 0;
-      const updated = prev.map(t => {
-        if(t.id === id) {
-          return {...t, cleanName:ruleCleanName, category:editCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
-        }
-        // Auto-apply: case-insensitive substring match on description using extracted keyword
-        if(matchKeyword && t.category === 'Uncategorized' && (t.description||'').toUpperCase().includes(matchKeyword)) {
-          autoApplied++;
-          return {...t, cleanName:ruleCleanName, category:editCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
-        }
-        return t;
-      });
-      if(autoApplied > 0) setTimeout(()=>showToast('✅ Rule applied to '+autoApplied+' matching transaction'+(autoApplied>1?'s':'')),100);
-      return updated;
-    });
-    showToast('✅ Category updated: '+editCat);
+    // Update only this transaction's category (no auto-apply — bulk apply is handled via the payee rename flow)
+    setTransactions(prev => prev.map(t => {
+      if(t.id === id) {
+        return {...t, cleanName:ruleCleanName, category:editCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
+      }
+      return t;
+    }));
+    showToast('Category updated: '+editCat);
     setEditId(null); setEditCat('');
   };
 
@@ -3906,8 +3892,63 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
 
   const savePayee = (id) => {
     if(!editPayeeName.trim()) return;
-    setTransactions(prev=>prev.map(t=>t.id===id?{...t, cleanName:editPayeeName.trim()}:t));
+    const txn = transactions.find(t=>t.id===id);
+    if(!txn) return;
+    const newName = editPayeeName.trim();
+    const keyword = extractKeyword(txn.description||'');
+    // Count matching uncategorized transactions (excluding this one)
+    const matchCount = keyword ? transactions.filter(t=>t.id!==id && t.category==='Uncategorized' && normalizeForMatch(t.description).includes(normalizeForMatch(keyword))).length : 0;
     setEditPayeeId(null); setEditPayeeName('');
+    if(matchCount > 0) {
+      const needsCategory = !txn.category || txn.category === 'Uncategorized';
+      setBulkApplyPrompt({ txn, newCleanName: newName, keyword, matchCount, needsCategory });
+      if(!needsCategory) setBulkApplyCat(txn.category);
+      else setBulkApplyCat('');
+    } else {
+      // No matches — just update this one
+      setTransactions(prev=>prev.map(t=>t.id===id?{...t, cleanName:newName}:t));
+    }
+  };
+
+  const confirmBulkApply = () => {
+    if(!bulkApplyPrompt) return;
+    const { txn, newCleanName, keyword } = bulkApplyPrompt;
+    const selectedCat = bulkApplyCat;
+    if(!selectedCat) return; // must pick a category
+    const cat = catMap[selectedCat] || categories.find(c=>c.name===selectedCat);
+    const normKw = normalizeForMatch(keyword);
+    // Update all matching uncategorized transactions + the current one
+    let applied = 0;
+    setTransactions(prev => prev.map(t => {
+      if(t.id === txn.id) {
+        return {...t, cleanName:newCleanName, category:selectedCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
+      }
+      if(normKw && t.category === 'Uncategorized' && normalizeForMatch(t.description).includes(normKw)) {
+        applied++;
+        return {...t, cleanName:newCleanName, category:selectedCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
+      }
+      return t;
+    }));
+    // Create/update payee rule in dictionary
+    if(setDictionary && keyword) {
+      setDictionary(prev => {
+        const existing = prev.find(d=>d.keyword.toUpperCase()===keyword.toUpperCase());
+        if(existing) {
+          return prev.map(d=>d.keyword.toUpperCase()===keyword.toUpperCase()?{...d, cleanName:newCleanName, category:selectedCat}:d);
+        }
+        return [...prev, {keyword, cleanName:newCleanName, category:selectedCat}];
+      });
+    }
+    setTimeout(()=>showToast('Updated '+(applied+1)+' transaction'+(applied>0?'s':'')+' and created payee rule'),100);
+    setBulkApplyPrompt(null); setBulkApplyCat('');
+  };
+
+  const declineBulkApply = () => {
+    if(!bulkApplyPrompt) return;
+    const { txn, newCleanName } = bulkApplyPrompt;
+    // Only update this single transaction's cleanName
+    setTransactions(prev=>prev.map(t=>t.id===txn.id?{...t, cleanName:newCleanName}:t));
+    setBulkApplyPrompt(null); setBulkApplyCat('');
   };
 
   const nonTransfer = transactions.filter(t=>t.catType!=='transfer');
@@ -4195,6 +4236,31 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
         h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:4}},
           h('button',{className:'btn',onClick:()=>setShowReconcile(false)}, 'Cancel'),
           h('button',{className:'btn green',onClick:doReconcile,disabled:!reconcileDate}, '✓ Reconcile')
+        )
+      )
+    ),
+
+    // Bulk apply popup card
+    bulkApplyPrompt && h('div',{style:{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.3)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'},onClick:()=>{setBulkApplyPrompt(null);setBulkApplyCat('');}},
+      h('div',{style:{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'20px 24px',maxWidth:420,width:'90%',boxShadow:'0 8px 32px rgba(0,0,0,0.3)'},onClick:e=>e.stopPropagation()},
+        h('div',{style:{fontSize:15,fontWeight:700,marginBottom:12,color:'var(--card-text)'}},"Apply '"+bulkApplyPrompt.newCleanName+"' to matching transactions?"),
+        h('div',{style:{fontSize:13,color:'var(--card-text2)',marginBottom:14,lineHeight:1.5}},
+          'Found ',h('strong',null,bulkApplyPrompt.matchCount),' uncategorized transaction'+(bulkApplyPrompt.matchCount>1?'s':'')+' containing ',
+          h('code',{style:{background:'rgba(232,160,32,0.15)',padding:'1px 6px',borderRadius:4,fontSize:12,fontWeight:600}},bulkApplyPrompt.keyword)
+        ),
+        bulkApplyPrompt.needsCategory && h('div',{style:{marginBottom:14}},
+          h('label',{style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Which category?'),
+          h('select',{className:'input',value:bulkApplyCat,onChange:e=>setBulkApplyCat(e.target.value),style:{width:'100%',fontSize:13}},
+            h('option',{value:''},'Select a category...'),
+            Object.keys(catMap).sort((a,b)=>a.localeCompare(b)).map(c=>h('option',{key:c,value:c},c))
+          )
+        ),
+        !bulkApplyPrompt.needsCategory && h('div',{style:{fontSize:12,color:'var(--green)',marginBottom:14,padding:'6px 10px',background:'rgba(64,192,128,0.08)',borderRadius:6}},
+          'Category: ',h('strong',null,bulkApplyPrompt.txn.category)
+        ),
+        h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end'}},
+          h('button',{className:'btn',onClick:declineBulkApply},'No, just this one'),
+          h('button',{className:'btn primary',onClick:confirmBulkApply,disabled:bulkApplyPrompt.needsCategory && !bulkApplyCat},'Yes, apply to all')
         )
       )
     )
