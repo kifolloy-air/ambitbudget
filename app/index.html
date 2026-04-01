@@ -3112,12 +3112,10 @@ function detectColumns(headers, sampleRows) {
 function ImportPage({transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setAccounts, setPage, tier, groupColors}) {
   const isFree = tier && tier.autoCategorize === false;
   const [csv, setCsv] = useState('');
-  const [preview, setPreview] = useState(null);
   const [parsedData, setParsedData] = useState(null);
   const [colMap, setColMap] = useState({dateCol:-1, descCol:-1, amountCol:-1, debitCol:-1, creditCol:-1});
   const [importMode, setImportMode] = useState('paste');
   const [selectedAccount, setSelectedAccount] = useState('');
-  const [transferDestAcct, setTransferDestAcct] = useState('');
   const [postImport, setPostImport] = useState(null);
   const fileRef = useRef(null);
   const [newAcctName, setNewAcctName] = useState('');
@@ -3153,7 +3151,6 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
 
     setParsedData({headers, rows:dataRows, delimiter, detected});
     setColMap(detected);
-    setPreview(null);
     showToast(`✅ Parsed ${dataRows.length} rows (${delimiter==='\t'?'tab':'comma'}-delimited, ${headers.length} columns)`);
   };
 
@@ -3182,8 +3179,8 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
     return null;
   },[last4Map]);
 
-  // Step 2: Build transactions from parsed data + column mapping
-  const buildPreview = () => {
+  // Step 2: Build transactions from parsed data + column mapping, then import directly
+  const importTransactions = () => {
     if(!parsedData) return;
     if(!selectedAccount) { showToast('⚠️ Please select an account first'); return; }
     const {rows} = parsedData;
@@ -3229,9 +3226,7 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
       // Check if this imported row matches a pending transaction
       const pendingMatch = pendingTxns.find(pt=>{
         if(matchedPendingIds.has(pt.id)) return false;
-        // Amount must match exactly (or within $0.01)
         if(Math.abs(pt.amount - amt) > 0.011) return false;
-        // Date within 14 days OR description similarity
         const dateDiff = Math.abs(safeDate(pt.date) - safeDate(dateStr));
         const within14Days = dateDiff <= 14*86400000;
         const descMatch = desc.toLowerCase().includes(pt.cleanName.toLowerCase()) || pt.cleanName.toLowerCase().includes(desc.toLowerCase().substring(0,10));
@@ -3240,7 +3235,6 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
       if(pendingMatch) {
         matchedPendingIds.add(pendingMatch.id);
         pendingMatched++;
-        // This will update the existing pending txn on confirm, skip adding a new one
         matched.push({_matchesPendingId:pendingMatch.id, date:dateStr, description:desc, amount:amt, cleanName:pendingMatch.cleanName, category:pendingMatch.category, group:pendingMatch.group, catType:pendingMatch.catType, accountId:selectedAccount});
         continue;
       }
@@ -3269,12 +3263,10 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
             group: transferCat.group || 'Other',
             catType: 'transfer',
             accountId: selectedAccount,
-            _autoTransferDest: destAcct.id // flag for pairing
+            _autoTransferDest: destAcct.id
           };
           matched.push(txn);
           autoTransfers++;
-          // Auto-set the transfer destination if not already set
-          if(!transferDestAcct) setTransferDestAcct(destAcct.id);
         } else {
           txn = {
             id: Date.now()+'_'+Math.random().toString(36).slice(2,8),
@@ -3288,52 +3280,28 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
       }
     }
 
-    if(autoTransfers > 0) {
-      showToast(`\u2705 Auto-detected ${autoTransfers} transfer(s) by account number`);
-    }
-    if(pendingMatched > 0) {
-      showToast(`\u23F3 Matched ${pendingMatched} pending transaction(s) with imported data`);
-    }
-    setPreview({matched, unmatched, dupes, errors, autoTransfers, pendingMatched, total: matched.length+unmatched.length+dupes+errors});
-  };
+    // Now import everything directly
+    const pendingUpdates = matched.filter(t=>t._matchesPendingId);
+    const newMatched = matched.filter(t=>!t._matchesPendingId);
+    const all = [...newMatched, ...unmatched];
 
-  const confirmImport = () => {
-    if(!preview) return;
-
-    // Separate pending matches from new transactions
-    const pendingUpdates = preview.matched.filter(t=>t._matchesPendingId);
-    const newMatched = preview.matched.filter(t=>!t._matchesPendingId);
-    const all = [...newMatched, ...preview.unmatched];
-
-    // Build pending update map for clearing matched pending transactions
     const pendingUpdateMap = {};
     pendingUpdates.forEach(pu=>{ pendingUpdateMap[pu._matchesPendingId] = pu; });
 
-    // For transfer-type transactions, create paired entries on the destination account
-    // Use auto-detected destination if available, otherwise fall back to manual selection
+    // Create paired entries for transfers
     const paired = [];
-
     for(const txn of all) {
       const cat = catMap[txn.category];
       const isTransfer = txn.catType==='transfer' || (cat && cat.catType==='transfer');
       if(isTransfer) {
-        // Only pair if we have a confirmed destination:
-        // 1. Auto-detected via last4 match in description (from buildPreview)
-        // 2. User explicitly selected a destination in the transfer picker
-        // 3. Last4 match found in description as fallback
         let destId = txn._autoTransferDest || null;
         if(!destId) {
-          // Scan description for any account's last4 — only pair if we find a match
           for(const acct of accounts) {
             if(acct.id !== selectedAccount && acct.last4 && acct.last4.length >= 3 && txn.description.toUpperCase().includes(acct.last4)) {
               destId = acct.id;
               break;
             }
           }
-        }
-        // Only fall back to manual selection if description has transfer-like keywords
-        if(!destId && transferDestAcct && /TRANSFER|XFER|TRNSFR|ONLINE.*TO/i.test(txn.description)) {
-          destId = transferDestAcct;
         }
         const dest = destId ? accounts.find(a=>a.id===destId) : null;
         if(dest) {
@@ -3344,25 +3312,16 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
             id: linkedId,
             linkedTxnId: txn.id,
             accountId: dest.id,
-            amount: -txn.amount, // reverse: outflow on source = inflow on dest
+            amount: -txn.amount,
             description: txn.description + ' (paired)',
             cleanName: txn.cleanName.replace(/Transfer to .+/, 'Transfer from ' + (accounts.find(a=>a.id===selectedAccount)?.name||'Other')),
           });
         }
-        delete txn._autoTransferDest; // clean up temp flag before saving
+        delete txn._autoTransferDest;
       }
     }
 
-    // Debug: log transfer handling
-    const debugTransfers = all.filter(t=>t.catType==='transfer' || /TRANSFER/i.test(t.description));
-    if(debugTransfers.length > 0) {
-      console.log('=== TRANSFER DEBUG ===');
-      console.log('Transfers in all[]:', debugTransfers.map(t=>({id:t.id, desc:t.description, amt:t.amount, acct:t.accountId, linked:t.linkedTxnId})));
-      console.log('Paired[]:', paired.map(t=>({id:t.id, desc:t.description, amt:t.amount, acct:t.accountId, linked:t.linkedTxnId})));
-      console.log('Total all:', all.length, 'Total paired:', paired.length);
-    }
     setTransactions(prev=>{
-      // First, update any matched pending transactions (clear flag, update date/desc from bank)
       let updated = prev;
       if(pendingUpdates.length > 0) {
         updated = updated.map(t=>{
@@ -3371,16 +3330,17 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
           return t;
         });
       }
-      // Then add new transactions
-      const result = [...updated,...all,...paired];
-      if(debugTransfers.length > 0) console.log('Final transaction count:', result.length, 'Transfer txns in result:', result.filter(t=>t.catType==='transfer'||/TRANSFER/i.test(t.description)).length);
-      return result;
+      return [...updated,...all,...paired];
     });
+
+    const totalImported = all.length;
+    const matchedCount = newMatched.length;
+    const unmatchedCount = unmatched.length;
     const pairMsg = paired.length > 0 ? ` (${paired.length} paired transfers created)` : '';
     const pendMsg = pendingUpdates.length > 0 ? `, ${pendingUpdates.length} pending cleared` : '';
-    showToast(`\u2705 Imported ${all.length} transactions${pairMsg}${pendMsg}`);
-    setPostImport({total:all.length, matched:preview.matched.length, unmatched:preview.unmatched.length});
-    setCsv(''); setPreview(null); setParsedData(null);
+    showToast(`\u2705 ${totalImported} transactions imported${pairMsg}${pendMsg}`);
+    setPostImport({total:totalImported, matched:matchedCount, unmatched:unmatchedCount, transfers:paired.length, autoTransfers, pendingMatched, dupes, errors});
+    setCsv(''); setParsedData(null);
   };
 
   // File upload handler
@@ -3475,12 +3435,12 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
             ? h('div',null,
                 h('h3',null, h('span',{className:'icon'},'📋'), 'Paste from Excel or CSV', h(InfoPill,{text:'Copy rows from your bank\'s spreadsheet or CSV export and paste them here. Include columns for date, description, and amount at minimum.'})),
                 h('p',{style:{color:'var(--text2)',fontSize:12,marginBottom:10}},'Works with tab-separated (Excel copy) or comma-separated data. Headers are auto-detected.'),
-                h('textarea',{className:'input',value:csv,onChange:e=>{setCsv(e.target.value);setParsedData(null);setPreview(null);},
+                h('textarea',{className:'input',value:csv,onChange:e=>{setCsv(e.target.value);setParsedData(null);},
                   placeholder:'Paste data from Excel, or CSV like:\nDate,Description,Amount\n02/01/2026,PAYCHECK DEPOSIT,3500.00\n02/01/2026,MORTGAGE PAYMENT,-1987.00\n02/03/2026,WALMART GROCERY,-87.43',
                   style:{width:'100%',height:200}}),
                 h('div',{style:{display:'flex',gap:8,marginTop:12}},
                   h('button',{className:'btn primary',onClick:()=>parseRaw(csv),disabled:!csv.trim()}, '🔍 Parse'),
-                  csv && h('button',{className:'btn',onClick:()=>{setCsv('');setParsedData(null);setPreview(null);}},'Clear')
+                  csv && h('button',{className:'btn',onClick:()=>{setCsv('');setParsedData(null);}},'Clear')
                 )
               )
             : h('div',null,
@@ -3577,149 +3537,44 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
             )
           ),
 
-          h('button',{className:'btn primary',onClick:buildPreview,
-            disabled:colMap.dateCol<0||colMap.descCol<0||(colMap.amountCol<0&&colMap.debitCol<0)
-          }, '🔍 Preview Transactions')
+          h('button',{className:'btn primary',onClick:importTransactions,
+            disabled:colMap.dateCol<0||colMap.descCol<0||(colMap.amountCol<0&&colMap.debitCol<0)||!selectedAccount
+          }, '📥 Import Transactions')
         ),
 
-        // Preview results
-        preview && h('div',{className:'card animate-in',style:{marginTop:16,border:'2px solid var(--green)'}},
-          h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,flexWrap:'wrap',gap:8}},
-            h('h3',{style:{margin:0},'aria-live':'polite'}, 'Preview — '+(preview.matched.length+preview.unmatched.length)+' ready', h(InfoPill,{text:'Green rows matched existing payee rules. Yellow rows will import as "Uncategorized" — categorize them on the Transactions screen afterward.'})),
-            h('div',{style:{display:'flex',gap:8}},
-              h('button',{className:'btn',onClick:()=>setPreview(null)},'Cancel'),
-              h('button',{className:'btn green',onClick:confirmImport,disabled:preview.matched.length+preview.unmatched.length===0},'✓ Confirm Import')
-            )
-          ),
-
-          // Transfer destination picker — shown when any transactions are categorized as transfers
-          (()=>{
-            const allPreviewTxns = [...preview.matched, ...preview.unmatched];
-            const transferTxns = allPreviewTxns.filter(t=>t.catType==='transfer' || (catMap[t.category] && catMap[t.category].catType==='transfer'));
-            const autoDetected = transferTxns.filter(t=>t._autoTransferDest);
-            const manualNeeded = transferTxns.filter(t=>!t._autoTransferDest);
-            const otherAccts = accounts.filter(a=>a.id!==selectedAccount);
-            if(transferTxns.length===0 || otherAccts.length===0) return null;
-            return h('div',{style:{padding:'12px 16px',marginBottom:14,background:'rgba(208,96,160,0.08)',border:'1px solid rgba(208,96,160,0.2)',borderRadius:8}},
-              h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
-                h('span',{style:{fontSize:13,fontWeight:600,color:'var(--pink)'}},'↔ '+transferTxns.length+' transfer(s) detected'),
-                autoDetected.length > 0 && h('div',{style:{fontSize:12,color:'var(--green)'}},
-                  '✓ '+autoDetected.length+' auto-matched by account number (last 4 digits)'
-                ),
-                manualNeeded.length > 0 && h('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}},
-                  h('span',{style:{fontSize:12,color:'var(--card-text2)'}}, manualNeeded.length+' need destination:'),
-                  h('select',{className:'input',value:transferDestAcct,onChange:e=>setTransferDestAcct(e.target.value),style:{fontSize:12,padding:'5px 8px'}},
-                    h('option',{value:''},'— Select destination account —'),
-                    otherAccts.map(a=>h('option',{key:a.id,value:a.id},a.name+' ('+a.type+')'+(a.last4?' ••••'+a.last4:'')))
-                  ),
-                  !transferDestAcct && h('span',{style:{fontSize:11,color:'var(--yellow)'}},'⚠ Select account for paired entries')
-                ),
-                autoDetected.length > 0 && manualNeeded.length === 0 && transferDestAcct && h('div',{style:{fontSize:12,color:'var(--green)'}},
-                  '✓ All transfers paired automatically'
-                )
-              )
-            );
-          })(),
-
-          h('div',{style:{display:'flex',gap:12,marginBottom:14,flexWrap:'wrap'}},
-            h('div',{style:{flex:1,textAlign:'center',padding:12,background:'rgba(64,192,128,0.1)',borderRadius:8}},
-              h('div',{style:{fontSize:24,fontWeight:700,color:'var(--green)'}},preview.matched.length),
-              h('div',{style:{fontSize:11,color:'var(--text2)'}},'Matched')
-            ),
-            h('div',{style:{flex:1,textAlign:'center',padding:12,background:preview.unmatched.length>0?'rgba(232,160,32,0.1)':'rgba(64,192,128,0.1)',borderRadius:8}},
-              h('div',{style:{fontSize:24,fontWeight:700,color:preview.unmatched.length>0?'var(--yellow)':'var(--green)'}},preview.unmatched.length),
-              h('div',{style:{fontSize:11,color:'var(--text2)'}},'Unmatched')
-            ),
-            h('div',{style:{flex:1,textAlign:'center',padding:12,background:'var(--surface2)',borderRadius:8}},
-              h('div',{style:{fontSize:24,fontWeight:700,color:'var(--text2)'}},preview.dupes),
-              h('div',{style:{fontSize:11,color:'var(--text2)'}},'Duplicates')
-            ),
-            preview.pendingMatched>0 && h('div',{style:{flex:1,textAlign:'center',padding:12,background:'rgba(232,160,32,0.1)',borderRadius:8}},
-              h('div',{style:{fontSize:24,fontWeight:700,color:'var(--accent2)'}},preview.pendingMatched),
-              h('div',{style:{fontSize:11,color:'var(--text2)'}},'\u23F3 Pending Cleared')
-            ),
-            preview.errors>0 && h('div',{style:{flex:1,textAlign:'center',padding:12,background:'rgba(224,80,80,0.1)',borderRadius:8}},
-              h('div',{style:{fontSize:24,fontWeight:700,color:'var(--red)'}},preview.errors),
-              h('div',{style:{fontSize:11,color:'var(--text2)'}},'Skipped')
-            )
-          ),
-          preview.matched.length>0 && h('div',{style:{marginBottom:12}},
-            h('div',{style:{fontSize:12,fontWeight:600,color:'var(--green)',marginBottom:6}},'✅ Matched ('+preview.matched.length+')'),
-            h('div',{style:{maxHeight:160,overflowY:'auto',border:'1px solid var(--border)',borderRadius:8}},
-              preview.matched.map((t,i)=>h('div',{key:i,style:{display:'flex',gap:8,padding:'5px 10px',borderTop:i?'1px solid var(--border)':'none',fontSize:12,alignItems:'center'}},
-                h('span',{style:{minWidth:75,color:'var(--text2)'}},t.date),
-                h('span',{style:{flex:1,color:'var(--text2)'}},t.description.substring(0,25)),
-                h('span',{style:{fontWeight:500}},t.cleanName),
-                h(Tag,{color:groupColors[t.group]||'#8b90a5'},t.category),
-                h('span',{style:{fontWeight:600,color:t.amount>=0?'var(--green)':'var(--text)'}}, (t.amount>=0?'+':'')+fmt(t.amount))
-              ))
-            )
-          ),
-          preview.unmatched.length>0 && h('div',null,
-            h('div',{style:{fontSize:12,fontWeight:600,color:'var(--yellow)',marginBottom:6}},'⚠️ Unmatched ('+preview.unmatched.length+') — will import as "Uncategorized"'),
-            h('div',{style:{padding:'10px 14px',marginBottom:8,background:'rgba(232,160,32,0.08)',border:'1px solid rgba(232,160,32,0.2)',borderRadius:8,fontSize:12,color:'var(--card-text2)'}},
-              'These transactions will be imported without a category. Go to the ',h('strong',null,'Transactions'),' screen to categorize them, or set up ',h('strong',null,'Payee Rules'),' on the Budget page to auto-match future imports.'
-            ),
-            h('div',{style:{border:'1px solid rgba(232,160,32,0.3)',borderRadius:8,background:'rgba(232,160,32,0.05)',overflow:'hidden',maxHeight:250,overflowY:'auto'}},
-              preview.unmatched.map((t,i)=>h('div',{key:t.id,style:{display:'flex',gap:8,padding:'5px 10px',borderTop:i?'1px solid var(--border)':'none',fontSize:12,alignItems:'center'}},
-                h('span',{style:{minWidth:75,color:'var(--text2)'}},t.date),
-                h('span',{style:{flex:1}},t.description.substring(0,40)),
-                h('span',{style:{fontWeight:600,color:t.amount>=0?'var(--green)':'var(--text)'}}, (t.amount>=0?'+':'')+fmt(t.amount))
-              ))
-            )
-          )
-        )
-      ),
-
-      // Right: Info panel
-      h('div',{className:'import-right',style:{flex:1,minWidth:260}},
-        h('div',{className:'card',style:{marginBottom:16}},
-          h('h3',null, h('span',{className:'icon'},'📊'), 'Import Stats', h(InfoPill,{text:'Summary of your current data: total transactions in the system and how many payee rules exist for auto-matching.'})),
-          h('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.8}},
-            h('div',null,'Total transactions: ',h('strong',{style:{color:'var(--text)'}},transactions.length)),
-            h('div',null,'Payee rules: ',h('strong',{style:{color:'var(--text)'}},dictionary.length)),
-            h('div',null,'Categories: ',h('strong',{style:{color:'var(--text)'}},Object.keys(catMap).length))
-          )
-        ),
-        h('div',{className:'card'},
-          h('h3',null, h('span',{className:'icon'},'💡'), 'Supported Formats', h(InfoPill,{text:'Reference for the file formats and column layouts the importer can handle.'})),
-          h('div',{style:{fontSize:12,color:'var(--text2)',lineHeight:1.8}},
-            h('p',null,'✅ Copy/paste from Excel (tab-delimited)'),
-            h('p',null,'✅ Standard CSV files (comma-delimited)'),
-            h('p',null,'✅ Bank exports (.csv, .tsv)'),
-            h('p',null,'✅ Single amount column OR separate debit/credit'),
-            h('p',null,'✅ Parentheses for negatives: (100.00)'),
-            h('p',null,'✅ Headers auto-detected'),
-            h('p',null,'✅ Column mapping adjustable'),
-            h('p',{style:{marginTop:8,borderTop:'1px solid var(--border)',paddingTop:8}},'Negative amounts = expenses'),
-            h('p',null,'Duplicates are auto-skipped')
-          )
-        )
       )
     ),
 
-    // Post-import guidance card
-    postImport && h('div',{className:'card animate-in',style:{marginTop:20,border:'2px solid var(--green)'}},
-      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}},
+    // Post-import summary card
+    postImport && h('div',{className:'card animate-in',style:{marginTop:20,border:'2px solid var(--green)',padding:24}},
+      h('div',{style:{display:'flex',alignItems:'center',gap:16,marginBottom:20}},
+        h('img',{src:'images/mr-ambit/thumbs-up.png',alt:'Mr. Ambit thumbs up',style:{width:64,height:64,objectFit:'contain'}}),
         h('div',null,
-          h('h3',{style:{color:'var(--green)',margin:0,marginBottom:4}},'✅ '+postImport.total+' transactions imported!'),
-          h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:0}},
-            postImport.matched+' auto-matched by rules, '+postImport.unmatched+' need categorization'
-          )
-        ),
-        h('button',{className:'btn sm',onClick:()=>setPostImport(null)},'✕')
-      ),
-      h('div',{style:{fontSize:13,fontWeight:600,color:'var(--card-text)',marginBottom:12}},'What\'s next:'),
-      h('div',{style:{display:'flex',gap:12,flexWrap:'wrap',marginBottom:16}},
-        postImport.unmatched>0 && h('button',{className:'btn primary',onClick:()=>{setPage('transactions');localStorage.setItem('ambit_txn_filter','uncategorized');}},
-          '📋 Categorize '+postImport.unmatched+' Transactions'
-        ),
-        h('button',{className:'btn',onClick:()=>setPage('budget')},
-          '📖 Set Up Auto-Match Rules'
+          h('h3',{style:{color:'var(--green)',margin:0,marginBottom:4}},'Imported '+postImport.total+' transactions'),
+          h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:0}},'All done! Here\'s a summary of your import.')
         )
       ),
-      h('div',{style:{padding:'10px 14px',background:'rgba(126,200,227,0.08)',borderRadius:8,fontSize:12,color:'var(--card-text2)'}},
-        '💡 ', h('strong',null,'Tip:'),' Auto-Match Rules automatically categorize future imports. Set them up once and never manually categorize the same payee again.'
+      h('div',{style:{display:'flex',gap:12,flexWrap:'wrap',marginBottom:20}},
+        h('div',{style:{flex:1,textAlign:'center',padding:12,background:'rgba(64,192,128,0.1)',borderRadius:8,minWidth:100}},
+          h('div',{style:{fontSize:24,fontWeight:700,color:'var(--green)'}},postImport.matched),
+          h('div',{style:{fontSize:11,color:'var(--text2)'}},'Matched by rules')
+        ),
+        h('div',{style:{flex:1,textAlign:'center',padding:12,background:postImport.unmatched>0?'rgba(232,160,32,0.1)':'rgba(64,192,128,0.1)',borderRadius:8,minWidth:100}},
+          h('div',{style:{fontSize:24,fontWeight:700,color:postImport.unmatched>0?'var(--yellow)':'var(--green)'}},postImport.unmatched),
+          h('div',{style:{fontSize:11,color:'var(--text2)'}},'Uncategorized')
+        ),
+        postImport.transfers>0 && h('div',{style:{flex:1,textAlign:'center',padding:12,background:'rgba(208,96,160,0.1)',borderRadius:8,minWidth:100}},
+          h('div',{style:{fontSize:24,fontWeight:700,color:'var(--pink)'}},postImport.transfers),
+          h('div',{style:{fontSize:11,color:'var(--text2)'}},'Transfers paired')
+        )
+      ),
+      postImport.unmatched>0 && h('div',{style:{padding:'10px 14px',marginBottom:16,background:'rgba(232,160,32,0.08)',border:'1px solid rgba(232,160,32,0.2)',borderRadius:8,fontSize:13,color:'var(--card-text2)'}},
+        postImport.unmatched+' uncategorized \u2014 ',
+        h('a',{href:'#',onClick:e=>{e.preventDefault();setPage('transactions');localStorage.setItem('ambit_txn_filter','uncategorized');},style:{color:'var(--accent)',fontWeight:600,textDecoration:'underline',cursor:'pointer'}},'categorize them on the Transactions screen')
+      ),
+      h('div',{style:{display:'flex',gap:12,flexWrap:'wrap'}},
+        h('button',{className:'btn primary',onClick:()=>{setPage('transactions');}},'Go to Transactions \u2192'),
+        h('button',{className:'btn',onClick:()=>{setPostImport(null);setCsv('');setParsedData(null);}},'Import More')
       )
     )
   );
