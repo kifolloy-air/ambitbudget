@@ -2483,7 +2483,7 @@ function App({idbData}) {
 
       page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, demoBypass, isTierDemo, groupColors, defaultAcct, setPage, onUpgrade:()=>setShowLicenseGate(true)}),
       page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors, tier, onUpgrade:()=>setShowLicenseGate(true)}),
-      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage, tier, groupColors}),
+      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setAccounts, setPage, tier, groupColors}),
       page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns, setTransactions, catMap, dictionary, setDictionary, groupColors, accounts, defaultAcct, groups, setGroups, groupList, showToast}),
       page==='accounts' && h(AccountsPage, {accounts, setAccounts, transactions:liveTxns, setTransactions, catMap, showToast, accountLimit, tier, isDemo, demoBypass}),
     ),
@@ -3109,7 +3109,7 @@ function detectColumns(headers, sampleRows) {
 // (UnmatchedRow removed — Import is now a pure data utility)
 
 // ── Import Page ─────────────────────────────────────────
-function ImportPage({transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setPage, tier, groupColors}) {
+function ImportPage({transactions, setTransactions, dictionary, categories, catMap, categorize, showToast, accounts, setAccounts, setPage, tier, groupColors}) {
   const isFree = tier && tier.autoCategorize === false;
   const [csv, setCsv] = useState('');
   const [preview, setPreview] = useState(null);
@@ -3120,6 +3120,9 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
   const [transferDestAcct, setTransferDestAcct] = useState('');
   const [postImport, setPostImport] = useState(null);
   const fileRef = useRef(null);
+  const [newAcctName, setNewAcctName] = useState('');
+  const [newAcctType, setNewAcctType] = useState('Checking');
+  const [newAcctBal, setNewAcctBal] = useState('0');
 
   // Auto-select single account
   useEffect(()=>{
@@ -3413,19 +3416,58 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
         ),
 
         // Account selector
-        h('div',{className:'card',style:{marginBottom:16,padding:14}},
-          h('div',{style:{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
-            h('span',{style:{fontSize:13,fontWeight:600}},'🏦 Import to Account:'),
-            accounts.length > 0
-              ? h('select',{className:'input',value:selectedAccount,onChange:e=>setSelectedAccount(e.target.value),
-                  'aria-label':'Import to account', 'aria-required':'true', style:{flex:1,maxWidth:220}},
-                  h('option',{value:''},'Select account...'),
-                  accounts.map(a=>h('option',{key:a.id,value:a.id}, a.name+' ('+a.type+')'))
-                )
-              : h('span',{style:{fontSize:12,color:'var(--text2)'}},'No accounts yet — create one on the Accounts page first.'),
-            !selectedAccount && accounts.length>0 && h('span',{style:{fontSize:11,color:'var(--yellow)'}},'⚠️ Required')
-          )
-        ),
+        accounts.length > 0
+          ? h('div',{className:'card',style:{marginBottom:16,padding:14}},
+              h('div',{style:{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}},
+                h('span',{style:{fontSize:13,fontWeight:600}},'🏦 Import to Account:'),
+                h('select',{className:'input',value:selectedAccount,onChange:e=>setSelectedAccount(e.target.value),
+                    'aria-label':'Import to account', 'aria-required':'true', style:{flex:1,maxWidth:220}},
+                    h('option',{value:''},'Select account...'),
+                    accounts.map(a=>h('option',{key:a.id,value:a.id}, a.name+' ('+a.type+')'))
+                  ),
+                !selectedAccount && h('span',{style:{fontSize:11,color:'var(--yellow)'}},'⚠️ Required')
+              )
+            )
+          : h('div',{className:'card',style:{marginBottom:16,padding:18}},
+              h('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:14}},
+                h('img',{src:'images/mr-ambit/idea.png',alt:'Mr. Ambit idea',style:{width:40,height:40,objectFit:'contain'}}),
+                h('span',{style:{fontSize:14,fontWeight:600,color:'var(--card-text)'}},"First, let's set up your account!")
+              ),
+              h('form',{onSubmit:e=>{
+                e.preventDefault();
+                if(!newAcctName.trim()){ showToast('❌ Please enter an account name'); return; }
+                const newAcct = {
+                  id: Date.now()+'_'+Math.random().toString(36).slice(2,6),
+                  name: newAcctName.trim(),
+                  type: newAcctType,
+                  startingBalance: parseFloat(newAcctBal) || 0,
+                  last4: ''
+                };
+                setAccounts(prev=>[...prev, newAcct]);
+                setSelectedAccount(newAcct.id);
+                setNewAcctName(''); setNewAcctType('Checking'); setNewAcctBal('0');
+                showToast('✅ Account created!');
+              },style:{display:'flex',alignItems:'flex-end',gap:10,flexWrap:'wrap'}},
+                h('div',{style:{display:'flex',flexDirection:'column',gap:3}},
+                  h('label',{style:{fontSize:11,fontWeight:600,color:'var(--card-text2)'}},'Account Name'),
+                  h('input',{className:'input',type:'text',value:newAcctName,onChange:e=>setNewAcctName(e.target.value),
+                    placeholder:'e.g., My Checking',required:true,style:{width:160}})
+                ),
+                h('div',{style:{display:'flex',flexDirection:'column',gap:3}},
+                  h('label',{style:{fontSize:11,fontWeight:600,color:'var(--card-text2)'}},'Account Type'),
+                  h('select',{className:'input',value:newAcctType,onChange:e=>setNewAcctType(e.target.value),style:{width:120}},
+                    h('option',{value:'Checking'},'Checking'),
+                    h('option',{value:'Savings'},'Savings')
+                  )
+                ),
+                h('div',{style:{display:'flex',flexDirection:'column',gap:3}},
+                  h('label',{style:{fontSize:11,fontWeight:600,color:'var(--card-text2)'}},'Starting Balance'),
+                  h('input',{className:'input',type:'number',value:newAcctBal,onChange:e=>setNewAcctBal(e.target.value),
+                    step:'0.01',style:{width:110}})
+                ),
+                h('button',{className:'btn primary',type:'submit',style:{height:36}},'Create Account')
+              )
+            ),
 
         // Input card
         h('div',{className:'card'},
