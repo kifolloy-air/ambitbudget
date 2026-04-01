@@ -748,6 +748,44 @@ function grpClass(g) { return 'grp-' + (g||'other').toLowerCase(); }
 
 // ── Format helpers ──────────────────────────────────────
 const normalizeForMatch = (s) => s.toUpperCase().replace(/[^A-Z0-9\s]/g,'').replace(/\s+/g,' ').trim();
+
+// Extract a smart keyword from a transaction description by stripping
+// common bank prefixes, masked card numbers, trailing locations, and IDs.
+const extractKeyword = (desc) => {
+  if(!desc) return '';
+  let s = desc.toUpperCase().trim();
+  // Strip common transaction prefixes
+  const prefixes = [
+    'RECURRING DEBIT CARD','DEBIT CARD PURCHASE','ELECTRONIC WITHDRAWAL',
+    'ONLINE TRANSFER','ACH PAYMENT','POS PURCHASE','CHECK CARD','DIRECT DEBIT'
+  ];
+  for(const p of prefixes) { if(s.startsWith(p)) { s = s.slice(p.length).trim(); break; } }
+  // Strip masked card numbers (e.g. XXXXXXXXX1078, XXXXX3989, xxxxxxxxxxxx1078)
+  s = s.replace(/X{4,}\d{0,4}/gi, '').trim();
+  // Strip phone numbers (xxx-xxx-xxxx or xxxxxxxxxx patterns after merchant)
+  s = s.replace(/\d{3}-\d{3}-\d{4}/g, '').trim();
+  // Strip trailing state abbreviations (2-letter codes at end, possibly preceded by city)
+  // e.g. "DUNKIN XX2963 PHILADELPHI PA" -> strip " PHILADELPHI PA"
+  s = s.replace(/\s+[A-Z]{2,}\s+[A-Z]{2}\s*$/, '').trim();
+  // Also handle just a trailing 2-letter state code
+  s = s.replace(/\s+[A-Z]{2}\s*$/, '').trim();
+  // Strip trailing store/reference IDs like #12345, XX1416, x2963
+  s = s.replace(/\s+#?\d{3,}$/,'').trim();
+  s = s.replace(/\s+[Xx#]{1,2}\d{3,}$/,'').trim();
+  // Strip any remaining trailing pure-digit sequences
+  s = s.replace(/\s+\d{4,}$/,'').trim();
+  // Clean up extra whitespace
+  s = s.replace(/\s+/g,' ').trim();
+  // If result is too short, take the first recognizable word (3+ chars, alphabetic)
+  if(s.length < 3) {
+    const words = desc.toUpperCase().replace(/[^A-Z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>=3 && /[A-Z]/.test(w));
+    // Skip common prefix words
+    const skipWords = new Set(['DEBIT','CARD','PURCHASE','ACH','PAYMENT','ONLINE','TRANSFER','POS','CHECK','RECURRING','ELECTRONIC','WITHDRAWAL','DIRECT']);
+    const meaningful = words.find(w=>!skipWords.has(w));
+    s = meaningful || words[0] || desc.toUpperCase().trim();
+  }
+  return s;
+};
 const _fb = ()=> atob('bWF0dEBtYWxsb3kta2lmb2xvLmNvbQ==');
 const fmt = (n) => { const abs = '$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); return n < 0 ? '('+abs+')' : abs; };
 const fmtDate = (d) => { const dt=new Date(d); return (dt.getMonth()+1)+'/'+dt.getDate()+'/'+dt.getFullYear(); };
@@ -3814,34 +3852,39 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     // in case catMap hasn't re-derived yet after a new category was just created
     const cat = catMap[editCat] || categories.find(c=>c.name===editCat);
     const txn = transactions.find(t=>t.id===id);
-    // Create or update dictionary rule so Dashboard bills/budget tracks this payee
-    const ruleKeyword = txn ? (txn.description||'').trim().toUpperCase() : '';
+    // Extract a smart keyword from the description (strips prefixes, card #s, locations)
+    const smartKeyword = txn ? extractKeyword(txn.description||'') : '';
     let ruleCleanName = txn ? (txn.cleanName || txn.description || '') : '';
-    if(txn && setDictionary && ruleKeyword) {
-      // Check if a rule already exists — if so, use its cleanName
-      const existingRule = dictionary.find(d=>d.keyword.toUpperCase()===ruleKeyword);
-      if(existingRule) ruleCleanName = existingRule.cleanName;
+    let ruleKeyword = smartKeyword;
+    if(txn && setDictionary && smartKeyword) {
+      // Check if a rule already exists for this keyword — if so, use its cleanName and keyword
+      const existingRule = dictionary.find(d=>d.keyword.toUpperCase()===smartKeyword.toUpperCase());
+      if(existingRule) {
+        ruleCleanName = existingRule.cleanName;
+        ruleKeyword = existingRule.keyword;
+      }
       setDictionary(prev => {
-        const existing = prev.find(d=>d.keyword.toUpperCase()===ruleKeyword);
+        const existing = prev.find(d=>d.keyword.toUpperCase()===smartKeyword.toUpperCase());
         if(existing) {
           // Update existing rule to point to the new category
-          return prev.map(d=>d.keyword.toUpperCase()===ruleKeyword?{...d, category:editCat}:d);
+          return prev.map(d=>d.keyword.toUpperCase()===smartKeyword.toUpperCase()?{...d, category:editCat}:d);
         } else {
-          // Create new rule for this payee
-          return [...prev, {keyword:ruleKeyword, cleanName:ruleCleanName, category:editCat}];
+          // Create new rule for this payee with the smart keyword
+          return [...prev, {keyword:smartKeyword, cleanName:ruleCleanName, category:editCat}];
         }
       });
     }
-    // Update transaction and auto-apply rule to all matching uncategorized transactions — never touch description
-    const normalizedKw = ruleKeyword ? normalizeForMatch(ruleKeyword) : '';
+    // Update transaction and auto-apply rule to all matching uncategorized transactions
+    // Use the extracted keyword (substring match) so it matches other transactions from same vendor
+    const matchKeyword = ruleKeyword ? ruleKeyword.toUpperCase() : '';
     setTransactions(prev => {
       let autoApplied = 0;
       const updated = prev.map(t => {
         if(t.id === id) {
           return {...t, cleanName:ruleCleanName, category:editCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
         }
-        // Auto-apply new rule to other uncategorized transactions with matching description
-        if(normalizedKw && t.category === 'Uncategorized' && normalizeForMatch(t.description).includes(normalizedKw)) {
+        // Auto-apply: case-insensitive substring match on description using extracted keyword
+        if(matchKeyword && t.category === 'Uncategorized' && (t.description||'').toUpperCase().includes(matchKeyword)) {
           autoApplied++;
           return {...t, cleanName:ruleCleanName, category:editCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
         }

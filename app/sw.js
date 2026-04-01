@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ambit-v9';
+const CACHE_NAME = 'ambit-v10';
 const ASSETS = [
   './',
   './index.html',
