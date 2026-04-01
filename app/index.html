@@ -3200,7 +3200,11 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
     const matchedPendingIds = new Set();
 
     // Find a transfer category to use for auto-detected transfers
-    const transferCat = categories.find(c=>c.catType==='transfer');
+    let transferCat = categories.find(c=>c.catType==='transfer');
+    // Auto-create a Transfer category if none exists
+    if(!transferCat) {
+      transferCat = {name:'Transfer',group:'Other',catType:'transfer',budget:0};
+    }
 
     for(const row of rows) {
       const dateStr = (row[dateCol]||'').trim();
