@@ -3626,11 +3626,8 @@ function ImportPage({transactions, setTransactions, dictionary, categories, catM
 // ── Transactions Page ───────────────────────────────────
 function TransactionsPage({transactions, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors, tier, onUpgrade}) {
   const isFree = tier && tier.budget === false;
-  const [filter, setFilter] = useState(()=>{
-    const saved = localStorage.getItem('ambit_txn_search');
-    if(saved) { localStorage.removeItem('ambit_txn_search'); return saved; }
-    return '';
-  });
+  // Legacy cleanup: remove old search localStorage key
+  useMemo(()=>{localStorage.removeItem('ambit_txn_search');},[]);
   const [acctFilter, setAcctFilterRaw] = useState(defaultAcct||'all');
   const setAcctFilter = (v) => { setAcctFilterRaw(v); localStorage.setItem('ambit_default_account', v); };
   const [sortCol, setSortCol] = useState('date');
@@ -3657,6 +3654,15 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   const [newCatContext, setNewCatContext] = useState(null); // 'inline' or 'modal'
   const [bulkApplyPrompt, setBulkApplyPrompt] = useState(null); // {txn, newCleanName, keyword, matchCount, needsCategory}
   const [bulkApplyCat, setBulkApplyCat] = useState('');
+  const [bulkNewCat, setBulkNewCat] = useState(false);
+  const [bulkNewCatName, setBulkNewCatName] = useState('');
+  const [bulkNewCatGroup, setBulkNewCatGroup] = useState('Other');
+  const [bulkNewCatType, setBulkNewCatType] = useState('discretionary');
+  // Column header filters
+  const [payeeFilter, setPayeeFilter] = useState('');
+  const [showPayeeFilter, setShowPayeeFilter] = useState(false);
+  const [catFilter, setCatFilter] = useState('all');
+  const [showCatFilter, setShowCatFilter] = useState(false);
   const createNewCategory = () => {
     if(!newCatName.trim()) return;
     if(categories && categories.find(c=>c.name.toLowerCase()===newCatName.trim().toLowerCase())) {
@@ -3670,9 +3676,24 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     showToast('✅ Category created: '+name);
   };
   const handleCatDropdown = (val, context) => {
-    if(val==='__new__') { setShowNewCat(true); setNewCatContext(context); }
+    if(val==='__new__') {
+      if(context==='bulk') { setBulkNewCat(true); setBulkApplyCat(''); }
+      else { setShowNewCat(true); setNewCatContext(context); }
+    }
     else if(context==='inline') setEditCat(val);
     else if(context==='modal') setNewTxn(p=>({...p, category:val}));
+    else if(context==='bulk') { setBulkApplyCat(val); setBulkNewCat(false); }
+  };
+  const createBulkNewCategory = () => {
+    if(!bulkNewCatName.trim()) return;
+    if(categories && categories.find(c=>c.name.toLowerCase()===bulkNewCatName.trim().toLowerCase())) {
+      showToast('\u26a0\ufe0f Category already exists'); return;
+    }
+    const name = bulkNewCatName.trim();
+    setCategories(prev=>[...prev, {name, group:bulkNewCatGroup, catType:bulkNewCatType, budget:0}]);
+    setBulkApplyCat(name);
+    setBulkNewCat(false); setBulkNewCatName(''); setBulkNewCatGroup('Other'); setBulkNewCatType('discretionary');
+    showToast('\u2705 Category created: '+name);
   };
 
   const resetNewTxn = () => { setNewTxn({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:'',transferDest:''}); setShowAddTxn(false); setShowNewCat(false); };
@@ -3805,9 +3826,13 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     if(statusFilter==='pending') arr = arr.filter(t=>t.pending);
     else if(statusFilter==='cleared') arr = arr.filter(t=>!t.pending);
     else if(statusFilter==='uncategorized') arr = arr.filter(t=>t.category==='Uncategorized');
-    if(filter) {
-      const f = filter.toLowerCase();
-      arr = arr.filter(t=>t.cleanName.toLowerCase().includes(f)||t.description.toLowerCase().includes(f)||t.category.toLowerCase().includes(f));
+    if(payeeFilter) {
+      const f = payeeFilter.toLowerCase();
+      arr = arr.filter(t=>(t.cleanName||'').toLowerCase().includes(f)||(t.description||'').toLowerCase().includes(f));
+    }
+    if(catFilter && catFilter!=='all') {
+      if(catFilter==='__uncategorized__') arr = arr.filter(t=>t.category==='Uncategorized');
+      else arr = arr.filter(t=>t.category===catFilter);
     }
     arr.sort((a,b)=>{
       // Pending transactions always on top (no date)
@@ -3824,7 +3849,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       return (a[sortCol]||'').localeCompare(b[sortCol]||'')*sortDir;
     });
     return arr;
-  },[transactions,filter,acctFilter,dateFilter,currentYM,statusFilter,sortCol,sortDir,txnOrder]);
+  },[transactions,payeeFilter,catFilter,acctFilter,dateFilter,currentYM,statusFilter,sortCol,sortDir,txnOrder]);
 
   const toggleSort = (col) => {
     if(sortCol===col) setSortDir(d=>d*-1);
@@ -3940,7 +3965,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       });
     }
     setTimeout(()=>showToast('Updated '+(applied+1)+' transaction'+(applied>0?'s':'')+' and created payee rule'),100);
-    setBulkApplyPrompt(null); setBulkApplyCat('');
+    setBulkApplyPrompt(null); setBulkApplyCat(''); setBulkNewCat(false); setBulkNewCatName('');
   };
 
   const declineBulkApply = () => {
@@ -3948,7 +3973,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     const { txn, newCleanName } = bulkApplyPrompt;
     // Only update this single transaction's cleanName
     setTransactions(prev=>prev.map(t=>t.id===txn.id?{...t, cleanName:newCleanName}:t));
-    setBulkApplyPrompt(null); setBulkApplyCat('');
+    setBulkApplyPrompt(null); setBulkApplyCat(''); setBulkNewCat(false); setBulkNewCatName('');
   };
 
   const nonTransfer = transactions.filter(t=>t.catType!=='transfer');
@@ -3975,7 +4000,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     h(HelpBar, HELP_CONTENT.transactions),
     h('div',{className:'page-header',style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}},
       h('div',null,
-        h('h2',null,'📋 Transactions', h(InfoPill,{text:'All imported transactions. Use filters to search by text, category, or date range. Click a payee or category to edit it inline. Use the + button to add manual transactions.'})),
+        h('h2',null,'📋 Transactions', h(InfoPill,{text:'All imported transactions. Click column headers to sort or filter. Click a payee or category to edit it inline. Use the + button to add manual transactions.'})),
         h('p',null,'View and manage all imported transactions.')
       ),
       h('button',{className:'btn primary',onClick:()=>{
@@ -4023,7 +4048,6 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
             h('option',{value:'cleared'},'🟢 Cleared'),
             h('option',{value:'uncategorized'},'⚠ Uncategorized')
           ),
-          h('input',{className:'input',value:filter,onChange:e=>setFilter(e.target.value),placeholder:'Search...', 'aria-label':'Search transactions', style:{width:180}}),
           (()=>{const uc=transactions.filter(t=>t.category==='Uncategorized').length; return uc>0 && h('button',{className:'btn sm'+(statusFilter==='uncategorized'?' primary':''),onClick:()=>setStatusFilter(statusFilter==='uncategorized'?'all':'uncategorized'),style:{fontSize:11,whiteSpace:'nowrap'}},'⚠ '+uc+' Uncategorized');})(),
           acctFilter!=='all'
             ? h('button',{className:'btn green sm',onClick:()=>{
@@ -4043,21 +4067,50 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
         ? h('div',{className:'empty'},
             h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'📋'),
-            h('p',null, transactions.length===0 ? 'No transactions yet. Import some on the Import page.' : 'No transactions match your search.')
+            h('p',null, transactions.length===0 ? 'No transactions yet. Import some on the Import page.' : 'No transactions match your filters.')
           )
         : h('div',{className:'table-scroll',style:{maxHeight:500,overflowY:'auto'}},
             h('table',{className:'table txn-table'},
-              h('thead',null,h('tr',null,
-                h('th',{scope:'col',style:{width:30}},null),
-                h('th',{scope:'col',onClick:()=>toggleSort('date'), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleSort('date');}}, tabIndex:0, role:'columnheader', 'aria-sort':sortCol==='date'?(sortDir>0?'ascending':'descending'):'none', style:{cursor:'pointer'}},'Date'+(sortCol==='date'?(sortDir>0?' ↑':' ↓'):'')),
-                h('th',{scope:'col'},'Payee'),
-                h('th',{scope:'col'},'Category'),
-                h('th',{scope:'col'},'Type'),
-                accounts.length>0 && h('th',{scope:'col'},'Account'),
-                h('th',{onClick:()=>toggleSort('amount'), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleSort('amount');}}, tabIndex:0, role:'columnheader', 'aria-sort':sortCol==='amount'?(sortDir>0?'ascending':'descending'):'none', style:{cursor:'pointer'}},'Amount'+(sortCol==='amount'?(sortDir>0?' ↑':' ↓'):'')),
-                h('th',null,'Balance'),
-                h('th',{style:{width:60}},null)
-              )),
+              h('thead',null,
+                h('tr',null,
+                  h('th',{scope:'col',style:{width:30}},null),
+                  h('th',{scope:'col',onClick:()=>toggleSort('date'), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleSort('date');}}, tabIndex:0, role:'columnheader', 'aria-sort':sortCol==='date'?(sortDir>0?'ascending':'descending'):'none', style:{cursor:'pointer',color:sortCol==='date'?'var(--accent)':'inherit'}},
+                    'Date ',h('span',{style:{fontSize:10,color:sortCol==='date'?'var(--accent)':'var(--text2)'}},sortCol==='date'?(sortDir>0?'\u25b2':'\u25bc'):'\u25b4\u25be')
+                  ),
+                  h('th',{scope:'col',onClick:()=>setShowPayeeFilter(v=>!v), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setShowPayeeFilter(v=>!v);}}, tabIndex:0, role:'columnheader', style:{cursor:'pointer',color:payeeFilter?'var(--accent)':'inherit'}},
+                    'Payee ',payeeFilter && h('span',{style:{fontSize:9,color:'var(--accent)',marginLeft:2}},'\u25cf')
+                  ),
+                  h('th',{scope:'col',onClick:()=>setShowCatFilter(v=>!v), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setShowCatFilter(v=>!v);}}, tabIndex:0, role:'columnheader', style:{cursor:'pointer',color:catFilter!=='all'?'var(--accent)':'inherit'}},
+                    'Category ',catFilter!=='all' && h('span',{style:{fontSize:9,color:'var(--accent)',marginLeft:2}},'\u25cf')
+                  ),
+                  h('th',{scope:'col'},'Type'),
+                  accounts.length>0 && h('th',{scope:'col'},'Account'),
+                  h('th',{onClick:()=>toggleSort('amount'), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleSort('amount');}}, tabIndex:0, role:'columnheader', 'aria-sort':sortCol==='amount'?(sortDir>0?'ascending':'descending'):'none', style:{cursor:'pointer',color:sortCol==='amount'?'var(--accent)':'inherit'}},
+                    'Amount ',h('span',{style:{fontSize:10,color:sortCol==='amount'?'var(--accent)':'var(--text2)'}},sortCol==='amount'?(sortDir>0?'\u25b2':'\u25bc'):'\u25b4\u25be')
+                  ),
+                  h('th',null,'Balance'),
+                  h('th',{style:{width:60}},null)
+                ),
+                (showPayeeFilter || showCatFilter) && h('tr',null,
+                  h('th',null),
+                  h('th',null),
+                  h('th',{style:{padding:'4px 6px'}},
+                    showPayeeFilter && h('input',{className:'input',value:payeeFilter,onChange:e=>setPayeeFilter(e.target.value),placeholder:'Filter payee...',style:{width:'100%',fontSize:11,padding:'3px 6px'},autoFocus:showPayeeFilter,onKeyDown:e=>{if(e.key==='Escape'){setPayeeFilter('');setShowPayeeFilter(false);}}})
+                  ),
+                  h('th',{style:{padding:'4px 6px'}},
+                    showCatFilter && h('select',{className:'input',value:catFilter,onChange:e=>{setCatFilter(e.target.value);},style:{width:'100%',fontSize:11,padding:'3px 6px'}},
+                      h('option',{value:'all'},'All Categories'),
+                      h('option',{value:'__uncategorized__'},'Uncategorized'),
+                      Object.keys(catMap).sort((a,b)=>a.localeCompare(b)).map(c=>h('option',{key:c,value:c},c))
+                    )
+                  ),
+                  h('th',null),
+                  accounts.length>0 && h('th',null),
+                  h('th',null),
+                  h('th',null),
+                  h('th',null)
+                )
+              ),
               h('tbody',null, sorted.slice(0,200).map(t => {
                 const rec = isReconciled(t);
                 const rowBg = t.pending ? {background:'rgba(232,160,32,0.06)'} : rec ? {background:'rgba(64,192,128,0.06)'} : undefined;
@@ -4241,7 +4294,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     ),
 
     // Bulk apply popup card
-    bulkApplyPrompt && h('div',{style:{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.3)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'},onClick:()=>{setBulkApplyPrompt(null);setBulkApplyCat('');}},
+    bulkApplyPrompt && h('div',{style:{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.3)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'},onClick:()=>{setBulkApplyPrompt(null);setBulkApplyCat('');setBulkNewCat(false);setBulkNewCatName('');}},
       h('div',{style:{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'20px 24px',maxWidth:420,width:'90%',boxShadow:'0 8px 32px rgba(0,0,0,0.3)'},onClick:e=>e.stopPropagation()},
         h('div',{style:{fontSize:15,fontWeight:700,marginBottom:12,color:'var(--card-text)'}},"Apply '"+bulkApplyPrompt.newCleanName+"' to matching transactions?"),
         h('div',{style:{fontSize:13,color:'var(--card-text2)',marginBottom:14,lineHeight:1.5}},
@@ -4250,9 +4303,23 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
         ),
         bulkApplyPrompt.needsCategory && h('div',{style:{marginBottom:14}},
           h('label',{style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Which category?'),
-          h('select',{className:'input',value:bulkApplyCat,onChange:e=>setBulkApplyCat(e.target.value),style:{width:'100%',fontSize:13}},
+          h('select',{className:'input',value:bulkNewCat?'__new__':bulkApplyCat,onChange:e=>handleCatDropdown(e.target.value,'bulk'),style:{width:'100%',fontSize:13}},
             h('option',{value:''},'Select a category...'),
-            Object.keys(catMap).sort((a,b)=>a.localeCompare(b)).map(c=>h('option',{key:c,value:c},c))
+            Object.keys(catMap).sort((a,b)=>a.localeCompare(b)).map(c=>h('option',{key:c,value:c},c)),
+            !isFree && h('option',{value:'__new__',style:{fontWeight:600,color:'#e8a020'}},'\uff0b New Category...')
+          ),
+          bulkNewCat && h('div',{style:{marginTop:8,padding:8,border:'1px dashed var(--accent)',borderRadius:8,background:'rgba(232,160,32,0.04)'}},
+            h('div',{style:{display:'flex',gap:6,alignItems:'flex-end',flexWrap:'wrap'}},
+              h('input',{className:'input',value:bulkNewCatName,onChange:e=>setBulkNewCatName(e.target.value),placeholder:'Category Name',style:{flex:1,minWidth:80,fontSize:12,padding:'4px 6px'},autoFocus:true}),
+              h('select',{className:'input',value:bulkNewCatGroup,onChange:e=>setBulkNewCatGroup(e.target.value),style:{fontSize:11,padding:'4px 6px'}},
+                (groupList||['Housing','Food','Transport','Utilities','Personal','Health','Entertainment','Savings','Income','Other']).map(g=>h('option',{key:g,value:g},g))
+              ),
+              h('select',{className:'input',value:bulkNewCatType,onChange:e=>setBulkNewCatType(e.target.value),style:{fontSize:11,padding:'4px 6px'}},
+                h('option',{value:'discretionary'},'Disc'),h('option',{value:'fixed'},'Fixed'),h('option',{value:'transfer'},'Transfer')
+              ),
+              h('button',{className:'btn sm primary',onClick:createBulkNewCategory,disabled:!bulkNewCatName.trim(),style:{fontSize:11}},'Create'),
+              h('button',{className:'btn sm',onClick:()=>setBulkNewCat(false),style:{fontSize:11}},'Cancel')
+            )
           )
         ),
         !bulkApplyPrompt.needsCategory && h('div',{style:{fontSize:12,color:'var(--green)',marginBottom:14,padding:'6px 10px',background:'rgba(64,192,128,0.08)',borderRadius:6}},
