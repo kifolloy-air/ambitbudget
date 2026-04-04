@@ -3732,9 +3732,17 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   const resetNewTxn = () => { setNewTxn({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:'',transferDest:'',isTransfer:false}); setShowAddTxn(false); setShowNewCat(false); };
 
   const saveNewTxn = () => {
-    const {date,description,amount,accountId,pending,checkNumber,transferDest,isTransfer} = newTxn;
-    if(!date||!description||!amount||!accountId) return;
+    const {date,amount,accountId,pending,checkNumber,transferDest,isTransfer} = newTxn;
+    let description = newTxn.description;
+    if(!date||!amount||!accountId) return;
     if(isTransfer && !transferDest) return; // require destination for transfers
+    // Auto-generate description for transfers if left blank
+    if(isTransfer && !description.trim()) {
+      const fromName = accounts.find(a=>a.id===accountId)?.name||'Account';
+      const toName = accounts.find(a=>a.id===transferDest)?.name||'Account';
+      description = 'Transfer: '+fromName+' → '+toName;
+    }
+    if(!description.trim()) return; // still require description for non-transfers
     // For transfers, find or create an "Account Transfer" category (as discretionary)
     let cat, txnCategory, txnGroup;
     if(isTransfer) {
@@ -4337,7 +4345,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
         ),
         h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}},
           h('button',{className:'btn',onClick:resetNewTxn},'Cancel'),
-          h('button',{className:'btn primary',onClick:saveNewTxn,disabled:!newTxn.date||!newTxn.description||!newTxn.amount||!newTxn.accountId||(newTxn.isTransfer&&!newTxn.transferDest)},newTxn.isTransfer?'Create Transfer':'Add Transaction')
+          h('button',{className:'btn primary',onClick:saveNewTxn,disabled:!newTxn.date||!newTxn.amount||!newTxn.accountId||(!newTxn.isTransfer&&!newTxn.description)||(newTxn.isTransfer&&!newTxn.transferDest)},newTxn.isTransfer?'Create Transfer':'Add Transaction')
         )
       )
     ),
