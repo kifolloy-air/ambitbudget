@@ -609,10 +609,10 @@ const DEMO_DATA = (()=>{
     { name:'Pharmacy', group:'Health', catType:'discretionary', budget:40 },
     { name:'Clothing', group:'Personal', catType:'discretionary', budget:150 },
     { name:'Haircut', group:'Personal', catType:'discretionary', budget:40 },
-    { name:'Savings Transfer', group:'Savings', catType:'transfer', budget:500 },
+    { name:'Savings Transfer', group:'Savings', catType:'discretionary', budget:500 },
     { name:'Subscriptions', group:'Entertainment', catType:'fixed', budget:30 },
     { name:'Home Maintenance', group:'Housing', catType:'discretionary', budget:100 },
-    { name:'Credit Card Payment', group:'Debt', catType:'transfer', budget:0 },
+    { name:'Credit Card Payment', group:'Debt', catType:'discretionary', budget:0 },
   ];
 
   const dictionary = [
@@ -651,9 +651,9 @@ const DEMO_DATA = (()=>{
 
   // Generate 3 months of transactions
   const txns = [];
-  const addTxn = (date, desc, cleanName, category, amount, acct='acct-1') => {
+  const addTxn = (date, desc, cleanName, category, amount, acct='acct-1', catTypeOverride=null) => {
     const cat = categories.find(c=>c.name===category);
-    txns.push({ id:id(), date, description:desc, cleanName, category, group:cat?.group||'Other', amount, catType:cat?.catType||'discretionary', accountId:acct });
+    txns.push({ id:id(), date, description:desc, cleanName, category, group:cat?.group||'Other', amount, catType:catTypeOverride||cat?.catType||'discretionary', accountId:acct });
   };
 
   for(let mo = m-2; mo <= m; mo++) {
@@ -709,9 +709,9 @@ const DEMO_DATA = (()=>{
     if(mo === m) addTxn(dtt(2), 'HOME DEPOT #111', 'Home Depot', 'Home Maintenance', -43.60);
     if(mo === m-1) addTxn(dtt(20), 'AMAZON PRIME MONTHLY', 'Amazon', 'Subscriptions', -14.99);
 
-    // Savings transfer
-    addTxn(dtt(1), 'TRANSFER TO SAVINGS', 'Savings Transfer', 'Savings Transfer', -500);
-    addTxn(dtt(1), 'TRANSFER FROM CHECKING', 'Savings Transfer', 'Savings Transfer', 500, 'acct-2');
+    // Savings transfer (catType override to 'transfer' since category is now discretionary)
+    addTxn(dtt(1), 'TRANSFER TO SAVINGS', 'Savings Transfer', 'Savings Transfer', -500, 'acct-1', 'transfer');
+    addTxn(dtt(1), 'TRANSFER FROM CHECKING', 'Savings Transfer', 'Savings Transfer', 500, 'acct-2', 'transfer');
 
     // Credit card charges (on acct-3)
     addTxn(dtt(5), 'AMAZON MARKETPLACE', 'Amazon', 'Subscriptions', -(45 + Math.round(Math.random()*30)), 'acct-3');
@@ -719,8 +719,8 @@ const DEMO_DATA = (()=>{
     if(dayLimit > 20) addTxn(dtt(20), 'DOORDASH DELIVERY', 'DoorDash', 'Dining Out', -(22 + Math.round(Math.random()*15)), 'acct-3');
 
     // Credit card payment (from checking to card)
-    addTxn(dtt(15), 'VISA PAYMENT ONLINE', 'Visa Card Payment', 'Credit Card Payment', -150);
-    addTxn(dtt(15), 'PAYMENT RECEIVED - THANK YOU', 'Visa Card Payment', 'Credit Card Payment', 150, 'acct-3');
+    addTxn(dtt(15), 'VISA PAYMENT ONLINE', 'Visa Card Payment', 'Credit Card Payment', -150, 'acct-1', 'transfer');
+    addTxn(dtt(15), 'PAYMENT RECEIVED - THANK YOU', 'Visa Card Payment', 'Credit Card Payment', 150, 'acct-3', 'transfer');
   }
 
   // Add some pending (uncleared) transactions for demo
@@ -1155,7 +1155,7 @@ const HELP_CONTENT = {
     diagram: 'Categories \u2192 Transaction dropdowns (everywhere)\n          \u2192 Dashboard sections (income/fixed/discretionary)\n          \u2192 Budget bars & tracking\nGroups \u2192 visual organization across all screens\n       \u2192 color-coded tags on transactions & budget',
     bullets: [
       'Categories you create here appear in every dropdown across the app',
-      'Category type (Fixed/Discretionary/Transfer) determines where it shows on the Dashboard',
+      'Category type (Fixed/Discretionary) determines where it shows on the Dashboard',
       'Groups organize categories visually \u2014 they show as color-coded sections',
       'Deleting a category does not delete its transactions (they become "Uncategorized")'
     ],
@@ -1895,7 +1895,7 @@ function MonthlyReviewModal({categories, transactions, onClose, onUpdateBudgets}
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const prevMonthName = monthNames[prevMonthIdx]+' '+prevYear;
 
-  const expenseCats = categories.filter(c=>c.catType!=='transfer' && c.group!=='Income');
+  const expenseCats = categories.filter(c=>c.group!=='Income' && c.name!=='Account Transfer');
   const prevTxns = transactions.filter(t=>getYearMonth(t.date)===prevYM && t.amount<0);
 
   const reviewData = useMemo(()=>{
@@ -2170,11 +2170,8 @@ function App({idbData}) {
     if(mode !== 'mine' || localStorage.getItem('ambit_transfer_migration_v1')) return;
     const checkingAcct = myAccounts.find(a=>a.type==='checking');
     if(!checkingAcct || myTransactions.length===0) return;
-    const catLookup = {};
-    myCategories.forEach(c=>{catLookup[c.name]=c;});
     const orphaned = myTransactions.filter(t=>
-      (t.catType==='transfer' || (catLookup[t.category] && catLookup[t.category].catType==='transfer'))
-      && t.amount > 0 && !t.linkedTxnId && t.accountId !== checkingAcct.id
+      t.catType==='transfer' && t.amount > 0 && !t.linkedTxnId && t.accountId !== checkingAcct.id
     );
     if(orphaned.length > 0) {
       const fixes = [];
@@ -2206,16 +2203,14 @@ function App({idbData}) {
     }
   },[mode]);
 
-  // Auto-create default "Account Transfer" category if no transfer-type category exists (My Budget mode only)
+  // One-time migration: convert transfer categories to discretionary (transfers now flagged at transaction level)
   useEffect(()=>{
-    if(mode!=='mine' || isDemo) return;
-    const hasTransferCat = myCategories.some(c=>c.catType==='transfer');
-    if(!hasTransferCat) {
-      setMyCategories(prev=>{
-        if(prev.some(c=>c.catType==='transfer')) return prev;
-        return [...prev, {name:'Account Transfer', group:'Other', catType:'transfer', budget:0}];
-      });
+    if(mode!=='mine' || isDemo || localStorage.getItem('ambit_transfer_cat_migration_v1')) return;
+    const transferCats = myCategories.filter(c=>c.catType==='transfer');
+    if(transferCats.length > 0) {
+      setMyCategories(prev=>prev.map(c=>c.catType==='transfer'?{...c, catType:'discretionary'}:c));
     }
+    localStorage.setItem('ambit_transfer_cat_migration_v1','done');
   },[mode]);
 
   // Monthly budget review — trigger once per month on first open in 'mine' mode (paid tiers only)
@@ -2277,12 +2272,13 @@ function App({idbData}) {
     return m;
   },[categories]);
 
-  // Live-enriched transactions: always derive group/catType from current category settings
+  // Live-enriched transactions: derive group/catType from current category settings,
+  // but preserve transaction-level catType:'transfer' (transfers are flagged per-transaction, not per-category)
   const liveTxns = useMemo(()=>{
     return transactions.map(t => {
       const cat = catMap[t.category];
       if(cat) {
-        return {...t, group: cat.group, catType: cat.catType};
+        return {...t, group: cat.group, catType: t.catType==='transfer' ? 'transfer' : cat.catType};
       }
       return {...t, catType: t.catType || normCatType(t)};
     });
@@ -2609,7 +2605,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast, group
       const catName = parts[0];
       const grp = parts[1] || 'Other';
       const typeRaw = (parts[2]||'discretionary').toLowerCase();
-      const catType = typeRaw.startsWith('f') ? 'fixed' : typeRaw.startsWith('t') ? 'transfer' : 'discretionary';
+      const catType = typeRaw.startsWith('f') ? 'fixed' : 'discretionary';
       const bgt = parseFloat(parts[3]) || 0;
       if(categories.find(c=>c.name.toLowerCase()===catName.toLowerCase())) continue;
       if(results.find(r=>r.name.toLowerCase()===catName.toLowerCase())) continue;
@@ -2677,8 +2673,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast, group
       h(Stat, {label:'Categories', value:categories.length, color:'var(--accent2)'}),
       h(Stat, {label:'Groups', value:groups.length, color:'var(--blue)'}),
       h(Stat, {label:'Discretionary', value:categories.filter(c=>c.catType==='discretionary').length, color:'var(--yellow)'}),
-      h(Stat, {label:'Fixed', value:categories.filter(c=>c.catType==='fixed').length, color:'var(--blue)'}),
-      h(Stat, {label:'Transfer', value:categories.filter(c=>c.catType==='transfer').length, color:'var(--pink)'})
+      h(Stat, {label:'Fixed', value:categories.filter(c=>c.catType==='fixed').length, color:'var(--blue)'})
     ),
 
     // ── Group Management Card ──
@@ -2783,20 +2778,17 @@ function CategoriesPage({categories, setCategories, dictionary, showToast, group
         h('div',null,
           h('label',{id:'cat-type-label',style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:6}},'Type'),
           h('div',{role:'radiogroup','aria-labelledby':'cat-type-label',style:{display:'flex',gap:16}},
-            ['discretionary','fixed','transfer'].map(t =>
+            ['discretionary','fixed'].map(t =>
               h('label',{key:t,htmlFor:'cat-type-'+t,style:{fontSize:13,cursor:'pointer',display:'flex',alignItems:'center',gap:5}},
                 h('input',{id:'cat-type-'+t,type:'radio',name:'catType',value:t,checked:catType===t,onChange:()=>setCatType(t)}),
-                t==='discretionary'?'Discretionary':t==='fixed'?'Fixed':'Transfer'
+                t==='discretionary'?'Discretionary':'Fixed'
               )
             )
           )
         ),
-        catType!=='transfer' && h('div',null,
+        h('div',null,
           h('label',{htmlFor:'cat-budget',style:{fontSize:12,color:'var(--text2)',display:'block',marginBottom:4}},'Monthly Budget ($)'),
           h('input',{id:'cat-budget',className:'input',type:'number',value:budget,onChange:e=>setBudget(e.target.value),style:{width:'100%'},min:0})
-        ),
-        catType==='transfer' && h('div',{style:{padding:10,background:'rgba(208,96,160,0.08)',borderRadius:8,fontSize:12,color:'var(--pink)'}},
-          '\uD83D\uDCA1 Transfer categories are excluded from spending totals and tracked separately.'
         ),
         h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}},
           h('button',{className:'btn',onClick:resetForm},'Cancel'),
@@ -2813,7 +2805,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast, group
           'Paste categories, one per line. Format: ', h('code',{style:{background:'var(--surface2)',padding:'1px 4px',borderRadius:3}},'name, group, type, budget')
         ),
         h('div',{style:{fontSize:11,color:'var(--text2)',padding:'6px 10px',background:'var(--surface2)',borderRadius:6}},
-          'Type shortcuts: d=discretionary, f=fixed, t=transfer. Group is auto-created if new.',
+          'Type shortcuts: d=discretionary, f=fixed. Group is auto-created if new.',
           h('br'),
           'Example: Groceries, Food, d, 600'
         ),
@@ -3250,12 +3242,12 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
     const pendingTxns = transactions.filter(t=>t.pending && t.accountId===selectedAccount);
     const matchedPendingIds = new Set();
 
-    // Find a transfer category to use for auto-detected transfers
-    let transferCat = categories.find(c=>c.catType==='transfer');
+    // Find a transfer category to use for auto-detected transfers (by name, since catType:'transfer' no longer exists on categories)
+    let transferCat = categories.find(c=>c.name==='Account Transfer') || categories.find(c=>c.name.toLowerCase().includes('transfer'));
     let transferCatCreated = false;
     // Auto-create an "Account Transfer" category if none exists
     if(!transferCat) {
-      transferCat = {name:'Account Transfer',group:'Other',catType:'transfer',budget:0};
+      transferCat = {name:'Account Transfer',group:'Other',catType:'discretionary',budget:0};
       transferCatCreated = true;
     }
 
@@ -3300,14 +3292,17 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
       let txn;
 
       if(match) {
+        // If description looks like a transfer, override catType to 'transfer' even if category is discretionary
+        const looksLikeTransferMatch = /TRANSFER|XFER|TRNSFR|ONLINE.*(?:TO|FROM)|ACH.*(?:TO|FROM)/i.test(desc.toUpperCase());
         txn = {
           id: Date.now()+'_'+Math.random().toString(36).slice(2,8),
           date: dateStr, description: desc, amount: amt,
           cleanName: match.cleanName, category: match.category,
-          group: match.group, catType: match.catType,
+          group: match.group, catType: looksLikeTransferMatch ? 'transfer' : match.catType,
           accountId: selectedAccount
         };
         matched.push(txn);
+        if(looksLikeTransferMatch) autoTransfers++;
       } else {
         // Check for auto-detectable transfer by last4 match
         const destAcct = detectTransferDest(desc);
@@ -3357,7 +3352,7 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
     // Persist the auto-created transfer category if any transfers were detected
     if(transferCatCreated && autoTransfers > 0 && setCategories) {
       setCategories(prev=>{
-        if(prev.some(c=>c.catType==='transfer')) return prev;
+        if(prev.some(c=>c.name==='Account Transfer')) return prev;
         return [...prev, transferCat];
       });
     }
@@ -3373,8 +3368,7 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
     // Create paired entries for transfers
     const paired = [];
     for(const txn of all) {
-      const cat = catMap[txn.category];
-      const isTransfer = txn.catType==='transfer' || (cat && cat.catType==='transfer');
+      const isTransfer = txn.catType==='transfer';
       if(isTransfer) {
         let destId = txn._autoTransferDest || null;
         if(!destId) {
@@ -3684,7 +3678,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     return 'all';
   });
   const [dateFilter, setDateFilter] = useState('current'); // 'all', 'current', or 'YYYY-MM'
-  const [newTxn, setNewTxn] = useState({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:'',transferDest:''});
+  const [newTxn, setNewTxn] = useState({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:'',transferDest:'',isTransfer:false});
   // New category inline creation state
   const [showNewCat, setShowNewCat] = useState(false);
   const [newCatName, setNewCatName] = useState('');
@@ -3697,9 +3691,6 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   const [bulkNewCatName, setBulkNewCatName] = useState('');
   const [bulkNewCatGroup, setBulkNewCatGroup] = useState('Other');
   const [bulkNewCatType, setBulkNewCatType] = useState('discretionary');
-  // Transfer prompt state (shown when user changes a transaction's category to a transfer type)
-  const [transferPrompt, setTransferPrompt] = useState(null); // {txnId, category, show}
-  const [transferDestAcct, setTransferDestAcct] = useState('');
   // Column header filters
   const [payeeFilter, setPayeeFilter] = useState('');
   const [showPayeeFilter, setShowPayeeFilter] = useState(false);
@@ -3738,27 +3729,47 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     showToast('\u2705 Category created: '+name);
   };
 
-  const resetNewTxn = () => { setNewTxn({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:'',transferDest:''}); setShowAddTxn(false); setShowNewCat(false); };
+  const resetNewTxn = () => { setNewTxn({date:'',description:'',amount:'',category:'',accountId:'',pending:false,checkNumber:'',transferDest:'',isTransfer:false}); setShowAddTxn(false); setShowNewCat(false); };
 
   const saveNewTxn = () => {
-    const {date,description,amount,category,accountId,pending,checkNumber,transferDest} = newTxn;
+    const {date,description,amount,accountId,pending,checkNumber,transferDest,isTransfer} = newTxn;
     if(!date||!description||!amount||!accountId) return;
-    const cat = catMap[category];
-    const isTransfer = cat && cat.catType === 'transfer';
     if(isTransfer && !transferDest) return; // require destination for transfers
+    // For transfers, find or create an "Account Transfer" category (as discretionary)
+    let cat, txnCategory, txnGroup;
+    if(isTransfer) {
+      cat = categories.find(c=>c.name==='Account Transfer');
+      if(!cat) {
+        cat = {name:'Account Transfer',group:'Other',catType:'discretionary',budget:0};
+        setCategories(prev=>{
+          if(prev.some(c=>c.name==='Account Transfer')) return prev;
+          return [...prev, cat];
+        });
+      }
+      txnCategory = 'Account Transfer';
+      txnGroup = 'Other';
+    } else {
+      cat = catMap[newTxn.category];
+      txnCategory = newTxn.category || 'Uncategorized';
+      txnGroup = cat?.group || 'Other';
+    }
     // Auto-set sign based on category: expenses negative, income positive
     let amt = +amount;
-    if(cat && cat.group !== 'Income' && amt > 0) amt = -Math.abs(amt);
-    if(cat && cat.group === 'Income' && amt < 0) amt = Math.abs(amt);
+    if(isTransfer) {
+      amt = -Math.abs(amt); // transfers always deduct from source
+    } else {
+      if(cat && cat.group !== 'Income' && amt > 0) amt = -Math.abs(amt);
+      if(cat && cat.group === 'Income' && amt < 0) amt = Math.abs(amt);
+    }
     const txnId = Date.now()+'_'+Math.random().toString(36).slice(2,8);
     const txn = {
       id: txnId,
       date, description: description.trim(),
       amount: amt,
       cleanName: description.trim(),
-      category: category || 'Uncategorized',
-      group: cat?.group || 'Other',
-      catType: cat?.catType || 'discretionary',
+      category: txnCategory,
+      group: txnGroup,
+      catType: isTransfer ? 'transfer' : (cat?.catType || 'discretionary'),
       accountId
     };
     if(pending) txn.pending = true;
@@ -3767,14 +3778,13 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     if(isTransfer && transferDest) {
       const pairedId = Date.now()+'_'+Math.random().toString(36).slice(2,8);
       txn.linkedTxnId = pairedId;
-      const destAcct = accounts.find(a=>a.id===transferDest);
       const paired = {
         id: pairedId, linkedTxnId: txnId,
         date, description: description.trim() + ' (paired)',
         amount: -amt, // reverse: outflow on source = inflow on dest
         cleanName: 'Transfer from ' + (accounts.find(a=>a.id===accountId)?.name||'Other'),
-        category: category || 'Uncategorized',
-        group: cat?.group || 'Other',
+        category: txnCategory,
+        group: txnGroup,
         catType: 'transfer',
         accountId: transferDest
       };
@@ -3784,13 +3794,13 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       setTransactions(prev=>[...prev, txn]);
     }
     // Create dictionary rule so Dashboard bills/budget tracks this payee
-    if(category && category!=='Uncategorized' && !isTransfer && setDictionary) {
+    if(!isTransfer && newTxn.category && newTxn.category!=='Uncategorized' && setDictionary) {
       const keyword = description.trim().toUpperCase();
       if(keyword) {
         setDictionary(prev => {
           const existing = prev.find(d=>d.keyword.toUpperCase()===keyword);
           if(!existing) {
-            return [...prev, {keyword, cleanName:description.trim(), category}];
+            return [...prev, {keyword, cleanName:description.trim(), category:newTxn.category}];
           }
           return prev;
         });
@@ -3920,13 +3930,6 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     // Look up category from catMap, but also check the categories array directly
     // in case catMap hasn't re-derived yet after a new category was just created
     const cat = catMap[editCat] || categories.find(c=>c.name===editCat);
-    // If the selected category is a transfer type, show the transfer destination prompt
-    if(cat && cat.catType === 'transfer') {
-      setTransferPrompt({txnId: id, category: editCat, show: true});
-      setTransferDestAcct('');
-      setEditId(null); setEditCat('');
-      return;
-    }
     const txn = transactions.find(t=>t.id===id);
     // Extract a smart keyword from the description (strips prefixes, card #s, locations)
     const smartKeyword = txn ? extractKeyword(txn.description||'') : '';
@@ -3955,39 +3958,6 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     }));
     showToast('Category updated: '+editCat);
     setEditId(null); setEditCat('');
-  };
-
-  // Confirm transfer pairing after user selects a destination account
-  const confirmTransferPairing = () => {
-    if(!transferPrompt || !transferDestAcct) return;
-    const {txnId, category} = transferPrompt;
-    const txn = transactions.find(t=>t.id===txnId);
-    if(!txn) { setTransferPrompt(null); return; }
-    const cat = catMap[category] || categories.find(c=>c.name===category);
-    const pairedId = Date.now()+'_'+Math.random().toString(36).slice(2,8);
-    const sourceAcct = accounts.find(a=>a.id===txn.accountId);
-    const destAcct = accounts.find(a=>a.id===transferDestAcct);
-    // Update original transaction and create paired transaction
-    setTransactions(prev => {
-      const updated = prev.map(t => {
-        if(t.id === txnId) {
-          return {...t, category, group: cat?.group||'Other', catType:'transfer', linkedTxnId: pairedId,
-            cleanName: 'Transfer to '+(destAcct?.name||'Other')};
-        }
-        return t;
-      });
-      const paired = {
-        id: pairedId, linkedTxnId: txnId,
-        date: txn.date, description: txn.description,
-        amount: -txn.amount,
-        cleanName: 'Transfer from '+(sourceAcct?.name||'Other'),
-        category, group: cat?.group||'Other', catType:'transfer',
-        accountId: transferDestAcct
-      };
-      return [...updated, paired];
-    });
-    showToast('Transfer paired: '+(sourceAcct?.name||'Source')+' \u2192 '+(destAcct?.name||'Dest'));
-    setTransferPrompt(null); setTransferDestAcct('');
   };
 
   const startEditPayee = (t) => {
@@ -4287,16 +4257,42 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
           h('div',{style:{flex:1}},
             h('label',{htmlFor:'txn-amount',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Amount'),
             h('input',{id:'txn-amount',className:'input',type:'number',value:newTxn.amount,onChange:e=>setNewTxn(p=>({...p,amount:e.target.value})),placeholder:'e.g. 0.01 or -50.00',style:{width:'100%'},step:'0.01'}),
-            h('div',{style:{fontSize:11,color:'var(--blue)',marginTop:4,display:'flex',alignItems:'center',gap:4}},'💡 Just enter the number \u2014 sign is set automatically (expenses become negative, income becomes positive)')
+            h('div',{style:{fontSize:11,color:newTxn.isTransfer?'var(--card-text2)':'var(--blue)',marginTop:4,display:'flex',alignItems:'center',gap:4}},
+              newTxn.isTransfer ? 'Enter the transfer amount' : '💡 Just enter the number \u2014 sign is set automatically (expenses become negative, income becomes positive)')
+          )
+        ),
+        // Transfer checkbox
+        h('div',{style:{display:'flex',alignItems:'center',gap:8,padding:'4px 0'}},
+          h('label',{style:{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13,color:newTxn.isTransfer?'var(--pink)':'var(--card-text)'}},
+            h('input',{type:'checkbox',checked:newTxn.isTransfer,onChange:e=>setNewTxn(p=>({...p,isTransfer:e.target.checked,category:'',transferDest:''})),style:{accentColor:'var(--pink)'}}),
+            '\uD83D\uDD04 This is a transfer'
           )
         ),
         h('div',null,
           h('label',{htmlFor:'txn-desc',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Description'),
-          h('input',{id:'txn-desc',className:'input',value:newTxn.description,onChange:e=>setNewTxn(p=>({...p,description:e.target.value})),placeholder:'e.g. Interest Payment',style:{width:'100%'},autoFocus:true})
+          h('input',{id:'txn-desc',className:'input',value:newTxn.description,onChange:e=>setNewTxn(p=>({...p,description:e.target.value})),placeholder:newTxn.isTransfer?'e.g. Transfer to Savings':'e.g. Interest Payment',style:{width:'100%'},autoFocus:true})
         ),
+        // Transfer mode: From Account / To Account
+        newTxn.isTransfer ? h('div',{style:{display:'flex',gap:10}},
+          h('div',{style:{flex:1}},
+            h('label',{htmlFor:'txn-account',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'From Account'),
+            h('select',{id:'txn-account',className:'input',value:newTxn.accountId,onChange:e=>setNewTxn(p=>({...p,accountId:e.target.value,transferDest:p.transferDest===e.target.value?'':p.transferDest})),style:{width:'100%'}},
+              h('option',{value:''},'Select...'),
+              accounts.map(a=>h('option',{key:a.id,value:a.id},a.name))
+            )
+          ),
+          h('div',{style:{flex:1}},
+            h('label',{htmlFor:'txn-transfer-dest',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'To Account'),
+            h('select',{id:'txn-transfer-dest',className:'input',value:newTxn.transferDest,onChange:e=>setNewTxn(p=>({...p,transferDest:e.target.value})),style:{width:'100%'}},
+              h('option',{value:''},'Select...'),
+              accounts.filter(a=>a.id!==newTxn.accountId).map(a=>h('option',{key:a.id,value:a.id},a.name))
+            )
+          )
+        ) :
+        // Normal mode: Account / Category
         h('div',{style:{display:'flex',gap:10}},
           h('div',{style:{flex:1}},
-            h('label',{htmlFor:'txn-account',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},catMap[newTxn.category]?.catType==='transfer'?'From Account':'Account'),
+            h('label',{htmlFor:'txn-account',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Account'),
             h('select',{id:'txn-account',className:'input',value:newTxn.accountId,onChange:e=>setNewTxn(p=>({...p,accountId:e.target.value})),style:{width:'100%'}},
               h('option',{value:''},'Select...'),
               accounts.map(a=>h('option',{key:a.id,value:a.id},a.name))
@@ -4311,7 +4307,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
             )
           )
         ),
-        showNewCat && newCatContext==='modal' && h('div',{style:{padding:10,border:'1px dashed var(--accent)',borderRadius:8,background:'rgba(232,160,32,0.04)'}},
+        !newTxn.isTransfer && showNewCat && newCatContext==='modal' && h('div',{style:{padding:10,border:'1px dashed var(--accent)',borderRadius:8,background:'rgba(232,160,32,0.04)'}},
           h('div',{style:{fontSize:11,fontWeight:600,color:'var(--accent)',marginBottom:6}},'➕ Quick Create Category'),
           h('div',{style:{display:'flex',gap:8,alignItems:'flex-end',flexWrap:'wrap'}},
             h('div',{style:{flex:1,minWidth:100}},
@@ -4325,20 +4321,13 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
               )
             ),
             h('select',{className:'input',value:newCatType,onChange:e=>setNewCatType(e.target.value),style:{fontSize:11,padding:'4px 6px'}},
-              h('option',{value:'discretionary'},'Disc'),h('option',{value:'fixed'},'Fixed'),h('option',{value:'transfer'},'Transfer')
+              h('option',{value:'discretionary'},'Disc'),h('option',{value:'fixed'},'Fixed')
             ),
             h('button',{className:'btn sm primary',onClick:createNewCategory,disabled:!newCatName.trim(),style:{fontSize:11}},'Create'),
             h('button',{className:'btn sm',onClick:()=>setShowNewCat(false),style:{fontSize:11}},'Cancel')
           )
         ),
-        catMap[newTxn.category]?.catType==='transfer' && h('div',{style:{padding:'8px 0'}},
-          h('label',{htmlFor:'txn-transfer-dest',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Transfer To Account'),
-          h('select',{id:'txn-transfer-dest',className:'input',value:newTxn.transferDest,onChange:e=>setNewTxn(p=>({...p,transferDest:e.target.value})),style:{width:'100%'}},
-            h('option',{value:''},'Select destination...'),
-            accounts.filter(a=>a.id!==newTxn.accountId).map(a=>h('option',{key:a.id,value:a.id},a.name))
-          ),
-          h('div',{style:{fontSize:10,color:'var(--pink)',marginTop:4}},'Money will be deducted from the account above and added to this account.')
-        ),
+        newTxn.isTransfer && h('div',{style:{fontSize:11,color:'var(--pink)',padding:'4px 0'}},'Money will be deducted from the source account and added to the destination account.'),
         h('div',{style:{display:'flex',alignItems:'center',gap:12,padding:'8px 0',borderTop:'1px solid rgba(255,255,255,0.06)',marginTop:4}},
           h('label',{style:{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13}},
             h('input',{type:'checkbox',checked:newTxn.pending,onChange:e=>setNewTxn(p=>({...p,pending:e.target.checked})),style:{accentColor:'var(--accent2)'}}),
@@ -4348,7 +4337,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
         ),
         h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:8}},
           h('button',{className:'btn',onClick:resetNewTxn},'Cancel'),
-          h('button',{className:'btn primary',onClick:saveNewTxn,disabled:!newTxn.date||!newTxn.description||!newTxn.amount||!newTxn.accountId},'Add Transaction')
+          h('button',{className:'btn primary',onClick:saveNewTxn,disabled:!newTxn.date||!newTxn.description||!newTxn.amount||!newTxn.accountId||(newTxn.isTransfer&&!newTxn.transferDest)},newTxn.isTransfer?'Create Transfer':'Add Transaction')
         )
       )
     ),
@@ -4375,26 +4364,6 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       )
     ),
 
-    // Transfer destination prompt (shown when inline category change to transfer type)
-    transferPrompt && transferPrompt.show && h('div',{style:{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.3)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'},onClick:()=>{setTransferPrompt(null);setTransferDestAcct('');}},
-      h('div',{style:{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'20px 24px',maxWidth:380,width:'90%',boxShadow:'0 8px 32px rgba(0,0,0,0.3)'},onClick:e=>e.stopPropagation()},
-        h('div',{style:{fontSize:15,fontWeight:700,marginBottom:12,color:'var(--card-text)'}},'Transfer to which account?'),
-        h('div',{style:{fontSize:13,color:'var(--card-text2)',marginBottom:14,lineHeight:1.5}},
-          'This transaction will be marked as a transfer. Select the destination account to create a paired entry.'
-        ),
-        h('div',{style:{marginBottom:14}},
-          h('label',{style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Destination Account'),
-          h('select',{className:'input',value:transferDestAcct,onChange:e=>setTransferDestAcct(e.target.value),style:{width:'100%',fontSize:13}},
-            h('option',{value:''},'Select an account...'),
-            accounts.filter(a=>{const txn=transactions.find(t=>t.id===transferPrompt.txnId);return txn && a.id!==txn.accountId;}).map(a=>h('option',{key:a.id,value:a.id},a.name))
-          )
-        ),
-        h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end'}},
-          h('button',{className:'btn',onClick:()=>{setTransferPrompt(null);setTransferDestAcct('');}},'Cancel'),
-          h('button',{className:'btn primary',onClick:confirmTransferPairing,disabled:!transferDestAcct},'Create Transfer Pair')
-        )
-      )
-    ),
 
     // Bulk apply popup card
     bulkApplyPrompt && h('div',{style:{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.3)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'},onClick:()=>{setBulkApplyPrompt(null);setBulkApplyCat('');setBulkNewCat(false);setBulkNewCatName('');}},
@@ -4418,7 +4387,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
                 (groupList||['Housing','Food','Transport','Utilities','Personal','Health','Entertainment','Savings','Income','Other']).map(g=>h('option',{key:g,value:g},g))
               ),
               h('select',{className:'input',value:bulkNewCatType,onChange:e=>setBulkNewCatType(e.target.value),style:{fontSize:11,padding:'4px 6px'}},
-                h('option',{value:'discretionary'},'Disc'),h('option',{value:'fixed'},'Fixed'),h('option',{value:'transfer'},'Transfer')
+                h('option',{value:'discretionary'},'Disc'),h('option',{value:'fixed'},'Fixed')
               ),
               h('button',{className:'btn sm primary',onClick:createBulkNewCategory,disabled:!bulkNewCatName.trim(),style:{fontSize:11}},'Create'),
               h('button',{className:'btn sm',onClick:()=>setBulkNewCat(false),style:{fontSize:11}},'Cancel')
@@ -4651,14 +4620,13 @@ function BudgetMonthlyTab({categories, setCategories, transactions, dictionary, 
       const curDisc = curTxns.filter(t=>t.amount<0 && t.catType==='discretionary').reduce((s,t)=>s+Math.abs(t.amount),0);
       const curXfer = curTxns.filter(t=>t.amount<0 && t.catType==='transfer').reduce((s,t)=>s+Math.abs(t.amount),0);
       const incomeBudgetMo = (grouped['Income']||[]).reduce((s,c)=>s+getMonthlyBudget(c,budgetAcct),0);
-      const xferBudgetMo = categories.filter(c=>c.catType==='transfer').reduce((s,c)=>s+getMonthlyBudget(c,budgetAcct),0);
       const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const mLabel = mNames[now.getMonth()];
       return h('div',{className:'stats'},
         h(Stat,{label:mLabel+' Income', value:fmt(curInc)+' / '+fmt(incomeBudgetMo), color:'var(--green)'}),
         h(Stat,{label:mLabel+' Fixed', value:fmt(curFixed)+' / '+fmt(fixedBudget), color:'var(--blue)'}),
         h(Stat,{label:mLabel+' Discretionary', value:fmt(curDisc)+' / '+fmt(discBudget), color:'var(--yellow)'}),
-        xferBudgetMo>0 && h(Stat,{label:mLabel+' Transfers', value:fmt(curXfer)+' / '+fmt(xferBudgetMo), color:'var(--pink)'})
+        curXfer>0 && h(Stat,{label:mLabel+' Transfers', value:fmt(curXfer), color:'var(--pink)'})
       );
     })(),
 
@@ -4885,7 +4853,7 @@ function BudgetMonthlyTab({categories, setCategories, transactions, dictionary, 
                       h('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}},
                         h(TypeTag,{catType:c.catType}),
                         h('span',{style:{width:130,fontSize:13}}, c.name),
-                        (c.catType==='fixed' || c.catType==='transfer' || c.group==='Income') && (()=>{
+                        (c.catType==='fixed' || c.group==='Income') && (()=>{
                           const freq = c.frequency||'monthly';
                           const isEditing = editingSchedule===c.name;
                           const schedColor = c.group==='Income'?'var(--green)':'var(--blue)';
@@ -5206,7 +5174,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
     const receivedIncome = forecastMonthTxns.filter(t=>t.amount>=0 && incomeCats.some(c=>c.name===t.category)).reduce((s,t)=>s+t.amount,0);
     const remainingIncome = Math.max(0, totalIncomeBudget - receivedIncome);
 
-    const fixedBillCats = categories.filter(c=>(c.catType==='fixed'||c.catType==='transfer') && c.group!=='Income');
+    const fixedBillCats = categories.filter(c=>c.catType==='fixed' && c.group!=='Income');
     const totalBillsBudget = fixedBillCats.reduce((s,c)=>s+getMonthlyBudget(c,selectedAcct),0);
     const paidBills = forecastMonthTxns.filter(t=>t.amount<0 && fixedBillCats.some(c=>c.name===t.category)).reduce((s,t)=>s+Math.abs(t.amount),0);
     const remainingBills = Math.max(0, totalBillsBudget - paidBills);
@@ -5243,7 +5211,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
     const monthTxns = transactions.filter(t=>filterAcct(t) && getYearMonth(t.date)===curYMKey);
 
     // Fixed bills + transfers from budget categories (frequency-aware)
-    const fixedCats = categories.filter(c=>(c.catType==='fixed'||c.catType==='transfer') && c.group!=='Income');
+    const fixedCats = categories.filter(c=>c.catType==='fixed' && c.group!=='Income');
     const curBills = [];
     const nextBills = [];
     fixedCats.forEach(cat=>{
@@ -7192,11 +7160,9 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
   const unpairedTransfers = useMemo(()=>{
     const linkedIds = new Set(transactions.filter(t=>t.linkedTxnId).map(t=>t.linkedTxnId));
     return transactions.filter(t=>{
-      const cat = catMap[t.category];
-      const isTransfer = t.catType==='transfer' || (cat && cat.catType==='transfer');
-      return isTransfer && !t.linkedTxnId && !linkedIds.has(t.id);
+      return t.catType==='transfer' && !t.linkedTxnId && !linkedIds.has(t.id);
     });
-  },[transactions, catMap]);
+  },[transactions]);
 
   // Retroactively pair unpaired transfers
   const pairTransfers = () => {
