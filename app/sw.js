@@ -1,12 +1,12 @@
-const CACHE_NAME = 'ambit-v16';
+const CACHE_NAME = 'ambit-v17';
 const ASSETS = [
   './',
   './index.html',
   './lib/react.min.js',
   './lib/react-dom.min.js',
   './manifest.json',
-  './icons/icon-192.svg',
-  './icons/icon-512.svg'
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
 // Install: cache core assets
