@@ -81,6 +81,22 @@
       cursor: pointer; box-shadow: var(--shadow);
       font-size: 18px;
     }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; }
+    .play-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--gold); color: var(--navy);
+      padding: 9px 14px; border-radius: 999px;
+      font-weight: 800; font-size: 14px;
+      text-decoration: none; box-shadow: var(--shadow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      font-family: inherit;
+    }
+    .play-pill:hover { transform: translateY(-1px); box-shadow: var(--shadow-lift); }
+    .play-pill .play-icon { font-size: 16px; }
+    @media (max-width: 380px) {
+      .play-pill span.play-label { display: none; }
+      .play-pill { padding: 9px 12px; }
+    }
 
     /* NAV TABS (bottom on mobile, top on desktop) */
     .nav-tabs {
@@ -470,7 +486,12 @@
           <div class="brand-tag" id="brand-tag">My Money</div>
         </div>
       </div>
-      <button class="menu-btn" onclick="showTab('settings')" title="Settings">⚙️</button>
+      <div class="topbar-actions">
+        <a class="play-pill" href="index.html" title="Play the Shop Game">
+          <span class="play-icon">🎮</span><span class="play-label">Play</span>
+        </a>
+        <button class="menu-btn" onclick="showTab('settings')" title="Settings">⚙️</button>
+      </div>
     </div>
 
     <!-- CELEBRATE BANNER -->

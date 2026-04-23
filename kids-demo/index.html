@@ -50,6 +50,20 @@
       display: flex;
       flex-direction: column;
     }
+    .game-topbar {
+      display: flex; justify-content: flex-end; align-items: center;
+      margin-bottom: 6px;
+    }
+    .tracker-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--navy); color: var(--cream);
+      padding: 9px 14px; border-radius: 999px;
+      font-weight: 800; font-size: 14px;
+      text-decoration: none; box-shadow: var(--shadow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      font-family: inherit;
+    }
+    .tracker-pill:hover { transform: translateY(-1px); box-shadow: var(--shadow-lift); }
     .screen { display: none; animation: fadeIn 0.35s ease; }
     .screen.active { display: block; }
     @keyframes fadeIn {
@@ -499,6 +513,12 @@
 </head>
 <body>
   <div class="app">
+
+    <div class="game-topbar">
+      <a class="tracker-pill" href="app.html" title="Back to my tracker">
+        <span>💰</span><span>My Money</span>
+      </a>
+    </div>
 
     <!-- WELCOME SCREEN -->
     <section id="screen-welcome" class="screen active">
