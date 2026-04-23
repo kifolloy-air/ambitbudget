@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ambit's Shop — An Ambit Adventures Game</title>
+  <meta name="description" content="A playable demo from the Ambit Adventures book series. Help Ambit go shopping, learn about saving, and start the journey to his dream.">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <style>
+    :root {
+      --cream: #FFF8E7;
+      --cream-deep: #FBEFD5;
+      --navy: #1E3A5F;
+      --navy-soft: #2C4A70;
+      --gold: #E8B547;
+      --gold-deep: #D4A94C;
+      --penny-pink: #F4B4C1;
+      --penny-pink-deep: #E8A0AE;
+      --polaris-yellow: #FFD966;
+      --polaris-yellow-deep: #F7C948;
+      --car-red: #D64545;
+      --car-red-deep: #B83535;
+      --text: #2C3E50;
+      --text-soft: #6B7B8C;
+      --shadow: 0 4px 14px rgba(30, 58, 95, 0.12);
+      --shadow-lift: 0 8px 28px rgba(30, 58, 95, 0.18);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      font-family: "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+    }
+    body {
+      background: linear-gradient(180deg, var(--cream) 0%, var(--cream-deep) 100%);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 780px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .screen { display: none; animation: fadeIn 0.35s ease; }
+    .screen.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.15); }
+    }
+
+    /* WELCOME */
+    .welcome {
+      text-align: center;
+      padding: 24px 16px 48px;
+    }
+    .welcome h1 {
+      font-size: clamp(32px, 6vw, 48px);
+      color: var(--navy);
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+      font-weight: 800;
+    }
+    .welcome .subtitle {
+      font-size: 16px;
+      color: var(--text-soft);
+      margin-bottom: 24px;
+      letter-spacing: 0.3px;
+    }
+    .welcome .ambit-image {
+      width: clamp(160px, 32vw, 220px);
+      height: auto;
+      margin: 12px auto 24px;
+      display: block;
+      filter: drop-shadow(0 10px 24px rgba(0,0,0,0.12));
+    }
+    .welcome .intro-card {
+      background: white;
+      padding: 22px 22px 18px;
+      border-radius: var(--radius);
+      max-width: 520px;
+      margin: 0 auto 24px;
+      box-shadow: var(--shadow);
+      text-align: left;
+    }
+    .welcome .intro-card p {
+      font-size: 17px;
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+    .welcome .intro-card p:last-child { margin-bottom: 0; }
+    .welcome .intro-card .signature {
+      margin-top: 8px;
+      color: var(--text-soft);
+      font-style: italic;
+      font-size: 15px;
+    }
+    .btn {
+      display: inline-block;
+      background: var(--navy);
+      color: var(--cream);
+      padding: 14px 32px;
+      border: none;
+      border-radius: 999px;
+      font-size: 18px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      letter-spacing: 0.3px;
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lift);
+    }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled {
+      background: #B8C2D1;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn.primary { background: var(--navy); }
+    .btn.gold { background: var(--gold); color: var(--navy); }
+
+    /* SHOP */
+    .shop-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .shop-title {
+      font-size: 26px;
+      color: var(--navy);
+      font-weight: 800;
+      letter-spacing: -0.2px;
+    }
+    .balances {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .balance {
+      background: white;
+      padding: 8px 14px 8px 12px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow);
+    }
+    .balance .icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+    .balance.penny .icon { background: var(--penny-pink); }
+    .balance.polaris .icon { background: var(--polaris-yellow); animation: twinkle 3.2s ease-in-out infinite; }
+    .balance .label { color: var(--text-soft); font-size: 12px; margin-right: 2px; }
+    .balance .amount { color: var(--navy); }
+
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .item {
+      background: white;
+      padding: 16px 12px 14px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      text-align: center;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      border: 3px solid transparent;
+      position: relative;
+      user-select: none;
+    }
+    .item:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+    .item.selected {
+      border-color: var(--gold);
+      background: #FFFDF5;
+    }
+    .item.selected::after {
+      content: "✓";
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: var(--navy);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 16px;
+    }
+    .item.locked {
+      cursor: not-allowed;
+      opacity: 0.92;
+    }
+    .item.locked:hover { transform: none; box-shadow: var(--shadow); }
+    .item .emoji {
+      font-size: 54px;
+      line-height: 1;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .item .name {
+      font-weight: 700;
+      color: var(--navy);
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+    .item .price {
+      color: var(--text-soft);
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .item.locked .name { color: var(--car-red); }
+
+    /* Dream car - special treatment */
+    .dream-car {
+      background: linear-gradient(140deg, #FFF5F5 0%, #FFE3E3 100%);
+      border: 3px dashed var(--car-red);
+    }
+    .dream-car .name { color: var(--car-red); }
+    .dream-car .lock-badge {
+      display: inline-block;
+      font-size: 11px;
+      background: var(--car-red);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-top: 6px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .dream-car .progress {
+      margin-top: 8px;
+      background: white;
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .dream-car .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold) 0%, var(--car-red) 100%);
+      width: 10.5%;
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* BACKPACK & TOTAL */
+    .backpack {
+      background: white;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-top: 6px;
+      margin-bottom: 14px;
+    }
+    .backpack-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .backpack-title {
+      font-weight: 700;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+    }
+    .backpack-title .pack-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--navy);
+      color: var(--gold);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 13px;
+    }
+    .backpack-items {
+      min-height: 24px;
+      color: var(--text-soft);
+      font-size: 14px;
+    }
+    .backpack-items.empty { font-style: italic; }
+    .total-line {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #EFE9DB;
+      font-weight: 700;
+    }
+    .total-line .total-amount.over {
+      color: var(--car-red);
+    }
+    .over-warning {
+      background: #FFF0F0;
+      color: var(--car-red-deep);
+      padding: 10px 14px;
+      border-radius: 12px;
+      margin-top: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      display: none;
+    }
+    .over-warning.show { display: block; animation: fadeIn 0.25s ease; }
+
+    .checkout-btn-row {
+      display: flex;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    /* CHECKOUT */
+    .checkout-card {
+      background: white;
+      padding: 24px 22px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+    .checkout-card h2 {
+      color: var(--navy);
+      margin-bottom: 14px;
+      font-size: 24px;
+    }
+    .checkout-card .receipt {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--cream);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+    }
+    .receipt .ambit-mini {
+      width: 64px;
+      height: auto;
+      flex-shrink: 0;
+    }
+    .receipt .receipt-text {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    .receipt .receipt-text strong { color: var(--navy); }
+
+    .left-behind {
+      margin-bottom: 14px;
+    }
+    .left-behind h3 {
+      font-size: 15px;
+      color: var(--text-soft);
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .left-behind .items-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .left-behind .left-item {
+      background: #F3EEDE;
+      padding: 6px 12px 6px 10px;
+      border-radius: 999px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-soft);
+    }
+    .left-behind .left-item .lb-emoji { font-size: 18px; }
+    .left-behind .none {
+      color: var(--text-soft);
+      font-style: italic;
+      font-size: 14px;
+    }
+
+    .polaris-card {
+      background: linear-gradient(135deg, #FFF9DD 0%, #FFEFA8 100%);
+      border-left: 4px solid var(--polaris-yellow-deep);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+    }
+    .polaris-card .polaris-title {
+      color: var(--navy);
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+    }
+    .polaris-card .polaris-title .star { animation: twinkle 3s ease-in-out infinite; }
+    .polaris-card p { font-size: 15px; line-height: 1.5; }
+
+    .dream-progress-card {
+      background: linear-gradient(135deg, #FFF5F5 0%, #FFE3E3 100%);
+      border-left: 4px solid var(--car-red);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+    }
+    .dream-progress-card .dream-title {
+      color: var(--navy);
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+    }
+    .dream-progress-card .progress-info {
+      font-size: 14px;
+      color: var(--text-soft);
+      margin-bottom: 6px;
+    }
+    .dream-progress-card .progress {
+      background: white;
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .dream-progress-card .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold) 0%, var(--car-red) 100%);
+      border-radius: 999px;
+      transition: width 0.8s ease;
+    }
+
+    .checkout-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .footer-note {
+      text-align: center;
+      padding: 18px 16px;
+      color: var(--text-soft);
+      font-size: 13px;
+    }
+    .footer-note a {
+      color: var(--navy);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .footer-note a:hover { text-decoration: underline; }
+
+    @media (max-width: 480px) {
+      .app { padding: 12px; }
+      .items-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .item .emoji { font-size: 42px; }
+      .welcome h1 { font-size: 30px; }
+      .shop-header { flex-direction: column; align-items: stretch; }
+      .shop-title { text-align: center; }
+      .balances { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- WELCOME SCREEN -->
+    <section id="screen-welcome" class="screen active">
+      <div class="welcome">
+        <h1>Ambit's Shop</h1>
+        <p class="subtitle">An Ambit Adventures Game · Demo</p>
+        <img src="images/pointing.png" alt="Mr. Ambit" class="ambit-image">
+        <div class="intro-card">
+          <p>Hi! I'm Ambit.</p>
+          <p>My boy Caiden turned seven last week. Mom Mom gave him ten dollars — and one dollar for me, because Caiden said I'm his best friend.</p>
+          <p>I brought my dollar to Penny. She's holding two dollars and fifty-eight cents of my spending money. Polaris is holding thirty cents up on the high shelf — that's for my dream. Want to come to the shop with me?</p>
+          <p class="signature">— Ambit</p>
+        </div>
+        <button class="btn primary" onclick="goToShop()">Let's go shopping!</button>
+      </div>
+    </section>
+
+    <!-- SHOP SCREEN -->
+    <section id="screen-shop" class="screen">
+      <div class="shop-header">
+        <div class="shop-title">🛒 Ambit's Shop</div>
+        <div class="balances">
+          <div class="balance penny">
+            <div class="icon">🐷</div>
+            <div><div class="label">Penny</div><div class="amount" id="penny-display">$2.58</div></div>
+          </div>
+          <div class="balance polaris">
+            <div class="icon">⭐</div>
+            <div><div class="label">Polaris</div><div class="amount" id="polaris-display">$0.30</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="items-grid" id="items-grid">
+        <!-- items render here -->
+      </div>
+
+      <div class="backpack">
+        <div class="backpack-header">
+          <div class="backpack-title">
+            <span class="pack-icon">N</span>
+            <span>My Backpack</span>
+          </div>
+          <div class="total-line">
+            <span class="total-amount" id="backpack-total">$0.00</span>
+          </div>
+        </div>
+        <div class="backpack-items empty" id="backpack-items">(click items above to add them)</div>
+        <div class="over-warning" id="over-warning">
+          ⚠️ That's more than I have in Penny. Let's try a smaller combination.
+        </div>
+      </div>
+
+      <div class="checkout-btn-row">
+        <button class="btn primary" id="checkout-btn" onclick="checkout()" disabled>Check out</button>
+      </div>
+    </section>
+
+    <!-- CHECKOUT SCREEN -->
+    <section id="screen-checkout" class="screen">
+      <div class="checkout-card">
+        <h2 id="checkout-title">Safe and sound.</h2>
+        <div class="receipt">
+          <img src="images/thumbs-up.png" alt="Ambit" class="ambit-mini" id="checkout-ambit">
+          <div class="receipt-text" id="receipt-text">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <div class="left-behind">
+          <h3>What I left behind</h3>
+          <div class="items-list" id="left-behind-list">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <div class="polaris-card">
+          <div class="polaris-title"><span class="star">⭐</span> From Polaris</div>
+          <p id="polaris-message">
+            <!-- filled by JS -->
+          </p>
+        </div>
+
+        <div class="dream-progress-card">
+          <div class="dream-title">🏎️ My Dream: The Red Car</div>
+          <div class="progress-info" id="dream-info">$0.30 saved of $2.85</div>
+          <div class="progress"><div class="progress-fill" id="dream-progress-fill" style="width: 10.5%"></div></div>
+        </div>
+      </div>
+
+      <div class="checkout-actions">
+        <button class="btn primary" onclick="playAgain()">Shop again</button>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      From the book <em>Ambit Goes Shopping</em> · an Ambit Adventures story · <a href="/">ambitbudget.com</a>
+    </div>
+
+  </div>
+
+  <script>
+    // --- GAME STATE (cents throughout for precision) ---
+    const state = {
+      pennyBalance: 258,      // spending money Ambit has WITH Penny (not on hand)
+      polarisBalance: 30,     // long-term savings with Polaris
+      dreamTarget: 285,       // the red car
+      selectedIds: new Set()
+    };
+
+    const items = [
+      { id: "hat",  name: "Blue Hat",      price: 100, emoji: "🎩" },
+      { id: "coat", name: "Orange Coat",   price: 150, emoji: "🧥" },
+      { id: "pin",  name: "Compass Pin",   price: 75,  emoji: "🧭" }
+    ];
+
+    const dreamItem = { id: "car", name: "Red Car", price: 285, emoji: "🏎️" };
+
+    // --- UTILS ---
+    function fmt(cents) {
+      const dollars = (cents / 100).toFixed(2);
+      return "$" + dollars;
+    }
+
+    // --- RENDER ---
+    function renderItems() {
+      const grid = document.getElementById("items-grid");
+      grid.innerHTML = "";
+      items.forEach(item => {
+        const el = document.createElement("div");
+        el.className = "item" + (state.selectedIds.has(item.id) ? " selected" : "");
+        el.innerHTML = `
+          <div class="emoji">${item.emoji}</div>
+          <div class="name">${item.name}</div>
+          <div class="price">${fmt(item.price)}</div>
+        `;
+        el.onclick = () => toggleItem(item.id);
+        grid.appendChild(el);
+      });
+
+      // Dream car (locked until you save enough — and you cannot buy with spending money alone anyway)
+      const car = document.createElement("div");
+      car.className = "item locked dream-car";
+      const progressPct = Math.min(100, (state.polarisBalance / state.dreamTarget) * 100);
+      car.innerHTML = `
+        <div class="emoji">${dreamItem.emoji}</div>
+        <div class="name">${dreamItem.name}</div>
+        <div class="price">${fmt(dreamItem.price)}</div>
+        <div class="lock-badge">My Dream · saving with Polaris</div>
+        <div class="progress"><div class="progress-fill" style="width: ${progressPct.toFixed(1)}%"></div></div>
+      `;
+      car.onclick = () => showDreamMessage();
+      grid.appendChild(car);
+    }
+
+    function renderBackpack() {
+      const itemsEl = document.getElementById("backpack-items");
+      const totalEl = document.getElementById("backpack-total");
+      const warningEl = document.getElementById("over-warning");
+      const checkoutBtn = document.getElementById("checkout-btn");
+
+      const selected = items.filter(i => state.selectedIds.has(i.id));
+      const total = selected.reduce((sum, i) => sum + i.price, 0);
+      const overBudget = total > state.pennyBalance;
+
+      if (selected.length === 0) {
+        itemsEl.className = "backpack-items empty";
+        itemsEl.textContent = "(click items above to add them)";
+      } else {
+        itemsEl.className = "backpack-items";
+        itemsEl.innerHTML = selected.map(i =>
+          `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;"><span style="font-size:18px;">${i.emoji}</span>${i.name}</span>`
+        ).join("");
+      }
+
+      totalEl.textContent = fmt(total);
+      totalEl.className = "total-amount" + (overBudget ? " over" : "");
+
+      warningEl.classList.toggle("show", overBudget);
+      checkoutBtn.disabled = selected.length === 0 || overBudget;
+    }
+
+    function toggleItem(id) {
+      if (state.selectedIds.has(id)) {
+        state.selectedIds.delete(id);
+      } else {
+        state.selectedIds.add(id);
+      }
+      renderItems();
+      renderBackpack();
+    }
+
+    function showDreamMessage() {
+      // Surface a soft message about the dream car
+      const warningEl = document.getElementById("over-warning");
+      warningEl.innerHTML = "✨ The red car is my dream. Polaris is saving for it, one dime at a time. $" +
+        (state.polarisBalance / 100).toFixed(2) + " saved of $" +
+        (state.dreamTarget / 100).toFixed(2) + ".";
+      warningEl.classList.add("show");
+      setTimeout(() => {
+        // Only hide if user hasn't over-budgeted meanwhile
+        const selected = items.filter(i => state.selectedIds.has(i.id));
+        const total = selected.reduce((sum, i) => sum + i.price, 0);
+        if (total <= state.pennyBalance) warningEl.classList.remove("show");
+        else renderBackpack(); // restore normal over-budget warning
+      }, 3500);
+    }
+
+    // --- SCREENS ---
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function goToShop() {
+      showScreen("screen-shop");
+      renderItems();
+      renderBackpack();
+    }
+
+    function checkout() {
+      const selected = items.filter(i => state.selectedIds.has(i.id));
+      const leftBehind = items.filter(i => !state.selectedIds.has(i.id));
+      const spent = selected.reduce((sum, i) => sum + i.price, 0);
+      const remaining = state.pennyBalance - spent;
+
+      // Build receipt
+      const receipt = document.getElementById("receipt-text");
+      const selectedText = selected.map(i => `<strong>${i.emoji} ${i.name}</strong>`).join(" and ");
+      receipt.innerHTML =
+        `<p>You helped me choose ${selectedText}.</p>` +
+        `<p style="margin-top:6px;">Spent <strong>${fmt(spent)}</strong>. Penny still has <strong>${fmt(remaining)}</strong> for next time and just-in-case.</p>`;
+
+      // Left behind
+      const leftList = document.getElementById("left-behind-list");
+      if (leftBehind.length === 0) {
+        leftList.innerHTML = `<div class="none">Nothing this time — but my dream is still waiting.</div>`;
+      } else {
+        leftList.innerHTML = leftBehind.map(i =>
+          `<div class="left-item"><span class="lb-emoji">${i.emoji}</span>${i.name} (${fmt(i.price)})</div>`
+        ).join("");
+      }
+
+      // Polaris message — tailored to choice
+      const polarisMsg = document.getElementById("polaris-message");
+      if (selected.some(i => i.id === "hat") && selected.length === 1) {
+        polarisMsg.textContent =
+          "The hat is what you came for. Coming back for the coat and the pin later means next time, more dimes can come to me. Keep going.";
+      } else if (selected.length === 0) {
+        polarisMsg.textContent =
+          "Sometimes the wisest trip is the one where you save everything for later. I'm proud of you.";
+      } else {
+        polarisMsg.textContent =
+          "You picked well. Remember — one in ten of anything you earn still comes to me. I hold your dream until you're ready.";
+      }
+
+      // Progress bar
+      const pct = Math.min(100, (state.polarisBalance / state.dreamTarget) * 100);
+      document.getElementById("dream-progress-fill").style.width = pct.toFixed(1) + "%";
+      document.getElementById("dream-info").textContent =
+        `${fmt(state.polarisBalance)} saved of ${fmt(state.dreamTarget)}`;
+
+      // Title line
+      const title = document.getElementById("checkout-title");
+      if (selected.length === 0) {
+        title.textContent = "Nothing today. That's okay.";
+        document.getElementById("checkout-ambit").src = "images/thinking.png";
+      } else if (selected.length === 1 && selected[0].id === "hat") {
+        title.textContent = "Safe and sound.";
+        document.getElementById("checkout-ambit").src = "images/thumbs-up.png";
+      } else {
+        title.textContent = "You chose.";
+        document.getElementById("checkout-ambit").src = "images/idea.png";
+      }
+
+      showScreen("screen-checkout");
+    }
+
+    function playAgain() {
+      state.selectedIds.clear();
+      goToShop();
+    }
+
+    // Init
+    renderItems();
+    renderBackpack();
+  </script>
+</body>
+</html>
