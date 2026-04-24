@@ -554,7 +554,28 @@
       }
 
       // Running animation frame cycle
-      if (p.onGround) p.animFrame = (p.animFrame + 0.4) % 4;
+      if (p.onGround) {
+        const prevFrame = p.animFrame;
+        p.animFrame = (p.animFrame + 0.4) % 4;
+        // Dust puff at every "step" — emit when phase crosses a half cycle
+        const prevStep = Math.floor(prevFrame * 2);
+        const nowStep = Math.floor(p.animFrame * 2);
+        if (prevStep !== nowStep) {
+          // Alternate foot position (left/right of player center)
+          const footOffset = (nowStep % 2 === 0 ? -1 : 1) * p.w * 0.2;
+          for (let i = 0; i < 5; i++) {
+            state.particles.push({
+              x: p.x + p.w / 2 + footOffset + (Math.random() - 0.5) * 6,
+              y: GROUND_Y - 1,
+              vx: -RUN_SPEED * 0.4 - Math.random() * 1.8,
+              vy: -Math.random() * 1.6 - 0.4,
+              life: 22 + Math.random() * 10,
+              size: 3 + Math.random() * 2,
+              color: "#B88660"
+            });
+          }
+        }
+      }
 
       // Collisions
       for (const o of state.obstacles) {
@@ -693,10 +714,10 @@
 
       // Particles
       for (const p of state.particles) {
-        ctx.globalAlpha = Math.max(0, p.life / 25);
+        ctx.globalAlpha = Math.max(0, p.life / 30);
         ctx.fillStyle = p.color;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.size || 3, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -843,16 +864,23 @@
         const drawW = p.w;
         const drawH = p.h;
 
-        // Running animation: subtle bob + side-to-side sway while grounded
+        // Running animation: pronounced bob + rhythmic sway while grounded
         const phase = p.animFrame * Math.PI;
-        const bob = p.onGround ? Math.abs(Math.sin(phase)) * 2 - 2 : 0;
-        const sway = p.onGround ? Math.sin(phase) * 0.07 : 0;
+        // Bob: clear up-and-down bounce per stride, 0 to 5px
+        const bob = p.onGround ? Math.abs(Math.sin(phase)) * -5 : 0;
+        // Sway: body tilts left and right with each step (±7 degrees)
+        const sway = p.onGround ? Math.sin(phase) * 0.12 : 0;
+        // Slight horizontal shift in time with stride
+        const shift = p.onGround ? Math.sin(phase * 2) * 1.5 : 0;
         // Jump tilt: lean forward going up, back coming down
         const jumpTilt = p.onGround ? 0 : (p.vy < 0 ? -0.08 : 0.05);
+        // Air squash: slight vertical stretch while going up, squash landing
+        const airScaleY = p.onGround ? 1 : (p.vy < -6 ? 1.04 : p.vy > 8 ? 0.96 : 1);
 
         ctx.save();
-        ctx.translate(p.x + p.w / 2, p.y + p.h / 2 + bob);
+        ctx.translate(p.x + p.w / 2 + shift, p.y + p.h / 2 + bob);
         ctx.rotate(sway + jumpTilt);
+        ctx.scale(1, airScaleY);
         ctx.drawImage(
           ambitSprite,
           SPRITE_CROP.sx, SPRITE_CROP.sy, SPRITE_CROP.sw, SPRITE_CROP.sh,
