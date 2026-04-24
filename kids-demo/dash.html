@@ -49,6 +49,7 @@
     }
     .wrap {
       flex: 1; display: flex; flex-direction: column;
+      justify-content: center;
       padding: 10px;
       gap: 10px;
       max-width: 860px; width: 100%; margin: 0 auto;
@@ -81,21 +82,21 @@
 
     .stage {
       position: relative;
-      flex: 1;
-      min-height: 340px;
+      width: 100%;
+      aspect-ratio: 2 / 1;
+      max-height: 62vh;
       background: linear-gradient(180deg, var(--sky) 0%, var(--sky-deep) 72%, var(--floor) 72%, var(--floor-deep) 100%);
       border-radius: var(--radius);
       box-shadow: var(--shadow-lift);
       overflow: hidden;
       touch-action: none;
+      margin: 0 auto;
     }
     canvas {
       display: block;
       width: 100%;
       height: 100%;
       touch-action: none;
-      image-rendering: pixelated;
-      image-rendering: -moz-crisp-edges;
     }
 
     .hud {
@@ -894,18 +895,10 @@
       if (state.mode === "playing") jump();
     });
 
-    // Resize — scale canvas backing store for crisp rendering
-    function resize() {
-      const stage = document.getElementById("stage");
-      const rect = stage.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = W;
-      canvas.height = H;
-      canvas.style.width = rect.width + "px";
-      canvas.style.height = rect.height + "px";
-    }
-    window.addEventListener("resize", resize);
-    resize();
+    // Canvas internal resolution is fixed at 800x400; CSS handles display sizing
+    // with aspect-ratio: 2/1 on the stage, so no stretching occurs.
+    canvas.width = W;
+    canvas.height = H;
   </script>
 </body>
 </html>
