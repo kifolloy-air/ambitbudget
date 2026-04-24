@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Dash to the Shop — Ambit Adventures</title>
+  <meta name="description" content="Ambit Dash — run to the shop, jump obstacles, collect coins. An Ambit Adventures action game.">
+  <meta name="theme-color" content="#1E3A5F">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <style>
+    :root {
+      --cream: #FFF8E7;
+      --cream-deep: #FBEFD5;
+      --navy: #1E3A5F;
+      --navy-soft: #2C4A70;
+      --gold: #E8B547;
+      --gold-deep: #D4A94C;
+      --penny-pink: #F4B4C1;
+      --polaris-yellow: #FFD966;
+      --sky: #B4DBF0;
+      --sky-deep: #7FBBDE;
+      --floor: #B88660;
+      --floor-deep: #8F6340;
+      --car-red: #D64545;
+      --text: #2C3E50;
+      --text-soft: #6B7B8C;
+      --shadow: 0 4px 14px rgba(30, 58, 95, 0.18);
+      --shadow-lift: 0 10px 30px rgba(30, 58, 95, 0.25);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      font-family: "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: linear-gradient(180deg, #14243a 0%, #1E3A5F 100%);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .wrap {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 10px;
+      gap: 10px;
+      max-width: 860px; width: 100%; margin: 0 auto;
+    }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 4px 0;
+      color: var(--cream);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-mark {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--gold); color: var(--navy);
+      display: grid; place-items: center;
+      font-weight: 900; font-size: 18px;
+    }
+    .brand-title { font-weight: 800; font-size: 18px; letter-spacing: -0.2px; }
+    .brand-tag { color: rgba(255,255,255,0.65); font-size: 11px; letter-spacing: 0.3px; }
+
+    .exit-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.12); color: var(--cream);
+      padding: 7px 12px; border-radius: 999px;
+      font-weight: 800; font-size: 13px;
+      text-decoration: none;
+      transition: background 0.15s ease;
+      font-family: inherit;
+    }
+    .exit-pill:hover { background: rgba(255,255,255,0.2); }
+
+    .stage {
+      position: relative;
+      flex: 1;
+      min-height: 340px;
+      background: linear-gradient(180deg, var(--sky) 0%, var(--sky-deep) 72%, var(--floor) 72%, var(--floor-deep) 100%);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lift);
+      overflow: hidden;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+    }
+
+    .hud {
+      position: absolute;
+      top: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; gap: 10px;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .hud-chip {
+      background: rgba(30,58,95,0.82);
+      color: var(--cream);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(4px);
+    }
+    .hud-chip .chip-icon { font-size: 15px; }
+    .hud-chip.coins { background: rgba(232,181,71,0.95); color: var(--navy); }
+
+    .overlay {
+      position: absolute; inset: 0;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(30,58,95,0.7);
+      backdrop-filter: blur(6px);
+      z-index: 10;
+      padding: 20px;
+    }
+    .overlay.show { display: flex; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .overlay-card {
+      background: white;
+      padding: 24px 22px;
+      border-radius: var(--radius);
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-lift);
+    }
+    .overlay h2 {
+      color: var(--navy);
+      font-size: 26px;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+    .overlay p {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-soft);
+      margin-bottom: 16px;
+    }
+    .overlay .stat-row {
+      display: flex; justify-content: center; gap: 10px;
+      margin: 12px 0 16px;
+      flex-wrap: wrap;
+    }
+    .overlay .stat {
+      background: var(--cream);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 800;
+      color: var(--navy);
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .overlay .stat .stat-icon { font-size: 18px; }
+
+    .btn {
+      display: inline-block;
+      background: var(--navy);
+      color: var(--cream);
+      padding: 12px 24px;
+      border: none;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+      text-decoration: none;
+      margin: 4px 2px;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-lift); }
+    .btn.gold { background: var(--gold); color: var(--navy); }
+    .btn.secondary {
+      background: var(--cream-deep);
+      color: var(--navy);
+      box-shadow: none;
+    }
+
+    .ambit-hero {
+      width: 110px;
+      margin: 0 auto 10px;
+      display: block;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.2));
+    }
+    .instructions {
+      background: var(--cream);
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      color: var(--navy);
+      line-height: 1.5;
+    }
+    .instructions strong { color: var(--navy); font-weight: 800; }
+
+    .footer-hint {
+      text-align: center;
+      color: rgba(255,255,255,0.55);
+      font-size: 12px;
+      padding: 4px 0 6px;
+    }
+
+    @media (max-width: 480px) {
+      .overlay-card { padding: 20px 18px; }
+      .overlay h2 { font-size: 22px; }
+      .ambit-hero { width: 84px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <div>
+          <div class="brand-title">Dash to the Shop</div>
+          <div class="brand-tag">Ambit Adventures · Action Game</div>
+        </div>
+      </div>
+      <a class="exit-pill" href="app.html" title="Back to tracker">💰 My Money</a>
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas id="game" width="800" height="400"></canvas>
+
+      <div class="hud">
+        <div class="hud-chip"><span class="chip-icon">📏</span><span id="hud-distance">0%</span></div>
+        <div class="hud-chip coins"><span class="chip-icon">🪙</span><span id="hud-coins">0</span></div>
+      </div>
+
+      <!-- START OVERLAY -->
+      <div class="overlay show" id="overlay-start">
+        <div class="overlay-card">
+          <img src="images/pointing.png" alt="Ambit" class="ambit-hero">
+          <h2>Dash to the Shop!</h2>
+          <div class="instructions">
+            Help Ambit run to the shop. <strong>Tap or press space</strong> to jump. Jump over Franklin the dog, shoes, and Legos. <strong>Collect coins</strong> to bring to the shop.
+          </div>
+          <button class="btn gold" onclick="startGame()">Let's go!</button>
+        </div>
+      </div>
+
+      <!-- WIN OVERLAY -->
+      <div class="overlay" id="overlay-win">
+        <div class="overlay-card">
+          <img src="images/thumbs-up.png" alt="Ambit" class="ambit-hero">
+          <h2>You made it!</h2>
+          <p>Ambit reached the shop. Time to spend those coins.</p>
+          <div class="stat-row">
+            <div class="stat"><span class="stat-icon">🪙</span><span id="win-coins">0 coins</span></div>
+            <div class="stat"><span class="stat-icon">💵</span><span id="win-value">$0.00 bonus</span></div>
+          </div>
+          <button class="btn gold" id="win-shop-btn" onclick="continueToShop()">🛒 Enter the Shop</button>
+          <button class="btn secondary" onclick="startGame()">Run it again</button>
+        </div>
+      </div>
+
+      <!-- LOSE OVERLAY -->
+      <div class="overlay" id="overlay-lose">
+        <div class="overlay-card">
+          <img src="images/thinking.png" alt="Ambit" class="ambit-hero">
+          <h2>Oof.</h2>
+          <p id="lose-message">Ambit tripped. Try again!</p>
+          <div class="stat-row">
+            <div class="stat"><span class="stat-icon">🪙</span><span id="lose-coins">0 coins</span></div>
+          </div>
+          <button class="btn gold" onclick="startGame()">Try again</button>
+          <a class="btn secondary" href="app.html">💰 My Money</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-hint">Tap or press <strong style="color: var(--gold);">SPACE</strong> to jump</div>
+
+  </div>
+
+  <script>
+    // ============================================================
+    // GAME STATE
+    // ============================================================
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    // Virtual canvas size (logical coords). Canvas is CSS-stretched to container.
+    const W = 800, H = 400;
+    const GROUND_Y = 300;
+    const GRAVITY = 0.7;
+    const JUMP_VY = -14;
+    const RUN_SPEED = 4.2; // pixels per frame
+    const LEVEL_LENGTH = 7200; // total world distance to reach shop
+    const COIN_VALUE_CENTS = 5;
+
+    const state = {
+      mode: "menu",  // menu | playing | win | lose
+      cameraX: 0,
+      player: null,
+      obstacles: [],
+      coins: [],
+      coinsCollected: 0,
+      shopX: 0,
+      decorations: [],
+      clouds: [],
+      particles: []
+    };
+
+    // Load Ambit sprite
+    const ambitSprite = new Image();
+    ambitSprite.src = "images/full-body.png";
+    let spriteReady = false;
+    ambitSprite.onload = () => { spriteReady = true; };
+
+    // ============================================================
+    // LEVEL DESIGN
+    // ============================================================
+    function buildLevel() {
+      const obs = [];
+      const coins = [];
+
+      // Gentle tutorial: first 600px clear
+      // Then alternating challenges + coin rewards
+
+      // Obstacle types
+      //   "lego"    : small, narrow (32w x 30h), easy jump
+      //   "shoe"    : medium (60w x 36h)
+      //   "franklin": wide (110w x 54h), big jump
+      //   "pit"     : gap in floor (hazard)
+
+      const mk = (x, type) => {
+        if (type === "lego")     obs.push({ x, y: GROUND_Y - 30, w: 32, h: 30, type });
+        if (type === "shoe")     obs.push({ x, y: GROUND_Y - 36, w: 60, h: 36, type });
+        if (type === "franklin") obs.push({ x, y: GROUND_Y - 54, w: 110, h: 54, type });
+        if (type === "pit")      obs.push({ x, y: GROUND_Y, w: 80, h: 100, type });
+      };
+
+      const coin = (x, y) => coins.push({ x, y, r: 14, collected: false });
+
+      // Coin cluster helper (arc or line)
+      const arcCluster = (x, count, step, peakOffset) => {
+        for (let i = 0; i < count; i++) {
+          const arcY = GROUND_Y - 80 - peakOffset * Math.sin(Math.PI * (i / (count - 1 || 1)));
+          coin(x + i * step, arcY);
+        }
+      };
+
+      // ---- Level layout ----
+      // 0-700: ease in
+      coin(400, GROUND_Y - 60);
+      coin(500, GROUND_Y - 60);
+
+      // 700-1400: first obstacle
+      mk(900, "lego");
+      arcCluster(1000, 5, 28, 60);
+
+      // 1400-2200: shoe
+      mk(1600, "shoe");
+      coin(1780, GROUND_Y - 80);
+      coin(1820, GROUND_Y - 90);
+      coin(1860, GROUND_Y - 80);
+
+      // 2200-3000: Franklin (big)
+      arcCluster(2200, 4, 30, 30);
+      mk(2600, "franklin");
+      coin(2720, GROUND_Y - 120);
+      coin(2760, GROUND_Y - 130);
+      coin(2800, GROUND_Y - 120);
+
+      // 3000-3800: combo
+      mk(3100, "lego");
+      mk(3180, "lego");
+      arcCluster(3300, 5, 28, 50);
+
+      // 3800-4600: shoe + coins
+      mk(4000, "shoe");
+      coin(4160, GROUND_Y - 100);
+      coin(4210, GROUND_Y - 110);
+      coin(4260, GROUND_Y - 100);
+      mk(4400, "lego");
+
+      // 4600-5400: pit!
+      arcCluster(4700, 4, 30, 20);
+      mk(5050, "pit");
+      coin(5080, GROUND_Y - 100);
+      coin(5120, GROUND_Y - 110);
+      coin(5160, GROUND_Y - 100);
+
+      // 5400-6200: second Franklin
+      mk(5700, "franklin");
+      arcCluster(5900, 5, 28, 60);
+
+      // 6200-7000: final stretch
+      mk(6300, "lego");
+      mk(6430, "shoe");
+      arcCluster(6600, 6, 30, 40);
+      mk(6900, "lego");
+
+      state.obstacles = obs;
+      state.coins = coins;
+      state.shopX = LEVEL_LENGTH;
+
+      // Decorations (non-interactive)
+      state.decorations = [];
+      for (let i = 0; i < 30; i++) {
+        state.decorations.push({
+          x: Math.random() * LEVEL_LENGTH,
+          y: GROUND_Y + 8 + Math.random() * 40,
+          type: "carpet-fuzz",
+          size: 2 + Math.random() * 4
+        });
+      }
+
+      // Clouds (background, slow parallax)
+      state.clouds = [];
+      for (let i = 0; i < 6; i++) {
+        state.clouds.push({
+          x: Math.random() * LEVEL_LENGTH,
+          y: 30 + Math.random() * 100,
+          size: 40 + Math.random() * 60
+        });
+      }
+    }
+
+    // ============================================================
+    // GAME CONTROL
+    // ============================================================
+    function startGame() {
+      state.mode = "playing";
+      state.cameraX = 0;
+      state.coinsCollected = 0;
+      state.particles = [];
+      state.player = {
+        x: 120, y: GROUND_Y - 52,
+        w: 38, h: 52,
+        vy: 0,
+        onGround: true,
+        animFrame: 0
+      };
+      buildLevel();
+      hideOverlay("overlay-start");
+      hideOverlay("overlay-win");
+      hideOverlay("overlay-lose");
+      updateHUD();
+    }
+
+    function hideOverlay(id) {
+      document.getElementById(id).classList.remove("show");
+    }
+    function showOverlay(id) {
+      document.getElementById(id).classList.add("show");
+    }
+
+    function jump() {
+      if (state.mode !== "playing") return;
+      if (state.player.onGround) {
+        state.player.vy = JUMP_VY;
+        state.player.onGround = false;
+        // jump particles
+        for (let i = 0; i < 4; i++) {
+          state.particles.push({
+            x: state.player.x + state.player.w / 2,
+            y: GROUND_Y,
+            vx: (Math.random() - 0.5) * 2,
+            vy: -Math.random() * 2,
+            life: 20,
+            color: "#EFE0C0"
+          });
+        }
+      }
+    }
+
+    function win() {
+      state.mode = "win";
+      document.getElementById("win-coins").textContent = state.coinsCollected + " coin" + (state.coinsCollected === 1 ? "" : "s");
+      const value = state.coinsCollected * COIN_VALUE_CENTS;
+      document.getElementById("win-value").textContent = "$" + (value / 100).toFixed(2) + " bonus";
+      showOverlay("overlay-win");
+    }
+
+    function lose(reason) {
+      state.mode = "lose";
+      document.getElementById("lose-coins").textContent = state.coinsCollected + " coin" + (state.coinsCollected === 1 ? "" : "s");
+      const msg = {
+        franklin: "Franklin woke up! Try again.",
+        shoe: "Shoe to the face. Try again!",
+        lego: "OUCH. Legos are no joke.",
+        pit: "Into the gap! Jump sooner next time.",
+        default: "Ambit tripped. Try again!"
+      };
+      document.getElementById("lose-message").textContent = msg[reason] || msg.default;
+      showOverlay("overlay-lose");
+    }
+
+    function continueToShop() {
+      const bonus = state.coinsCollected * COIN_VALUE_CENTS;
+      window.location.href = "index.html?bonus=" + bonus;
+    }
+
+    // ============================================================
+    // UPDATE
+    // ============================================================
+    function update() {
+      if (state.mode !== "playing") return;
+
+      const p = state.player;
+      state.cameraX += RUN_SPEED;
+
+      // Gravity
+      p.vy += GRAVITY;
+      p.y += p.vy;
+
+      // Floor collision (considering pits)
+      const worldX = p.x + state.cameraX; // player's absolute world x
+      const pit = state.obstacles.find(o =>
+        o.type === "pit" &&
+        worldX + p.w > o.x &&
+        worldX < o.x + o.w
+      );
+
+      const groundHere = pit ? H + 100 : GROUND_Y;
+      if (p.y + p.h >= groundHere) {
+        if (pit) {
+          // fell into pit
+          lose("pit");
+          return;
+        }
+        p.y = groundHere - p.h;
+        p.vy = 0;
+        p.onGround = true;
+      } else {
+        p.onGround = false;
+      }
+
+      // Running animation frame cycle
+      if (p.onGround) p.animFrame = (p.animFrame + 0.4) % 4;
+
+      // Collisions
+      for (const o of state.obstacles) {
+        if (o.type === "pit") continue;
+        if (worldX + p.w - 6 > o.x &&
+            worldX + 6 < o.x + o.w &&
+            p.y + p.h - 4 > o.y &&
+            p.y + 4 < o.y + o.h) {
+          lose(o.type);
+          return;
+        }
+      }
+
+      // Coins
+      for (const c of state.coins) {
+        if (c.collected) continue;
+        const dx = (worldX + p.w / 2) - c.x;
+        const dy = (p.y + p.h / 2) - c.y;
+        if (dx * dx + dy * dy < (c.r + 24) * (c.r + 24)) {
+          c.collected = true;
+          state.coinsCollected++;
+          updateHUD();
+          // sparkle particles
+          for (let i = 0; i < 8; i++) {
+            state.particles.push({
+              x: c.x - state.cameraX,
+              y: c.y,
+              vx: (Math.random() - 0.5) * 4,
+              vy: (Math.random() - 0.8) * 4,
+              life: 25,
+              color: "#FFD966"
+            });
+          }
+        }
+      }
+
+      // Particles
+      state.particles = state.particles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.3;
+        p.life--;
+        return p.life > 0;
+      });
+
+      // Win
+      if (state.cameraX + p.x >= state.shopX - 60) {
+        win();
+        return;
+      }
+    }
+
+    function updateHUD() {
+      const progress = Math.min(100, Math.round((state.cameraX / LEVEL_LENGTH) * 100));
+      document.getElementById("hud-distance").textContent = progress + "%";
+      document.getElementById("hud-coins").textContent = state.coinsCollected;
+    }
+
+    // ============================================================
+    // RENDER
+    // ============================================================
+    function render() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Sky
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+      skyGrad.addColorStop(0, "#B4DBF0");
+      skyGrad.addColorStop(1, "#7FBBDE");
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, GROUND_Y);
+
+      // Clouds (slow parallax — 0.3x speed)
+      for (const cloud of state.clouds) {
+        const screenX = cloud.x - state.cameraX * 0.3;
+        const wrapped = ((screenX % (W + 200)) + (W + 200)) % (W + 200) - 100;
+        drawCloud(wrapped, cloud.y, cloud.size);
+      }
+
+      // Distant furniture silhouettes (medium parallax — 0.5x)
+      ctx.fillStyle = "rgba(30,58,95,0.12)";
+      for (let i = 0; i < 12; i++) {
+        const baseX = i * 220 - (state.cameraX * 0.5) % 220;
+        ctx.fillRect(baseX, GROUND_Y - 60, 80, 60);
+        ctx.fillRect(baseX + 110, GROUND_Y - 100, 60, 100);
+      }
+
+      // Floor (carpet)
+      const floorGrad = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+      floorGrad.addColorStop(0, "#B88660");
+      floorGrad.addColorStop(1, "#8F6340");
+      ctx.fillStyle = floorGrad;
+      ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+
+      // Pits (render BEFORE floor decorations so they're visible as gaps)
+      for (const o of state.obstacles) {
+        if (o.type !== "pit") continue;
+        const screenX = o.x - state.cameraX;
+        if (screenX > W || screenX + o.w < 0) continue;
+        // Draw floor cut-out (dark)
+        ctx.fillStyle = "#14243a";
+        ctx.fillRect(screenX, GROUND_Y, o.w, H - GROUND_Y);
+      }
+
+      // Carpet fuzz decorations (fast parallax — 1.0x)
+      ctx.fillStyle = "rgba(93, 66, 46, 0.55)";
+      for (const d of state.decorations) {
+        const screenX = d.x - state.cameraX;
+        if (screenX > W + 20 || screenX + d.size < -20) continue;
+        ctx.fillRect(screenX, d.y, d.size, 1);
+      }
+
+      // Obstacles (on top of floor)
+      for (const o of state.obstacles) {
+        if (o.type === "pit") continue;
+        const screenX = o.x - state.cameraX;
+        if (screenX > W || screenX + o.w < 0) continue;
+        drawObstacle(screenX, o);
+      }
+
+      // Coins
+      for (const c of state.coins) {
+        if (c.collected) continue;
+        const screenX = c.x - state.cameraX;
+        if (screenX > W + 20 || screenX + c.r < -20) continue;
+        drawCoin(screenX, c.y, c.r);
+      }
+
+      // Shop at the end
+      const shopScreenX = state.shopX - state.cameraX;
+      if (shopScreenX < W + 100) {
+        drawShop(shopScreenX, GROUND_Y);
+      }
+
+      // Player
+      if (state.player) drawPlayer(state.player);
+
+      // Particles
+      for (const p of state.particles) {
+        ctx.globalAlpha = Math.max(0, p.life / 25);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawCloud(x, y, size) {
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      ctx.beginPath();
+      ctx.arc(x, y, size * 0.4, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.4, y - size * 0.15, size * 0.35, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.7, y, size * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawCoin(x, y, r) {
+      const wobble = Math.sin((state.cameraX + x) * 0.03) * 2;
+      ctx.save();
+      ctx.translate(x, y + wobble);
+      // Outer gold
+      ctx.fillStyle = "#E8B547";
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#A37A1F";
+      ctx.stroke();
+      // Dollar sign
+      ctx.fillStyle = "#A37A1F";
+      ctx.font = "bold 16px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("$", 0, 1);
+      ctx.restore();
+    }
+
+    function drawObstacle(x, o) {
+      if (o.type === "franklin") {
+        // Sleeping dog mound
+        ctx.fillStyle = "#A87557";
+        ctx.beginPath();
+        ctx.moveTo(x, o.y + o.h);
+        ctx.bezierCurveTo(x, o.y, x + o.w * 0.3, o.y - 8, x + o.w * 0.5, o.y - 4);
+        ctx.bezierCurveTo(x + o.w * 0.7, o.y + 4, x + o.w, o.y + 10, x + o.w, o.y + o.h);
+        ctx.closePath();
+        ctx.fill();
+        // Ear
+        ctx.fillStyle = "#8A5C41";
+        ctx.beginPath();
+        ctx.ellipse(x + o.w * 0.78, o.y + 6, 14, 18, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        // Z for sleeping
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.font = "bold 13px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("💤", x + o.w * 0.5, o.y - 4);
+      } else if (o.type === "shoe") {
+        // Dad's sneaker
+        ctx.fillStyle = "#454545";
+        ctx.beginPath();
+        ctx.moveTo(x, o.y + o.h);
+        ctx.lineTo(x, o.y + o.h - 14);
+        ctx.lineTo(x + o.w * 0.3, o.y + o.h * 0.3);
+        ctx.quadraticCurveTo(x + o.w * 0.6, o.y, x + o.w, o.y + o.h * 0.5);
+        ctx.lineTo(x + o.w, o.y + o.h);
+        ctx.closePath();
+        ctx.fill();
+        // Sole
+        ctx.fillStyle = "#2A2A2A";
+        ctx.fillRect(x - 2, o.y + o.h - 8, o.w + 4, 8);
+        // Laces
+        ctx.strokeStyle = "#CCCCCC";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x + o.w * 0.35, o.y + o.h * 0.5);
+        ctx.lineTo(x + o.w * 0.65, o.y + o.h * 0.35);
+        ctx.moveTo(x + o.w * 0.4, o.y + o.h * 0.65);
+        ctx.lineTo(x + o.w * 0.7, o.y + o.h * 0.5);
+        ctx.stroke();
+      } else if (o.type === "lego") {
+        // Lego brick (red)
+        ctx.fillStyle = "#D64545";
+        ctx.fillRect(x, o.y + 8, o.w, o.h - 8);
+        // Studs
+        ctx.fillStyle = "#B83535";
+        ctx.beginPath();
+        ctx.arc(x + 10, o.y + 6, 5, 0, Math.PI * 2);
+        ctx.arc(x + 22, o.y + 6, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawShop(x, floorY) {
+      const shopW = 160, shopH = 130;
+      const shopY = floorY - shopH;
+      // Awning
+      ctx.fillStyle = "#D64545";
+      ctx.fillRect(x - 10, shopY - 12, shopW + 20, 22);
+      ctx.fillStyle = "#B83535";
+      for (let i = 0; i < 6; i++) {
+        if (i % 2 === 1) {
+          ctx.fillRect(x - 10 + i * (shopW + 20) / 6, shopY - 12, (shopW + 20) / 6, 22);
+        }
+      }
+      // Body
+      ctx.fillStyle = "#FBEFD5";
+      ctx.fillRect(x, shopY, shopW, shopH);
+      ctx.strokeStyle = "#8F6340";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, shopY, shopW, shopH);
+      // Window display
+      ctx.fillStyle = "#FFF8E7";
+      ctx.fillRect(x + 15, shopY + 20, shopW - 30, 60);
+      // Hat in window
+      ctx.fillStyle = "#4A89C7";
+      ctx.fillRect(x + 30, shopY + 50, 30, 18);
+      ctx.fillRect(x + 22, shopY + 64, 46, 6);
+      // Car in window (red!)
+      ctx.fillStyle = "#D64545";
+      ctx.fillRect(x + 85, shopY + 55, 48, 14);
+      ctx.fillStyle = "#8B2A2A";
+      ctx.beginPath();
+      ctx.arc(x + 95, shopY + 72, 5, 0, Math.PI * 2);
+      ctx.arc(x + 123, shopY + 72, 5, 0, Math.PI * 2);
+      ctx.fill();
+      // Sign
+      ctx.fillStyle = "#1E3A5F";
+      ctx.font = "bold 22px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("SHOP", x + shopW / 2, shopY + 108);
+    }
+
+    function drawPlayer(p) {
+      // Shadow
+      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      ctx.beginPath();
+      ctx.ellipse(p.x + p.w / 2, GROUND_Y + 2, p.w * 0.55, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (spriteReady) {
+        // Full-body sprite with a slight bob
+        const bob = p.onGround ? Math.sin(p.animFrame * Math.PI) * 1.5 : 0;
+        const tilt = p.onGround ? 0 : (p.vy > 0 ? 0.1 : -0.1);
+        ctx.save();
+        ctx.translate(p.x + p.w / 2, p.y + p.h / 2 + bob);
+        ctx.rotate(tilt);
+        // Scale image to player bounds
+        ctx.drawImage(ambitSprite, -p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      } else {
+        // Fallback shape
+        ctx.fillStyle = "#E8B547";
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = "#1E3A5F";
+        ctx.fillRect(p.x + 4, p.y + 10, p.w - 8, 10);
+      }
+    }
+
+    // ============================================================
+    // GAME LOOP
+    // ============================================================
+    let lastTime = 0;
+    function loop(t) {
+      update();
+      render();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    // ============================================================
+    // INPUT
+    // ============================================================
+    document.addEventListener("keydown", e => {
+      if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") {
+        e.preventDefault();
+        if (state.mode === "menu") startGame();
+        else if (state.mode === "playing") jump();
+      }
+      if (e.code === "Enter" && state.mode === "win") continueToShop();
+      if (e.code === "Enter" && (state.mode === "lose" || state.mode === "menu")) startGame();
+    });
+    document.getElementById("stage").addEventListener("pointerdown", e => {
+      if (state.mode === "playing") jump();
+    });
+
+    // Resize — scale canvas backing store for crisp rendering
+    function resize() {
+      const stage = document.getElementById("stage");
+      const rect = stage.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = W;
+      canvas.height = H;
+      canvas.style.width = rect.width + "px";
+      canvas.style.height = rect.height + "px";
+    }
+    window.addEventListener("resize", resize);
+    resize();
+  </script>
+</body>
+</html>

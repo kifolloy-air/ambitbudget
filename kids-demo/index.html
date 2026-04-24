@@ -552,6 +552,10 @@
         </div>
       </div>
 
+      <div id="dash-bonus-banner" style="display: none; background: linear-gradient(135deg, #FFF9DD 0%, #FFEFA8 100%); border-left: 4px solid var(--gold); padding: 10px 14px; border-radius: 12px; margin-bottom: 12px; font-size: 14px; color: var(--navy); font-weight: 600;">
+        <strong>🎮 +<span id="dash-bonus-display">$0.00</span></strong> from your Dash — added to Penny for this trip!
+      </div>
+
       <div class="items-grid" id="items-grid">
         <!-- items render here -->
       </div>
@@ -621,11 +625,16 @@
   </div>
 
   <script>
+    // --- READ BONUS FROM DASH (if present) ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const dashBonus = Math.max(0, Math.min(500, parseInt(urlParams.get("bonus"), 10) || 0));
+
     // --- GAME STATE (cents throughout for precision) ---
     const state = {
-      pennyBalance: 258,      // spending money Ambit has WITH Penny (not on hand)
-      polarisBalance: 30,     // long-term savings with Polaris
-      dreamTarget: 285,       // the red car
+      pennyBalance: 258 + dashBonus,   // spending money (boosted by coins from Dash if any)
+      polarisBalance: 30,              // long-term savings with Polaris
+      dreamTarget: 285,                // the red car
+      dashBonus: dashBonus,
       selectedIds: new Set()
     };
 
@@ -735,6 +744,14 @@
     }
 
     function goToShop() {
+      // Update balance displays (may have a dash bonus applied)
+      document.getElementById("penny-display").textContent = fmt(state.pennyBalance);
+      document.getElementById("polaris-display").textContent = fmt(state.polarisBalance);
+      if (state.dashBonus > 0) {
+        const banner = document.getElementById("dash-bonus-banner");
+        banner.style.display = "block";
+        document.getElementById("dash-bonus-display").textContent = fmt(state.dashBonus);
+      }
       showScreen("screen-shop");
       renderItems();
       renderBackpack();
@@ -806,6 +823,10 @@
     // Init
     renderItems();
     renderBackpack();
+    // If arriving from a Dash run (bonus present), skip welcome and go straight to the shop
+    if (dashBonus > 0) {
+      goToShop();
+    }
   </script>
 </body>
 </html>
