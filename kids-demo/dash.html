@@ -325,13 +325,13 @@
       particles: []
     };
 
-    // Load Ambit sprite. pointing.png has tightest content packing.
-    // Measured bounding box of non-transparent pixels: x=39, y=148, w=937, h=1019 of 1024x1536.
+    // Load Ambit sprite — full body so compass face, jacket, AND legs all render.
+    // Measured non-transparent bbox of full-body.png: x=58, y=67, w=244, h=407 of 361x541.
     const ambitSprite = new Image();
-    ambitSprite.src = "images/pointing.png";
+    ambitSprite.src = "images/full-body.png";
     let spriteReady = false;
     ambitSprite.onload = () => { spriteReady = true; };
-    const SPRITE_CROP = { sx: 39, sy: 148, sw: 937, sh: 1019 };
+    const SPRITE_CROP = { sx: 58, sy: 67, sw: 244, sh: 407 };
 
     // ============================================================
     // LEVEL DESIGN
@@ -452,8 +452,8 @@
       state.coinsCollected = 0;
       state.particles = [];
       state.player = {
-        x: 90, y: GROUND_Y - 102,
-        w: 94, h: 102,
+        x: 95, y: GROUND_Y - 130,
+        w: 78, h: 130,
         vy: 0,
         onGround: true,
         animFrame: 0
