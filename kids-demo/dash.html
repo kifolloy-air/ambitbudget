@@ -324,11 +324,13 @@
       particles: []
     };
 
-    // Load Ambit sprite
+    // Load Ambit sprite. pointing.png has tightest content packing.
+    // Measured bounding box of non-transparent pixels: x=39, y=148, w=937, h=1019 of 1024x1536.
     const ambitSprite = new Image();
-    ambitSprite.src = "images/full-body.png";
+    ambitSprite.src = "images/pointing.png";
     let spriteReady = false;
     ambitSprite.onload = () => { spriteReady = true; };
+    const SPRITE_CROP = { sx: 39, sy: 148, sw: 937, sh: 1019 };
 
     // ============================================================
     // LEVEL DESIGN
@@ -449,8 +451,8 @@
       state.coinsCollected = 0;
       state.particles = [];
       state.player = {
-        x: 120, y: GROUND_Y - 52,
-        w: 38, h: 52,
+        x: 90, y: GROUND_Y - 102,
+        w: 94, h: 102,
         vy: 0,
         onGround: true,
         animFrame: 0
@@ -826,28 +828,42 @@
     }
 
     function drawPlayer(p) {
-      // Shadow
-      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      // Shadow (scales with jump height for depth)
+      const airHeight = Math.max(0, (GROUND_Y - (p.y + p.h)));
+      const shadowScale = 1 - Math.min(0.5, airHeight / 200);
+      ctx.fillStyle = "rgba(0,0,0," + (0.28 * shadowScale).toFixed(2) + ")";
       ctx.beginPath();
-      ctx.ellipse(p.x + p.w / 2, GROUND_Y + 2, p.w * 0.55, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(p.x + p.w / 2, GROUND_Y + 3, p.w * 0.5 * shadowScale, 5 * shadowScale, 0, 0, Math.PI * 2);
       ctx.fill();
 
       if (spriteReady) {
-        // Full-body sprite with a slight bob
-        const bob = p.onGround ? Math.sin(p.animFrame * Math.PI) * 1.5 : 0;
-        const tilt = p.onGround ? 0 : (p.vy > 0 ? 0.1 : -0.1);
+        // Draw only the cropped content region of the sprite (no transparent padding)
+        // so Ambit fills the player bounds tightly.
+        const drawW = p.w;
+        const drawH = p.h;
+
+        // Running animation: subtle bob + side-to-side sway while grounded
+        const phase = p.animFrame * Math.PI;
+        const bob = p.onGround ? Math.abs(Math.sin(phase)) * 2 - 2 : 0;
+        const sway = p.onGround ? Math.sin(phase) * 0.07 : 0;
+        // Jump tilt: lean forward going up, back coming down
+        const jumpTilt = p.onGround ? 0 : (p.vy < 0 ? -0.08 : 0.05);
+
         ctx.save();
         ctx.translate(p.x + p.w / 2, p.y + p.h / 2 + bob);
-        ctx.rotate(tilt);
-        // Scale image to player bounds
-        ctx.drawImage(ambitSprite, -p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.rotate(sway + jumpTilt);
+        ctx.drawImage(
+          ambitSprite,
+          SPRITE_CROP.sx, SPRITE_CROP.sy, SPRITE_CROP.sw, SPRITE_CROP.sh,
+          -drawW / 2, -drawH / 2, drawW, drawH
+        );
         ctx.restore();
       } else {
-        // Fallback shape
+        // Fallback shape (loading state)
         ctx.fillStyle = "#E8B547";
         ctx.fillRect(p.x, p.y, p.w, p.h);
         ctx.fillStyle = "#1E3A5F";
-        ctx.fillRect(p.x + 4, p.y + 10, p.w - 8, 10);
+        ctx.fillRect(p.x + 4, p.y + 14, p.w - 8, 18);
       }
     }
 
