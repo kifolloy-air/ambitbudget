@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Ambit Budget Pro</title>
+<title>Ambit&trade; Budget Pro</title>
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0c1445">
@@ -405,6 +405,8 @@ a:focus-visible, button:focus-visible, .btn:focus-visible { outline: 3px solid v
 .onboard-skip:hover { opacity:1; text-decoration:underline; }
 .onboard-step-enter { animation:onboardFadeIn 0.3s ease; }
 @keyframes onboardFadeIn { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:translateX(0); } }
+@keyframes ambit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.ambit-spin { animation: ambit-spin 2.4s linear infinite; }
 @media (max-width:600px) {
   .onboard-card { flex-direction:column; max-width:95%; }
   .onboard-left { flex:0 0 auto; border-radius:16px 16px 0 0; padding:20px 16px; }
@@ -915,7 +917,7 @@ function HelpBar({steps, diagram, bullets, title}) {
       ...a11yClick(()=>setOpen(!open), 'Toggle help section')
     },
       h('span',{style:{fontSize:16}},'?'),
-      h('img',{src:'images/mr-ambit/head.png',alt:'Mr. Ambit',style:{width:28,height:28,objectFit:'contain'}}),
+      h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:28,height:28,objectFit:'contain'}}),
       h('span',{style:{fontSize:13,fontWeight:500,color:'var(--text2)',flex:1}}, title||'How does this work?'),
       h('span',{style:{fontSize:12,color:'var(--text2)',transition:'transform 0.2s',transform:open?'rotate(180deg)':'rotate(0)'}}, '▾')
     ),
@@ -1329,12 +1331,13 @@ function CompassRose({size=24, color='currentColor', className='', style={}}) {
   );
 }
 
-// Ambit Budget Pro logo mark (v5: orange shield, beige interior, navy A, gold needle)
-function ShieldLogo({size=32}) {
+// Ambit Budget Pro logo mark — shield + compass needle through the A
+function ShieldLogo({size=32, spin=false}) {
   return h('img',{
-    src:'icons/logo-app.png',
+    src:'icons/ambit-symbol.png',
     width:size, height:size,
-    alt:'Ambit Budget Pro',
+    alt:'Ambit logo',
+    className: spin ? 'ambit-spin' : '',
     style:{display:'inline-block',verticalAlign:'middle',flexShrink:0,objectFit:'contain'}
   });
 }
@@ -1571,15 +1574,15 @@ function SplashScreen({onDone}) {
     return ()=>{ clearTimeout(t1); clearTimeout(t2); };
   },[]);
   return h('div',{className:'splash-screen'+(fading?' splash-fade':'')},
-    h(ShieldLogo, {size:120}),
+    h(ShieldLogo, {size:120, spin:true}),
     h('div',{className:'splash-title'}, 'Ambit'),
-    h('div',{className:'splash-sub'}, 'Budget Pro')
+    h('div',{className:'splash-sub'}, 'Budget Pro\u2122')
   );
 }
 
 // ── Onboarding Tour ────────────────────────────────────
 const TOUR_STEPS = [
-  { icon:'🧭', title:'Welcome to Ambit Budget Pro',
+  { icon:'🧭', title:'Welcome to Ambit\u2122 Budget Pro',
     desc:'Your personal finance command center. Track spending, manage bills, set budgets, and forecast your balance — all in one place. Let\'s take a quick tour!' },
   { icon:'📊', title:'Dashboard',
     desc:'Your home base. See account balances, spending breakdowns by category, balance forecasts, and this month\'s bills all at a glance. Everything updates as you import transactions.' },
@@ -1634,7 +1637,7 @@ function FirstRunWizard({setPage, onDismiss, isFree, setAccounts, accounts, tran
   const cardRef = useRef(null);
   const reducedMotion = useMemo(()=> window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
 
-  const IMG = 'images/mr-ambit/';
+  const SYMBOL = 'icons/ambit-symbol.png';
   const totalSteps = isFree ? 4 : 5;
 
   // TTS helper
@@ -1681,10 +1684,10 @@ function FirstRunWizard({setPage, onDismiss, isFree, setAccounts, accounts, tran
   },[step]);
 
   function getStepText(s, free) {
-    if(s===0) return "Hey! I'm Mr. Ambit. Let's get your budget set up in 2 minutes. No sign-up needed — your data stays right here on your device.";
+    if(s===0) return "Welcome to Ambit\u2122 Budget Pro. Let's get your budget set up in 2 minutes. No sign-up needed — your data stays right here on your device.";
     if(s===1) return "First, what's your main bank account?";
     if(s===2) return "Now let's see where your money's been going. You can paste bank data or upload a CSV file.";
-    if(!free && s===3) return "Want me to remember these for next time? Set up payee rules to auto-categorize your imports.";
+    if(!free && s===3) return "Want Ambit to remember these for next time? Set up payee rules to auto-categorize your imports.";
     const completionStep = free ? 3 : 4;
     if(s===completionStep) return free
       ? "You're all set! Here's your dashboard. Import some transactions to see your spending breakdown."
@@ -1692,20 +1695,8 @@ function FirstRunWizard({setPage, onDismiss, isFree, setAccounts, accounts, tran
     return '';
   }
 
-  function getStepImage(s, free) {
-    if(s===0) return 'full-body.png';
-    if(s===1) return 'pointing.png';
-    if(s===2) return 'idea.png';
-    if(!free && s===3) return 'thinking.png';
-    return 'thumbs-up.png';
-  }
-
-  function getImageAlt(s, free) {
-    if(s===0) return 'Mr. Ambit standing and waving';
-    if(s===1) return 'Mr. Ambit pointing';
-    if(s===2) return 'Mr. Ambit with an idea';
-    if(!free && s===3) return 'Mr. Ambit thinking';
-    return 'Mr. Ambit giving a thumbs up';
+  function isThinkingStep(s, free) {
+    return !free && s===3;
   }
 
   const goStep = (n) => { setStep(n); setStepKey(k=>k+1); };
@@ -1810,9 +1801,9 @@ function FirstRunWizard({setPage, onDismiss, isFree, setAccounts, accounts, tran
         title: ttsOn ? 'Turn off voice' : 'Read aloud'
       }, ttsOn ? '\uD83D\uDD0A On' : '\uD83D\uDD0A Read aloud'),
 
-      // Left: Mr. Ambit image
+      // Left: Ambit symbol (spins during the "thinking" step)
       h('div',{className:'onboard-left'},
-        h('img',{src:IMG+getStepImage(step, isFree), alt:getImageAlt(step, isFree), key:step, style:{opacity:1}})
+        h('img',{src:SYMBOL, alt:'Ambit logo', key:step, className: isThinkingStep(step, isFree) ? 'ambit-spin' : '', style:{opacity:1}})
       ),
 
       // Right: content
@@ -2442,7 +2433,7 @@ function App({idbData}) {
       // Backup reminder banner
       !isDemo && backupNeeded && h('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',marginBottom:12,background:'rgba(232,160,32,0.1)',border:'1px solid rgba(232,160,32,0.25)',borderRadius:8,fontSize:13,color:'var(--text)'},role:'status'},
         h('span',{'aria-hidden':'true'},'🔒'),
-        h('img',{src:'images/mr-ambit/thinking.png',alt:'Mr. Ambit',style:{width:24,height:24,objectFit:'contain'}}),
+        h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',className:'ambit-spin',style:{width:24,height:24,objectFit:'contain'}}),
         h('span',{style:{flex:1}},
           backupNeeded.never
             ? 'Your local data file needs updating. Export a backup now to prevent data loss. For extra protection, save your backup to OneDrive, Google Drive, or iCloud.'
@@ -2465,7 +2456,7 @@ function App({idbData}) {
       // Free tier welcome banner
       isFreeTier && mode==='mine' && !freeWelcomeDismissed && h('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',marginBottom:12,background:'rgba(126,200,227,0.1)',border:'1px solid rgba(126,200,227,0.25)',borderRadius:8,fontSize:13,color:'var(--text)'},role:'status'},
         h('span',{'aria-hidden':'true'},'👋'),
-        h('img',{src:'images/mr-ambit/thumbs-up.png',alt:'Mr. Ambit',style:{width:30,height:30,objectFit:'contain'}}),
+        h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:30,height:30,objectFit:'contain'}}),
         h('span',{style:{flex:1}},
           'Welcome to Ambit Budget! You\'re on the ',h('strong',null,'Free plan'),'. Track your spending across 1 account. ',
           h('span',{style:{cursor:'pointer',color:'var(--accent2)',fontWeight:600,textDecoration:'underline'}, ...a11yClick(()=>setShowLicenseGate(true))},'Upgrade'),
@@ -2677,7 +2668,7 @@ function CategoriesPage({categories, setCategories, dictionary, showToast, group
     categories.length === 0
       ? h('div',{className:'card'},
           h('div',{className:'empty'},
-            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
+            h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'📂'),
             h('p',null,'No categories yet. Click "New Category" to start building your budget structure.')
           )
@@ -2927,7 +2918,7 @@ function DictionaryPage({dictionary, setDictionary, categories, showToast, group
       ),
       filtered.length === 0
         ? h('div',{className:'empty'},
-            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
+            h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'📖'),
             h('p',null, dictionary.length===0 ? 'No payee rules yet. Add keywords above to auto-categorize transactions when you import them.' : 'No rules match your filter.')
           )
@@ -3413,7 +3404,7 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
             )
           : h('div',{className:'card',style:{marginBottom:16,padding:18}},
               h('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:14}},
-                h('img',{src:'images/mr-ambit/idea.png',alt:'Mr. Ambit idea',style:{width:40,height:40,objectFit:'contain'}}),
+                h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:40,height:40,objectFit:'contain'}}),
                 h('span',{style:{fontSize:14,fontWeight:600,color:'var(--card-text)'}},"First, let's set up your account!")
               ),
               h('form',{onSubmit:e=>{
@@ -3571,7 +3562,7 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
     // Post-import summary card
     postImport && h('div',{className:'card animate-in',style:{marginTop:20,border:'2px solid var(--green)',padding:24}},
       h('div',{style:{display:'flex',alignItems:'center',gap:16,marginBottom:20}},
-        h('img',{src:'images/mr-ambit/thumbs-up.png',alt:'Mr. Ambit thumbs up',style:{width:64,height:64,objectFit:'contain'}}),
+        h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:64,height:64,objectFit:'contain'}}),
         h('div',null,
           h('h3',{style:{color:'var(--green)',margin:0,marginBottom:4}},'Imported '+postImport.total+' transactions'),
           h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:0}},'All done! Here\'s a summary of your import.')
@@ -3928,8 +3919,13 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     if(!txn) return;
     const newName = editPayeeName.trim();
     const keyword = extractKeyword(txn.description||'');
-    // Count matching uncategorized transactions (excluding this one)
-    const matchCount = keyword ? transactions.filter(t=>t.id!==id && t.category==='Uncategorized' && normalizeForMatch(t.description).includes(normalizeForMatch(keyword))).length : 0;
+    // Count all matching transactions (excluding this one and any that already have the new name)
+    const normKw = keyword ? normalizeForMatch(keyword) : '';
+    const matchCount = normKw ? transactions.filter(t =>
+      t.id !== id &&
+      t.cleanName !== newName &&
+      normalizeForMatch(t.description).includes(normKw)
+    ).length : 0;
     setEditPayeeId(null); setEditPayeeName('');
     if(matchCount > 0) {
       const needsCategory = !txn.category || txn.category === 'Uncategorized';
@@ -3944,34 +3940,41 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
 
   const confirmBulkApply = () => {
     if(!bulkApplyPrompt) return;
-    const { txn, newCleanName, keyword } = bulkApplyPrompt;
+    const { txn, newCleanName, keyword, needsCategory } = bulkApplyPrompt;
     const selectedCat = bulkApplyCat;
-    if(!selectedCat) return; // must pick a category
-    const cat = catMap[selectedCat] || categories.find(c=>c.name===selectedCat);
+    // If source txn was uncategorized, a category pick is required
+    if(needsCategory && !selectedCat) return;
+    const cat = selectedCat ? (catMap[selectedCat] || categories.find(c=>c.name===selectedCat)) : null;
     const normKw = normalizeForMatch(keyword);
-    // Update all matching uncategorized transactions + the current one
+    // Rename ALL matches (regardless of category). Only re-categorize rows that were uncategorized.
     let applied = 0;
     setTransactions(prev => prev.map(t => {
       if(t.id === txn.id) {
-        return {...t, cleanName:newCleanName, category:selectedCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
+        const update = {...t, cleanName: newCleanName};
+        if(cat) { update.category = selectedCat; update.group = cat.group || 'Other'; update.catType = cat.catType || 'discretionary'; }
+        return update;
       }
-      if(normKw && t.category === 'Uncategorized' && normalizeForMatch(t.description).includes(normKw)) {
+      if(normKw && t.cleanName !== newCleanName && normalizeForMatch(t.description).includes(normKw)) {
         applied++;
-        return {...t, cleanName:newCleanName, category:selectedCat, group:cat?.group||'Other', catType:cat?.catType||'discretionary'};
+        const update = {...t, cleanName: newCleanName};
+        const wasUncat = !t.category || t.category === 'Uncategorized';
+        if(wasUncat && cat) { update.category = selectedCat; update.group = cat.group || 'Other'; update.catType = cat.catType || 'discretionary'; }
+        return update;
       }
       return t;
     }));
     // Create/update payee rule in dictionary
     if(setDictionary && keyword) {
+      const ruleCat = selectedCat || txn.category || '';
       setDictionary(prev => {
         const existing = prev.find(d=>d.keyword.toUpperCase()===keyword.toUpperCase());
         if(existing) {
-          return prev.map(d=>d.keyword.toUpperCase()===keyword.toUpperCase()?{...d, cleanName:newCleanName, category:selectedCat}:d);
+          return prev.map(d=>d.keyword.toUpperCase()===keyword.toUpperCase()?{...d, cleanName:newCleanName, category: ruleCat || existing.category}:d);
         }
-        return [...prev, {keyword, cleanName:newCleanName, category:selectedCat}];
+        return [...prev, {keyword, cleanName:newCleanName, category: ruleCat}];
       });
     }
-    setTimeout(()=>showToast('Updated '+(applied+1)+' transaction'+(applied>0?'s':'')+' and created payee rule'),100);
+    setTimeout(()=>showToast('Renamed '+(applied+1)+' transaction'+(applied>0?'s':'')+' and saved payee rule'),100);
     setBulkApplyPrompt(null); setBulkApplyCat(''); setBulkNewCat(false); setBulkNewCatName('');
   };
 
@@ -4072,7 +4075,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       ),
       sorted.length === 0
         ? h('div',{className:'empty'},
-            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
+            h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'📋'),
             h('p',null, transactions.length===0 ? 'No transactions yet. Import some on the Import page.' : 'No transactions match your filters.')
           )
@@ -4323,10 +4326,11 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     // Bulk apply popup card
     bulkApplyPrompt && h('div',{style:{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.3)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'},onClick:()=>{setBulkApplyPrompt(null);setBulkApplyCat('');setBulkNewCat(false);setBulkNewCatName('');}},
       h('div',{style:{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'20px 24px',maxWidth:420,width:'90%',boxShadow:'0 8px 32px rgba(0,0,0,0.3)'},onClick:e=>e.stopPropagation()},
-        h('div',{style:{fontSize:15,fontWeight:700,marginBottom:12,color:'var(--card-text)'}},"Apply '"+bulkApplyPrompt.newCleanName+"' to matching transactions?"),
+        h('div',{style:{fontSize:15,fontWeight:700,marginBottom:12,color:'var(--card-text)'}},"Rename matching transactions to '"+bulkApplyPrompt.newCleanName+"'?"),
         h('div',{style:{fontSize:13,color:'var(--card-text2)',marginBottom:14,lineHeight:1.5}},
-          'Found ',h('strong',null,bulkApplyPrompt.matchCount),' uncategorized transaction'+(bulkApplyPrompt.matchCount>1?'s':'')+' containing ',
-          h('code',{style:{background:'rgba(232,160,32,0.15)',padding:'1px 6px',borderRadius:4,fontSize:12,fontWeight:600}},bulkApplyPrompt.keyword)
+          'Found ',h('strong',null,bulkApplyPrompt.matchCount),' other transaction'+(bulkApplyPrompt.matchCount>1?'s':'')+' containing ',
+          h('code',{style:{background:'rgba(232,160,32,0.15)',padding:'1px 6px',borderRadius:4,fontSize:12,fontWeight:600}},bulkApplyPrompt.keyword),
+          '. Apply this name to all of them and save a payee rule for future imports?'
         ),
         bulkApplyPrompt.needsCategory && h('div',{style:{marginBottom:14}},
           h('label',{style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Which category?'),
@@ -4352,9 +4356,9 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
         !bulkApplyPrompt.needsCategory && h('div',{style:{fontSize:12,color:'var(--green)',marginBottom:14,padding:'6px 10px',background:'rgba(64,192,128,0.08)',borderRadius:6}},
           'Category: ',h('strong',null,bulkApplyPrompt.txn.category)
         ),
-        h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end'}},
-          h('button',{className:'btn',onClick:declineBulkApply},'No, just this one'),
-          h('button',{className:'btn primary',onClick:confirmBulkApply,disabled:bulkApplyPrompt.needsCategory && !bulkApplyCat},'Yes, apply to all')
+        h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',flexWrap:'wrap'}},
+          h('button',{className:'btn',onClick:declineBulkApply},'Just this one'),
+          h('button',{className:'btn primary',onClick:confirmBulkApply,disabled:bulkApplyPrompt.needsCategory && !bulkApplyCat},'Rename all & save rule')
         )
       )
     )
@@ -4588,7 +4592,7 @@ function BudgetMonthlyTab({categories, setCategories, transactions, dictionary, 
     categories.length === 0
       ? h('div',{className:'card'},
           h('div',{className:'empty'},
-            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
+            h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'\uD83D\uDCB0'),
             h('p',null,'Create categories first on the Categories page, then come back here to set budgets.')
           )
@@ -5589,7 +5593,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
     transactions.length===0
       ? h('div',{className:'card'},
           h('div',{className:'empty'},
-            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
+            h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'📊'),
             h('p',null,'Import transactions to see your spending dashboard.')
           )
@@ -5926,7 +5930,7 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
         h('div',{style:{textAlign:'center',cursor:'pointer',userSelect:'none',padding:'8px 0'},
           ...a11yClick(()=>setPlansExpanded(!plansExpanded),'Toggle plan features'),'aria-expanded':plansExpanded},
           h('span',{style:{fontSize:12,color:'var(--card-text2)',letterSpacing:'0.3px',display:'inline-flex',alignItems:'center',gap:6}},
-            plansExpanded && h('img',{src:'images/mr-ambit/idea.png',alt:'Mr. Ambit idea',style:{width:60,height:60,objectFit:'contain'}}),
+            plansExpanded && h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:60,height:60,objectFit:'contain'}}),
             'See what\'s available in other plans ',
             h('span',{style:{display:'inline-block',transition:'transform 0.2s',transform:plansExpanded?'rotate(180deg)':'rotate(0)',fontSize:10}},'▾')
           )
@@ -6300,7 +6304,7 @@ function DebtPlannerPage({accounts, setAccounts, transactions, tier, isDemo, sho
       h('div',{className:'page-header'},h('h2',null,'💳 Debt Reduction Planner')),
       h('div',{className:'card',style:{textAlign:'center',padding:'40px 20px'}},
         h('div',{className:'empty'},
-          h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
+          h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
           h('div',{className:'icon'},'💳'),
           h('p',null,'No debt accounts found.'),
           h('p',{style:{fontSize:13,color:'var(--text2)'}},'Add a Credit Card or Loan account on the Accounts page to get started.')
@@ -7199,7 +7203,7 @@ function AccountsPage({accounts, setAccounts, transactions, setTransactions, cat
     accounts.length===0
       ? h('div',{className:'card'},
           h('div',{className:'empty'},
-            h('img',{src:'images/mr-ambit/full-body.png',alt:'Mr. Ambit',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
+            h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
             h('div',{className:'icon'},'🏦'),
             h('p',null,'No accounts yet. Add your checking and savings accounts to start tracking.')
           )
@@ -7342,7 +7346,7 @@ class ErrorBoundary extends React.Component {
     if(this.state.hasError) {
       return h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#0c1445',color:'#eef0ff',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif'}},
         h('div',{style:{textAlign:'center',maxWidth:420,padding:40}},
-          h('img',{src:'images/mr-ambit/thinking.png',alt:'Mr. Ambit thinking',style:{width:100,height:100,objectFit:'contain',marginBottom:12}}),
+          h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',className:'ambit-spin',style:{width:100,height:100,objectFit:'contain',marginBottom:12}}),
           h('h2',{style:{marginBottom:12,fontSize:20}},'Something went wrong'),
           h('p',{style:{fontSize:14,color:'#c0c8e8',lineHeight:1.6,marginBottom:20}},
             'Ambit Budget encountered an error. Your data is safe — it\'s stored locally on your device.'),

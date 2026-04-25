@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ambit&trade; Kids — Coming Soon</title>
+<meta name="description" content="Ambit&trade; Kids: a financial literacy app and book series for kids ages 3–17. Coming soon from the makers of Ambit&trade; Budget Pro.">
+<meta name="theme-color" content="#0c1445">
+<link rel="canonical" href="https://ambitbudget.com/kids/">
+<link rel="icon" type="image/png" href="../favicon.png">
+<meta property="og:title" content="Ambit&trade; Kids — Coming Soon">
+<meta property="og:description" content="A financial literacy app and book series for kids. Coming soon from the makers of Ambit&trade; Budget Pro.">
+<meta property="og:image" content="https://ambitbudget.com/og-image.png">
+<meta property="og:type" content="website">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0C1445;
+  --navy-light: #101850;
+  --amber: #E8A020;
+  --amber-light: #f0c050;
+  --blue: #7ec8e3;
+  --pink: #F4B4C1;
+  --green: #40c080;
+  --text: #eef0ff;
+  --text2: #9da5d0;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: linear-gradient(160deg, var(--navy) 0%, #1a2870 100%);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+.container {
+  text-align: center;
+  max-width: 480px;
+  width: 100%;
+  padding: 48px 32px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+}
+.symbol {
+  width: 130px;
+  height: auto;
+  margin: 0 auto 24px;
+  display: block;
+  animation: gentle-bob 4s ease-in-out infinite;
+}
+@keyframes gentle-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+h1 {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+  line-height: 1.15;
+}
+h1 .gold { color: var(--amber-light); }
+.tagline {
+  font-size: 16px;
+  color: var(--text2);
+  margin-bottom: 16px;
+  font-style: italic;
+}
+.coming {
+  display: inline-block;
+  background: rgba(126,200,227,0.14);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 18px;
+  border-radius: 99px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+.about {
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 24px;
+  text-align: left;
+  background: rgba(255,255,255,0.03);
+  padding: 18px 20px;
+  border-radius: 12px;
+  border-left: 3px solid var(--amber);
+}
+.about strong { color: var(--amber-light); }
+.pillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.pillar {
+  background: rgba(255,255,255,0.04);
+  padding: 14px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 600;
+}
+.pillar .icon { display: block; font-size: 20px; margin-bottom: 4px; }
+.notify-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.notify-form input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  background: var(--navy-light);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.notify-form input:focus { border-color: var(--blue); }
+.notify-form button {
+  width: 100%;
+  padding: 13px;
+  background: var(--amber);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.notify-form button:hover { background: #d09018; }
+.notify-form button:active { transform: scale(0.98); }
+.thanks { display: none; padding: 14px; background: rgba(64,192,128,0.1); border: 1px solid rgba(64,192,128,0.3); border-radius: 10px; color: var(--green); font-size: 14px; font-weight: 600; }
+.back-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text2);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.back-link:hover { color: var(--blue); }
+.copy {
+  margin-top: 36px;
+  font-size: 11px;
+  color: var(--text2);
+  opacity: 0.5;
+}
+@media (max-width: 480px) {
+  .container { padding: 32px 20px; }
+  h1 { font-size: 28px; }
+  .pillars { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .pillar { padding: 10px 6px; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <img class="symbol" src="../ambit-symbol.png" alt="Ambit logo">
+  <h1>Ambit&trade; <span class="gold">Kids</span></h1>
+  <p class="tagline">Money skills for the next generation.</p>
+  <div class="coming">Coming Soon</div>
+
+  <div class="about">
+    A <strong>book series + companion app</strong> that teaches kids ages 3–17 how money really works — earn it, save it, spend it wisely, and track it. Each book unlocks a level in the app.
+  </div>
+
+  <div class="pillars">
+    <div class="pillar"><span class="icon">&#x1F4DA;</span>5-Book Series</div>
+    <div class="pillar"><span class="icon">&#x1F3AE;</span>Web Games</div>
+    <div class="pillar"><span class="icon">&#x1F4F1;</span>Companion App</div>
+  </div>
+
+  <form id="notify" class="notify-form" action="https://formspree.io/f/xojnbyek" method="POST">
+    <input type="hidden" name="_subject" value="Ambit Kids waitlist signup">
+    <input type="hidden" name="source" value="ambit-kids-coming-soon">
+    <input type="email" name="email" placeholder="you@example.com" required>
+    <button type="submit">Notify Me at Launch &#x2192;</button>
+  </form>
+  <div class="thanks" id="thanks">You&rsquo;re on the list! We&rsquo;ll email you the moment Ambit&trade; Kids launches.</div>
+
+  <a class="back-link" href="../">&larr; Back to Ambit&trade; Budget Pro</a>
+
+  <p class="copy">&copy; 2026 Kifolloy AIR, LLC. All rights reserved.</p>
+</div>
+
+<script>
+(function(){
+  var form = document.getElementById('notify');
+  var thanks = document.getElementById('thanks');
+  if(!form) return;
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var data = new FormData(form);
+    fetch(form.action, { method:'POST', body:data, headers:{'Accept':'application/json'} })
+      .then(function(r){
+        if(r.ok){
+          form.style.display='none';
+          thanks.style.display='block';
+        } else {
+          form.querySelector('button').textContent = 'Try again';
+        }
+      })
+      .catch(function(){
+        form.querySelector('button').textContent = 'Try again';
+      });
+  });
+})();
+</script>
+</body>
+</html>
