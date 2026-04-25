@@ -978,44 +978,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     </div>
   </section>
 
-  <!-- ── WAITLIST ── -->
-  <section class="section section-alt" id="waitlist">
-    <div class="container waitlist-section">
-      <h2 class="section-title">Be the first to know</h2>
-      <p class="section-sub">Drop your email and we'll notify you when Ambit&trade; Budget Pro is available for purchase.</p>
-      <form id="waitlist-form" action="https://formspree.io/f/xojnbyek" method="POST" class="waitlist-form">
-        <input type="email" name="email" required placeholder="you@example.com">
-        <button type="submit">Notify Me &#x2192;</button>
-      </form>
-      <div id="waitlist-thanks" style="display:none;margin-top:16px;color:var(--green);font-weight:600;font-size:15px;">You're on the list! We'll email you at launch.</div>
-      <p style="margin-top:12px;font-size:12px;color:var(--text3);">No spam. Just one email when we go live.</p>
-
-      <!-- Beta download -->
-      <div class="beta-download">
-        <div class="lock-icon">&#x1F512;</div>
-        <div class="dl-title">Already have access?</div>
-        <div class="dl-sub">Enter your download password</div>
-        <div class="dl-row">
-          <input id="dl-pass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')document.getElementById('dl-btn').click()">
-          <button id="dl-btn" onclick="
-            var p=document.getElementById('dl-pass').value;
-            var e=document.getElementById('dl-err');
-            if(p==='kifolo13'){
-              e.style.display='none';
-              var a=document.createElement('a');
-              a.href='./dl/ambit-budget-pro.html';
-              a.download='AmbitBudgetPro.html';
-              a.click();
-            } else {
-              e.style.display='block';
-            }
-          ">Download</button>
-        </div>
-        <div id="dl-err" style="display:none;color:var(--red);font-size:12px;margin-top:8px;">Invalid password</div>
-      </div>
-    </div>
-  </section>
-
   <!-- ── FOOTER ── -->
   <footer class="footer">
     <div class="container">
@@ -1096,21 +1058,6 @@ function selectTier(card) {
   if (newTabLink) newTabLink.href = src;
 }
 
-// Waitlist form
-var wf = document.getElementById('waitlist-form');
-if (wf) {
-  wf.addEventListener('submit', function(e) {
-    e.preventDefault();
-    var data = new FormData(wf);
-    fetch(wf.action, { method: 'POST', body: data, headers: { 'Accept': 'application/json' } })
-      .then(function(r) {
-        if (r.ok) {
-          wf.style.display = 'none';
-          document.getElementById('waitlist-thanks').style.display = 'block';
-        }
-      });
-  });
-}
 </script>
 </body>
 </html>

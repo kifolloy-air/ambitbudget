@@ -1964,8 +1964,8 @@ function App({idbData}) {
   // isTierDemo and demoBypass are defined after isDemo (below) to avoid temporal dead zone
   const API_BASE = 'https://ambitbudget.com';
 
-  // Beta test keys — remove before public launch
-  const BETA_KEYS = { 'AMBIT-KIFOLLOY-2026':'Pro', 'REVIEW-STARTER-2026':'Starter', 'REVIEW-PLUS-2026':'Plus', 'REVIEW-PRO-2026':'Pro' };
+  // Comp / one-off keys (owner-issued). Add a key + tier here when granting comp access.
+  const BETA_KEYS = { 'AMBIT-KIFOLLOY-2026':'Pro' };
 
   const activateLicense = async (key) => {
     // Check for beta keys first (offline, no API call needed)
