@@ -563,12 +563,15 @@ function buildBackupPayload(state) {
     _format: 'ambit-backup',
     _version: APP_VERSION,
     _exportedAt: new Date().toISOString(),
+    // Personal data (legacy keys preserved for backward compatibility)
     accounts: state.accounts,
     categories: state.categories,
     dictionary: state.dictionary,
     transactions: state.transactions,
     groups: state.groups,
-    license: state.license || null
+    license: state.license || null,
+    // Business data (only set if the user has business-mode unlocked)
+    business: state.business || null
   };
 }
 
@@ -803,6 +806,46 @@ const DEFAULT_GROUPS = [
 ];
 const GROUP_LIST = DEFAULT_GROUPS.map(g=>g.name);
 const GROUP_COLORS = Object.fromEntries(DEFAULT_GROUPS.map(g=>[g.name,g.color]));
+
+// Business mode defaults (Schedule C inspired)
+const DEFAULT_BUSINESS_GROUPS = [
+  {name:'Income',color:'#60d8b0'},
+  {name:'Cost of Goods Sold',color:'#f07070'},
+  {name:'Operating Expenses',color:'#f0c050'},
+  {name:'Vehicle',color:'#f09040'},
+  {name:'Owner Equity',color:'#70a8f0'},
+  {name:'Other',color:'#c0c8e8'}
+];
+const DEFAULT_BUSINESS_CATEGORIES = [
+  // Income
+  {name:'Sales / Services Revenue',group:'Income',catType:'fixed',budget:0,scheduleC:'Line 1'},
+  {name:'Other Income',group:'Income',catType:'discretionary',budget:0,scheduleC:'Line 6'},
+  // COGS
+  {name:'Cost of Goods Sold',group:'Cost of Goods Sold',catType:'discretionary',budget:0,scheduleC:'Line 4'},
+  // Operating expenses (most common Schedule C lines)
+  {name:'Advertising',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 8'},
+  {name:'Commissions and Fees',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 10'},
+  {name:'Contract Labor',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 11'},
+  {name:'Insurance',group:'Operating Expenses',catType:'fixed',budget:0,scheduleC:'Line 15'},
+  {name:'Legal and Professional Services',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 17'},
+  {name:'Office Expense',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 18'},
+  {name:'Rent (Office/Equipment)',group:'Operating Expenses',catType:'fixed',budget:0,scheduleC:'Line 20'},
+  {name:'Repairs and Maintenance',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 21'},
+  {name:'Supplies',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 22'},
+  {name:'Taxes and Licenses',group:'Operating Expenses',catType:'fixed',budget:0,scheduleC:'Line 23'},
+  {name:'Travel',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 24a'},
+  {name:'Meals',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 24b'},
+  {name:'Utilities',group:'Operating Expenses',catType:'fixed',budget:0,scheduleC:'Line 25'},
+  {name:'Software / Subscriptions',group:'Operating Expenses',catType:'fixed',budget:0,scheduleC:'Line 27a'},
+  {name:'Bank Fees',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 27a'},
+  // Vehicle
+  {name:'Vehicle Expense (actual)',group:'Vehicle',catType:'discretionary',budget:0,scheduleC:'Line 9'},
+  {name:'Mileage',group:'Vehicle',catType:'discretionary',budget:0,scheduleC:'Line 9'},
+  // Owner equity
+  {name:"Owner's Draw",group:'Owner Equity',catType:'discretionary',budget:0,scheduleC:''},
+  {name:"Owner's Contribution",group:'Owner Equity',catType:'discretionary',budget:0,scheduleC:''}
+];
+const BIZ_STORE_KEY = 'businesspro_v1';
 const COLOR_PRESETS = ['#f0c050','#40c080','#e07828','#5090e8','#d060a0','#e05050','#e8a020','#50c8a0','#9da5d0','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1'];
 function grpClass(g) { return 'grp-' + (g||'other').toLowerCase(); }
 
@@ -2092,21 +2135,49 @@ function App({idbData}) {
   const [demoTransactions, setDemoTransactions] = useState(DEMO_DATA.transactions);
   const [demoGroups, setDemoGroups] = useState(DEFAULT_GROUPS);
 
+  // ── Business state (separate, persisted to its own key) ──
+  const bizSaved = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem(BIZ_STORE_KEY)) || null; } catch { return null; }
+  }, []);
+  const [bizAccounts, setBizAccounts] = useState(()=> bizSaved?.accounts || []);
+  const [bizCategories, setBizCategories] = useState(()=> (bizSaved?.categories || DEFAULT_BUSINESS_CATEGORIES).map(c=>({...c, catType: normCatType(c)})));
+  const [bizDictionary, setBizDictionary] = useState(()=> bizSaved?.dictionary || []);
+  const [bizTransactions, setBizTransactions] = useState(()=> bizSaved?.transactions || []);
+  const [bizGroups, setBizGroups] = useState(()=> bizSaved?.groups || DEFAULT_BUSINESS_GROUPS);
+
   // ── Active data based on mode ──
   // Tier demos use demo data but apply tier-specific feature gates via demoTier
   const isDemo = mode === 'demo';
   const isTierDemo = !!(urlMode === 'demo' && urlTier);
   const demoBypass = isDemo && !isTierDemo;
-  const accounts = isDemo ? demoAccounts : myAccounts;
-  const setAccounts = isDemo ? setDemoAccounts : setMyAccounts;
-  const categories = isDemo ? demoCategories : myCategories;
-  const setCategories = isDemo ? setDemoCategories : setMyCategories;
-  const dictionary = isDemo ? demoDictionary : myDictionary;
-  const setDictionary = isDemo ? setDemoDictionary : setMyDictionary;
-  const transactions = isDemo ? demoTransactions : myTransactions;
-  const setTransactions = isDemo ? setDemoTransactions : setMyTransactions;
-  const groups = isDemo ? demoGroups : myGroups;
-  const setGroups = isDemo ? setDemoGroups : setMyGroups;
+
+  // Business Mode unlock — only visible to owner or Books license holders.
+  // Everyone else: feature is completely hidden.
+  const isOwner = license?.key === 'AMBIT-KIFOLLOY-2026';
+  const hasBooks = license?.tier === 'Books' || license?.tier === 'Books Pro';
+  const businessUnlocked = isOwner || hasBooks;
+
+  // Active app mode: 'personal' or 'business'. Persisted; force 'personal' if locked.
+  const [appMode, setAppMode] = useState(()=>{
+    const saved = localStorage.getItem('ambit_app_mode');
+    return saved === 'business' ? 'business' : 'personal';
+  });
+  useEffect(()=>{
+    if(!businessUnlocked && appMode === 'business') { setAppMode('personal'); return; }
+    localStorage.setItem('ambit_app_mode', appMode);
+  },[appMode, businessUnlocked]);
+  const inBusiness = appMode === 'business' && businessUnlocked && !isDemo; // demo never goes business
+
+  const accounts = isDemo ? demoAccounts : (inBusiness ? bizAccounts : myAccounts);
+  const setAccounts = isDemo ? setDemoAccounts : (inBusiness ? setBizAccounts : setMyAccounts);
+  const categories = isDemo ? demoCategories : (inBusiness ? bizCategories : myCategories);
+  const setCategories = isDemo ? setDemoCategories : (inBusiness ? setBizCategories : setMyCategories);
+  const dictionary = isDemo ? demoDictionary : (inBusiness ? bizDictionary : myDictionary);
+  const setDictionary = isDemo ? setDemoDictionary : (inBusiness ? setBizDictionary : setMyDictionary);
+  const transactions = isDemo ? demoTransactions : (inBusiness ? bizTransactions : myTransactions);
+  const setTransactions = isDemo ? setDemoTransactions : (inBusiness ? setBizTransactions : setMyTransactions);
+  const groups = isDemo ? demoGroups : (inBusiness ? bizGroups : myGroups);
+  const setGroups = isDemo ? setDemoGroups : (inBusiness ? setBizGroups : setMyGroups);
 
   const groupList = useMemo(()=>groups.map(g=>g.name),[groups]);
   const groupColors = useMemo(()=>{const m={};groups.forEach(g=>{m[g.name]=g.color;});return m;},[groups]);
@@ -2201,9 +2272,10 @@ function App({idbData}) {
         return;
       }
       try {
+        const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups} : null;
         const payload = buildBackupPayload({
           accounts: myAccounts, categories: myCategories, dictionary: myDictionary,
-          transactions: myTransactions, groups: myGroups, license
+          transactions: myTransactions, groups: myGroups, license, business
         });
         const fileName = await writeBackupToFolder(handle, payload);
         localStorage.setItem('ambit_last_backup', new Date().toISOString());
@@ -2221,6 +2293,13 @@ function App({idbData}) {
     const state = {accounts: myAccounts, categories: myCategories, dictionary: myDictionary, transactions: myTransactions, groups: myGroups};
     AmbitDB.save(state); // Saves to IndexedDB + mirrors to localStorage
   },[myAccounts, myCategories, myDictionary, myTransactions, myGroups]);
+
+  // Save Business data separately (only when unlocked)
+  useEffect(()=>{
+    if(!businessUnlocked) return;
+    const state = {accounts: bizAccounts, categories: bizCategories, dictionary: bizDictionary, transactions: bizTransactions, groups: bizGroups};
+    try { localStorage.setItem(BIZ_STORE_KEY, JSON.stringify(state)); } catch(e) {}
+  },[bizAccounts, bizCategories, bizDictionary, bizTransactions, bizGroups, businessUnlocked]);
 
   // One-time migration: fix orphaned positive transfer transactions missing their negative counterpart
   useEffect(()=>{
@@ -2445,7 +2524,7 @@ function App({idbData}) {
     h('nav',{className:'sidebar', 'aria-label':'Main navigation', style:{background:currentTheme.sidebarBg,borderRightColor:currentTheme.sidebarBorder,color:currentTheme.sidebarText}},
       h('h1',{className:'logo', style:{display:'flex',flexDirection:'column',alignItems:'center',gap:6,padding:'6px 0 10px'}},
         h(ShieldLogo, {size:96}),
-        h('div',{style:{textAlign:'center',lineHeight:1.1}}, 'Ambit', h('span',{style:{display:'block',fontSize:10,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)',marginTop:2}},'Budget Pro'))
+        h('div',{style:{textAlign:'center',lineHeight:1.1}}, 'Ambit', h('span',{style:{display:'block',fontSize:10,letterSpacing:1.5,textTransform:'uppercase',color:inBusiness?'var(--accent2)':'var(--text2)',marginTop:2}}, inBusiness?'Books':'Budget Pro'))
       ),
       // Mode tabs (hidden when demo is dismissed)
       !demoHidden && h('div',{className:'mode-tabs', role:'tablist'},
@@ -2458,6 +2537,19 @@ function App({idbData}) {
           h('span',{className:'mode-dot mine','aria-hidden':'true'}), 'My Budget'
         )
       ),
+
+      // Personal / Business toggle — only visible to Books holders + owner.
+      // Demo mode never shows it (business is real-data only).
+      businessUnlocked && mode !== 'demo' && h('div',{role:'tablist','aria-label':'Personal or Business mode',style:{display:'flex',gap:6,padding:'6px 16px 10px'}},
+        h('button',{type:'button', role:'tab', 'aria-selected':appMode==='personal',
+          onClick:()=>{setAppMode('personal');setPage('dashboard');},
+          style:{flex:1,padding:'7px 8px',fontSize:12,fontWeight:600,borderRadius:8,cursor:'pointer',border:'1px solid '+(appMode==='personal'?'var(--accent)':'transparent'),background:appMode==='personal'?'rgba(232,160,32,0.18)':'rgba(255,255,255,0.04)',color:appMode==='personal'?'var(--accent2)':'var(--text2)',transition:'all 0.15s'}},
+          '🏠 Personal'),
+        h('button',{type:'button', role:'tab', 'aria-selected':appMode==='business',
+          onClick:()=>{setAppMode('business');setPage('dashboard');},
+          style:{flex:1,padding:'7px 8px',fontSize:12,fontWeight:600,borderRadius:8,cursor:'pointer',border:'1px solid '+(appMode==='business'?'var(--accent)':'transparent'),background:appMode==='business'?'rgba(232,160,32,0.18)':'rgba(255,255,255,0.04)',color:appMode==='business'?'var(--accent2)':'var(--text2)',transition:'all 0.15s'}},
+          '💼 Business')
+      ),
       navItems.map(n => h('div',{
         key:n.id, className:'nav-item'+(page===n.id?' active':''),
         ...a11yClick(()=>setPage(n.id)), 'aria-current':page===n.id?'page':undefined
@@ -2467,7 +2559,8 @@ function App({idbData}) {
       h('div',{className:'nav-item'+(page==='import'?' active':''), ...a11yClick(()=>setPage('import'))}, h('span',{className:'icon','aria-hidden':'true'},'📥'), h('span',null,'Import Bank Data')),
       h('div',{className:'nav-item', ...a11yClick(()=>{
         if(confirm('Export all data as JSON backup?')) {
-          const payload = buildBackupPayload({accounts,categories,dictionary,transactions,groups,license});
+          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups} : null;
+          const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,license,business});
           const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
           const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
           localStorage.setItem('ambit_last_backup', new Date().toISOString());
@@ -2483,18 +2576,29 @@ function App({idbData}) {
           r.onload = ev => {
             try {
               const d = JSON.parse(ev.target.result);
-              if(d.accounts) setAccounts(d.accounts);
-              if(d.categories) setCategories(d.categories.map(c=>({...c, catType:normCatType(c)})));
-              if(d.dictionary) setDictionary(d.dictionary);
-              if(d.transactions) setTransactions(d.transactions);
-              if(d.groups) setGroups(d.groups);
+              // Personal data
+              if(d.accounts) setMyAccounts(d.accounts);
+              if(d.categories) setMyCategories(d.categories.map(c=>({...c, catType:normCatType(c)})));
+              if(d.dictionary) setMyDictionary(d.dictionary);
+              if(d.transactions) setMyTransactions(d.transactions);
+              if(d.groups) setMyGroups(d.groups);
+              // Business data (if present in backup AND unlocked)
+              let bizMsg = '';
+              if(d.business && businessUnlocked) {
+                if(d.business.accounts) setBizAccounts(d.business.accounts);
+                if(d.business.categories) setBizCategories(d.business.categories.map(c=>({...c, catType:normCatType(c)})));
+                if(d.business.dictionary) setBizDictionary(d.business.dictionary);
+                if(d.business.transactions) setBizTransactions(d.business.transactions);
+                if(d.business.groups) setBizGroups(d.business.groups);
+                bizMsg = ' + business';
+              }
               // Restore license if backup includes one (lets users recover access after a clear-history)
               if(d.license && d.license.valid && d.license.tier) {
                 localStorage.setItem('ambit_license', JSON.stringify(d.license));
                 setLicense(d.license);
-                showToast('✅ Data + license restored');
+                showToast('✅ Data + license'+bizMsg+' restored');
               } else {
-                showToast('✅ Data restored successfully');
+                showToast('✅ Data'+bizMsg+' restored successfully');
               }
             } catch(e) { showToast('❌ Invalid file'); }
           };
@@ -2616,7 +2720,8 @@ function App({idbData}) {
             : 'Last backup: '+backupNeeded.days+' days ago. Your local data file needs updating. Export a backup now to prevent data loss. For extra protection, save your backup to OneDrive, Google Drive, or iCloud.'
         ),
         h('button',{className:'btn sm primary',onClick:()=>{
-          const payload = buildBackupPayload({accounts,categories,dictionary,transactions,groups,license});
+          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups} : null;
+          const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,license,business});
           const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
           const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
           localStorage.setItem('ambit_last_backup', new Date().toISOString());
