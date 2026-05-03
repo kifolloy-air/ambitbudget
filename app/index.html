@@ -813,9 +813,18 @@ const DEFAULT_BUSINESS_GROUPS = [
   {name:'Cost of Goods Sold',color:'#f07070'},
   {name:'Operating Expenses',color:'#f0c050'},
   {name:'Vehicle',color:'#f09040'},
-  {name:'Owner Equity',color:'#70a8f0'},
+  {name:'Partner Equity',color:'#70a8f0'},
   {name:'Other',color:'#c0c8e8'}
 ];
+
+// Default partners — 2 partners at 50/50 (covers Matt's case + most LLC defaults)
+const DEFAULT_BUSINESS_PARTNERS = [
+  {id:'p1', name:'Partner 1', equityPct:50, active:true},
+  {id:'p2', name:'Partner 2', equityPct:50, active:true}
+];
+
+// IRS standard mileage rate (deductible $/mile). Make this user-editable via Settings later.
+const DEFAULT_IRS_MILEAGE_RATE = 0.67;
 const DEFAULT_BUSINESS_CATEGORIES = [
   // Income
   {name:'Sales / Services Revenue',group:'Income',catType:'fixed',budget:0,scheduleC:'Line 1'},
@@ -840,10 +849,9 @@ const DEFAULT_BUSINESS_CATEGORIES = [
   {name:'Bank Fees',group:'Operating Expenses',catType:'discretionary',budget:0,scheduleC:'Line 27a'},
   // Vehicle
   {name:'Vehicle Expense (actual)',group:'Vehicle',catType:'discretionary',budget:0,scheduleC:'Line 9'},
-  {name:'Mileage',group:'Vehicle',catType:'discretionary',budget:0,scheduleC:'Line 9'},
-  // Owner equity
-  {name:"Owner's Draw",group:'Owner Equity',catType:'discretionary',budget:0,scheduleC:''},
-  {name:"Owner's Contribution",group:'Owner Equity',catType:'discretionary',budget:0,scheduleC:''}
+  {name:'Mileage',group:'Vehicle',catType:'discretionary',budget:0,scheduleC:'Line 9'}
+  // Per-partner equity categories (Draw, Contribution) are auto-synced from
+  // the partners list in Settings — see syncPartnerCategories.
 ];
 const BIZ_STORE_KEY = 'businesspro_v1';
 const COLOR_PRESETS = ['#f0c050','#40c080','#e07828','#5090e8','#d060a0','#e05050','#e8a020','#50c8a0','#9da5d0','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1'];
@@ -2148,6 +2156,8 @@ function App({idbData}) {
   const [bizDictionary, setBizDictionary] = useState(()=> bizSaved?.dictionary || []);
   const [bizTransactions, setBizTransactions] = useState(()=> bizSaved?.transactions || []);
   const [bizGroups, setBizGroups] = useState(()=> bizSaved?.groups || DEFAULT_BUSINESS_GROUPS);
+  const [bizPartners, setBizPartners] = useState(()=> bizSaved?.partners || DEFAULT_BUSINESS_PARTNERS);
+  const [bizMileageRate, setBizMileageRate] = useState(()=> bizSaved?.mileageRate ?? DEFAULT_IRS_MILEAGE_RATE);
 
   // ── Active data based on mode ──
   // Tier demos use demo data but apply tier-specific feature gates via demoTier
@@ -2278,7 +2288,7 @@ function App({idbData}) {
         return;
       }
       try {
-        const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups} : null;
+        const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate} : null;
         const payload = buildBackupPayload({
           accounts: myAccounts, categories: myCategories, dictionary: myDictionary,
           transactions: myTransactions, groups: myGroups, license, business
@@ -2303,9 +2313,27 @@ function App({idbData}) {
   // Save Business data separately (only when unlocked)
   useEffect(()=>{
     if(!businessUnlocked) return;
-    const state = {accounts: bizAccounts, categories: bizCategories, dictionary: bizDictionary, transactions: bizTransactions, groups: bizGroups};
+    const state = {accounts: bizAccounts, categories: bizCategories, dictionary: bizDictionary, transactions: bizTransactions, groups: bizGroups, partners: bizPartners, mileageRate: bizMileageRate};
     try { localStorage.setItem(BIZ_STORE_KEY, JSON.stringify(state)); } catch(e) {}
-  },[bizAccounts, bizCategories, bizDictionary, bizTransactions, bizGroups, businessUnlocked]);
+  },[bizAccounts, bizCategories, bizDictionary, bizTransactions, bizGroups, bizPartners, bizMileageRate, businessUnlocked]);
+
+  // Auto-sync per-partner Draw/Contribution categories whenever partners change.
+  // Adds missing categories for active partners; we never auto-delete (preserves transaction history if a partner leaves).
+  useEffect(()=>{
+    if(!businessUnlocked) return;
+    setBizCategories(prev => {
+      const existing = new Set(prev.map(c=>c.name.toLowerCase()));
+      const additions = [];
+      for(const p of bizPartners) {
+        if(!p.active) continue;
+        const drawName = p.name+' Draw';
+        const contName = p.name+' Contribution';
+        if(!existing.has(drawName.toLowerCase())) additions.push({name:drawName,group:'Partner Equity',catType:'discretionary',budget:0,scheduleC:'',partnerId:p.id,equityType:'draw'});
+        if(!existing.has(contName.toLowerCase())) additions.push({name:contName,group:'Partner Equity',catType:'discretionary',budget:0,scheduleC:'',partnerId:p.id,equityType:'contribution'});
+      }
+      return additions.length ? [...prev, ...additions] : prev;
+    });
+  },[bizPartners, businessUnlocked]);
 
   // One-time migration: fix orphaned positive transfer transactions missing their negative counterpart
   useEffect(()=>{
@@ -2484,7 +2512,7 @@ function App({idbData}) {
 
     // Settings modal
     showBackupSettings && h('div',{className:'modal-overlay',onClick:()=>setShowBackupSettings(false)},
-      h('div',{className:'modal',role:'dialog','aria-modal':'true','aria-label':'Settings',style:{maxWidth:540},onClick:e=>e.stopPropagation()},
+      h('div',{className:'modal',role:'dialog','aria-modal':'true','aria-label':'Settings',style:{maxWidth:560,maxHeight:'90vh',overflowY:'auto'},onClick:e=>e.stopPropagation()},
         h('h3',{style:{marginBottom:14,display:'flex',alignItems:'center',gap:8}},h('span','⚙️'),'Settings'),
 
         // ── License section ──
@@ -2515,6 +2543,49 @@ function App({idbData}) {
                 h('div',{style:{flex:1,minWidth:200,fontSize:13,color:'var(--card-text2)'}},'You\'re on the Free plan. Upgrade to unlock more features.'),
                 h('button',{type:'button',className:'btn primary',style:{fontSize:12,padding:'6px 12px'},onClick:()=>{setShowBackupSettings(false);setShowLicenseGate(true);}},'⬆ Upgrade')
               )
+        ),
+
+        // ── Business / Partners section (only in business mode) ──
+        inBusiness && h('div',{style:{marginBottom:18,paddingBottom:18,borderBottom:'1px solid var(--border)'}},
+          h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)',marginBottom:8}},'Partners (Business)'),
+          h('p',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:10,lineHeight:1.4}},
+            'Add each partner with their equity %. The app auto-creates a Draw and Contribution category per partner, and splits net profit by equity for the P&L.'
+          ),
+          // Partner list
+          h('div',{style:{display:'flex',flexDirection:'column',gap:6,marginBottom:10}},
+            bizPartners.map((p,i)=>h('div',{key:p.id, style:{display:'flex',gap:8,alignItems:'center',padding:8,background:'var(--surface2)',borderRadius:6}},
+              h('input',{type:'text',value:p.name, placeholder:'Partner name',
+                onChange:e=>setBizPartners(prev=>prev.map(q=>q.id===p.id?{...q,name:e.target.value}:q)),
+                style:{flex:1,padding:'5px 8px',fontSize:13,border:'1px solid var(--border)',borderRadius:4,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit'}
+              }),
+              h('input',{type:'number',min:0,max:100,step:0.5,value:p.equityPct,
+                onChange:e=>setBizPartners(prev=>prev.map(q=>q.id===p.id?{...q,equityPct:Math.max(0,Math.min(100,parseFloat(e.target.value)||0))}:q)),
+                style:{width:64,padding:'5px 6px',fontSize:13,border:'1px solid var(--border)',borderRadius:4,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit'}
+              }),
+              h('span',{style:{fontSize:12,color:'var(--card-text2)'}},'%'),
+              bizPartners.length>1 && h('button',{type:'button','aria-label':'Remove partner',
+                style:{background:'none',border:'none',cursor:'pointer',color:'var(--text2)',fontSize:18,lineHeight:1,padding:'0 4px'},
+                onClick:()=>{ if(confirm('Remove '+(p.name||'this partner')+'? Their existing Draw/Contribution categories stay so historical transactions are preserved.')) setBizPartners(prev=>prev.filter(q=>q.id!==p.id));}
+              },'×')
+            )),
+            // Total equity check
+            (()=>{ const total = bizPartners.reduce((s,p)=>s+(p.active!==false?p.equityPct:0),0); if(Math.abs(total-100)>0.01) return h('div',{style:{fontSize:11,color:'var(--red)',padding:'4px 4px 0'}},'⚠️ Equity totals '+total.toFixed(1)+'%. Should sum to 100%.'); return null; })()
+          ),
+          h('button',{type:'button',className:'btn sm',
+            onClick:()=>{
+              const id='p'+Date.now().toString(36);
+              setBizPartners(prev=>[...prev, {id, name:'New Partner', equityPct:0, active:true}]);
+            }
+          },'+ Add Partner'),
+          // Mileage rate
+          h('div',{style:{marginTop:14,paddingTop:12,borderTop:'1px dashed var(--border)',display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}},
+            h('label',{style:{fontSize:12,color:'var(--card-text2)'}},'IRS mileage rate'),
+            h('input',{type:'number',min:0,step:0.001,value:bizMileageRate,
+              onChange:e=>setBizMileageRate(parseFloat(e.target.value)||0),
+              style:{width:90,padding:'4px 8px',fontSize:13,border:'1px solid var(--border)',borderRadius:4,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit'}
+            }),
+            h('span',{style:{fontSize:12,color:'var(--card-text2)'}},'$ per mile (current IRS standard rate)')
+          )
         ),
 
         // ── Backup section ──
@@ -2598,7 +2669,7 @@ function App({idbData}) {
       h('div',{className:'nav-item'+(page==='import'?' active':''), ...a11yClick(()=>setPage('import'))}, h('span',{className:'icon','aria-hidden':'true'},'📥'), h('span',null,'Import Bank Data')),
       h('div',{className:'nav-item', ...a11yClick(()=>{
         if(confirm('Export all data as JSON backup?')) {
-          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups} : null;
+          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate} : null;
           const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,license,business});
           const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
           const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
@@ -2629,6 +2700,8 @@ function App({idbData}) {
                 if(d.business.dictionary) setBizDictionary(d.business.dictionary);
                 if(d.business.transactions) setBizTransactions(d.business.transactions);
                 if(d.business.groups) setBizGroups(d.business.groups);
+                if(d.business.partners) setBizPartners(d.business.partners);
+                if(typeof d.business.mileageRate === 'number') setBizMileageRate(d.business.mileageRate);
                 bizMsg = ' + business';
               }
               // Restore license if backup includes one (lets users recover access after a clear-history)
@@ -2757,7 +2830,7 @@ function App({idbData}) {
             : 'Last backup: '+backupNeeded.days+' days ago. Your local data file needs updating. Export a backup now to prevent data loss. For extra protection, save your backup to OneDrive, Google Drive, or iCloud.'
         ),
         h('button',{className:'btn sm primary',onClick:()=>{
-          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups} : null;
+          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate} : null;
           const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,license,business});
           const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
           const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
@@ -2784,6 +2857,10 @@ function App({idbData}) {
         h('button',{style:{background:'none',border:'none',cursor:'pointer',color:'var(--text2)',fontSize:16,padding:2},'aria-label':'Dismiss welcome banner',onClick:()=>{localStorage.setItem('ambit_free_welcome_dismissed','1');setFreeWelcomeDismissed(true);}},'✕')
       ),
 
+      page==='dashboard' && inBusiness && h(BusinessDashboardPanel, {
+        transactions: liveTxns, categories, accounts, partners: bizPartners, mileageRate: bizMileageRate,
+        setTransactions, defaultAcct, showToast
+      }),
       page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, demoBypass, isTierDemo, groupColors, defaultAcct, setPage, onUpgrade:()=>setShowLicenseGate(true)}),
       page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors, tier, onUpgrade:()=>setShowLicenseGate(true)}),
       page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, setCategories, catMap, categorize, showToast, accounts, setAccounts, setPage, tier, groupColors}),
@@ -5258,6 +5335,177 @@ function BudgetMonthlyTab({categories, setCategories, transactions, dictionary, 
         h('button',{className:'btn',onClick:()=>setDrilldown(null)},'Close')
       )
     )
+  );
+}
+
+// ── Business Mode: Quick Entry Modal ───────────────────
+function QuickEntryModal({type, partners, mileageRate, accounts, categories, defaultAcct, onSave, onCancel}) {
+  const today = new Date().toISOString().slice(0,10);
+  const [date, setDate] = useState(today);
+  const [amount, setAmount] = useState('');
+  const [desc, setDesc] = useState('');
+  const [accountId, setAccountId] = useState(()=> defaultAcct && defaultAcct !== 'all' ? defaultAcct : (accounts[0]?.id || ''));
+  const [partnerId, setPartnerId] = useState(partners.find(p=>p.active!==false)?.id || '');
+  const [miles, setMiles] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [category, setCategory] = useState('');
+  const titles = {income:'💰 Money In', expense:'🛒 Money Out', mileage:'🚗 Log Miles', draw:'💼 Partner Draw'};
+  const fld = {width:'100%',padding:8,fontSize:13,border:'1px solid var(--border)',borderRadius:6,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit'};
+  const labelStyle = {fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4};
+
+  function build() {
+    const id = Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    const base = {id, date, accountId};
+    if(type==='income') {
+      const amt = Math.abs(parseFloat(amount)||0);
+      if(!amt || !desc.trim()) return null;
+      const catName = category || 'Sales / Services Revenue';
+      const cat = categories.find(c=>c.name===catName);
+      return {...base, amount:amt, description:desc.trim(), cleanName:desc.trim(), category:catName, group:cat?.group||'Income', catType:cat?.catType||'fixed'};
+    }
+    if(type==='expense') {
+      const amt = -Math.abs(parseFloat(amount)||0);
+      if(!amt || !desc.trim()) return null;
+      const catName = category || 'Office Expense';
+      const cat = categories.find(c=>c.name===catName);
+      return {...base, amount:amt, description:desc.trim(), cleanName:desc.trim(), category:catName, group:cat?.group||'Operating Expenses', catType:cat?.catType||'discretionary'};
+    }
+    if(type==='mileage') {
+      const m = parseFloat(miles)||0;
+      if(!m || !purpose.trim()) return null;
+      const amt = -(m * (mileageRate||0));
+      return {...base, amount:amt, description:m+' mi · '+purpose.trim(), cleanName:'Mileage', category:'Mileage', group:'Vehicle', catType:'discretionary', miles:m};
+    }
+    if(type==='draw') {
+      const amt = -Math.abs(parseFloat(amount)||0);
+      const partner = partners.find(p=>p.id===partnerId);
+      if(!amt || !partner) return null;
+      const drawCatName = partner.name+' Draw';
+      return {...base, amount:amt, description:'Draw to '+partner.name, cleanName:drawCatName, category:drawCatName, group:'Partner Equity', catType:'discretionary'};
+    }
+    return null;
+  }
+  const valid = (() => {
+    if(!accountId) return false;
+    if(type==='mileage') return miles && purpose.trim();
+    if(type==='draw') return amount && partnerId;
+    return amount && desc.trim();
+  })();
+
+  return h('div',{className:'modal-overlay',onClick:onCancel},
+    h('div',{className:'modal',role:'dialog','aria-modal':'true',style:{maxWidth:440},onClick:e=>e.stopPropagation()},
+      h('h3',{style:{marginBottom:14}}, titles[type]),
+      h('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+        h('div',null, h('label',{style:labelStyle},'Date'), h('input',{type:'date',value:date,onChange:e=>setDate(e.target.value),style:fld})),
+        accounts.length>0 && h('div',null, h('label',{style:labelStyle},'Account'),
+          h('select',{value:accountId,onChange:e=>setAccountId(e.target.value),style:fld},
+            h('option',{value:''},'Select account...'),
+            accounts.map(a=>h('option',{key:a.id,value:a.id},a.name))
+          )
+        ),
+        type!=='mileage' && h('div',null, h('label',{style:labelStyle},'Amount'),
+          h('input',{type:'number',step:0.01,value:amount,onChange:e=>setAmount(e.target.value),placeholder:'0.00',autoFocus:true,style:{...fld,fontSize:14,fontWeight:600}})
+        ),
+        (type==='income'||type==='expense') && h('div',null,
+          h('label',{style:labelStyle}, type==='income'?'From whom?':'For what?'),
+          h('input',{type:'text',value:desc,onChange:e=>setDesc(e.target.value),placeholder:type==='income'?'Client / source':'Vendor / payee',style:fld})
+        ),
+        (type==='income'||type==='expense') && h('div',null,
+          h('label',{style:labelStyle},'Category'),
+          h('select',{value:category,onChange:e=>setCategory(e.target.value),style:fld},
+            h('option',{value:''}, type==='income'?'Sales / Services Revenue (default)':'Office Expense (default)'),
+            categories.filter(c=> type==='income' ? c.group==='Income' : (c.group!=='Income' && c.group!=='Partner Equity'))
+              .map(c=>h('option',{key:c.name,value:c.name},c.name))
+          )
+        ),
+        type==='mileage' && h('div',null, h('label',{style:labelStyle},'Miles'),
+          h('input',{type:'number',step:0.1,value:miles,onChange:e=>setMiles(e.target.value),placeholder:'0',autoFocus:true,style:{...fld,fontSize:14,fontWeight:600}})
+        ),
+        type==='mileage' && h('div',null, h('label',{style:labelStyle},'Business purpose'),
+          h('input',{type:'text',value:purpose,onChange:e=>setPurpose(e.target.value),placeholder:'Client meeting, supplies run, etc.',style:fld})
+        ),
+        type==='mileage' && miles && h('div',{style:{fontSize:12,color:'var(--card-text2)',padding:'6px 10px',background:'var(--surface2)',borderRadius:6}},
+          'Deductible: $'+((parseFloat(miles)||0)*(mileageRate||0)).toFixed(2)+' (at $'+(mileageRate||0).toFixed(3)+'/mi)'
+        ),
+        type==='draw' && h('div',null, h('label',{style:labelStyle},'Partner'),
+          h('select',{value:partnerId,onChange:e=>setPartnerId(e.target.value),style:fld},
+            partners.filter(p=>p.active!==false).map(p=>h('option',{key:p.id,value:p.id},p.name+' ('+p.equityPct+'%)'))
+          )
+        )
+      ),
+      h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:16}},
+        h('button',{className:'btn',onClick:onCancel},'Cancel'),
+        h('button',{className:'btn primary',disabled:!valid,onClick:()=>{const t=build(); if(t)onSave(t);}}, 'Save')
+      )
+    )
+  );
+}
+
+// ── Business Mode: Dashboard panel (Quick Entry + P&L) ──
+function BusinessDashboardPanel({transactions, categories, accounts, partners, mileageRate, setTransactions, defaultAcct, showToast}) {
+  const [quickEntry, setQuickEntry] = useState(null);
+  const pnl = useMemo(()=>{
+    const yr = new Date().getFullYear();
+    const ytd = transactions.filter(t=> t.date && t.date.startsWith(String(yr)));
+    let income=0, cogs=0, opEx=0;
+    for(const t of ytd) {
+      const cat = categories.find(c=>c.name===t.category);
+      const grp = cat?.group || 'Other';
+      if(grp==='Income') income += t.amount;
+      else if(grp==='Cost of Goods Sold') cogs += Math.abs(t.amount);
+      else if(grp==='Partner Equity') {/* equity events: skip in P&L */}
+      else if(t.amount < 0) opEx += Math.abs(t.amount);
+    }
+    return {income, cogs, opEx, grossProfit: income-cogs, netIncome: income-cogs-opEx};
+  },[transactions, categories]);
+
+  const fmt = n => '$' + Math.abs(n).toFixed(2) + (n<0?' (loss)':'');
+
+  return h('div',{style:{marginBottom:18}},
+    h('div',{className:'card',style:{marginBottom:12}},
+      h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)',marginBottom:10}},'Quick Entry'),
+      h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))',gap:8}},
+        h('button',{className:'btn',style:{borderColor:'var(--green)',color:'var(--green)',fontWeight:600},onClick:()=>setQuickEntry('income')},'💰 Money In'),
+        h('button',{className:'btn',style:{borderColor:'var(--red)',color:'var(--red)',fontWeight:600},onClick:()=>setQuickEntry('expense')},'🛒 Money Out'),
+        h('button',{className:'btn',style:{borderColor:'var(--orange)',color:'var(--orange)',fontWeight:600},onClick:()=>setQuickEntry('mileage')},'🚗 Log Miles'),
+        h('button',{className:'btn',style:{borderColor:'var(--blue)',color:'var(--blue)',fontWeight:600},onClick:()=>setQuickEntry('draw'),disabled:partners.filter(p=>p.active!==false).length===0},'💼 Partner Draw')
+      )
+    ),
+    h('div',{className:'card',style:{marginBottom:12}},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:14}},
+        h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)'}},'P&L · Year-to-Date'),
+        h('div',{style:{fontSize:12,color:'var(--card-text2)'}}, new Date().getFullYear())
+      ),
+      h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:10}},
+        h('div',null,
+          h('div',{style:{fontSize:11,color:'var(--card-text2)'}},'Income'),
+          h('div',{style:{fontSize:18,fontWeight:700,color:'var(--green)'}}, fmt(pnl.income))
+        ),
+        h('div',null,
+          h('div',{style:{fontSize:11,color:'var(--card-text2)'}},'Operating Expenses'),
+          h('div',{style:{fontSize:18,fontWeight:700,color:'var(--red)'}}, fmt(pnl.opEx))
+        )
+      ),
+      pnl.cogs > 0 && h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:12,color:'var(--card-text2)',marginBottom:6}},
+        h('span',null,'Cost of Goods Sold'), h('span',null, fmt(pnl.cogs))
+      ),
+      h('div',{style:{borderTop:'1px solid var(--border)',paddingTop:10,display:'flex',justifyContent:'space-between',alignItems:'baseline'}},
+        h('span',{style:{fontSize:13,fontWeight:600,color:'var(--card-text)'}},'Net Income'),
+        h('span',{style:{fontSize:22,fontWeight:800,color: pnl.netIncome>=0?'var(--green)':'var(--red)'}}, fmt(pnl.netIncome))
+      ),
+      partners.filter(p=>p.active!==false).length > 0 && h('div',{style:{marginTop:12,paddingTop:10,borderTop:'1px dashed var(--border)'}},
+        h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1,color:'var(--text2)',marginBottom:6}},'Partner Allocation (before draws)'),
+        partners.filter(p=>p.active!==false).map(p=>h('div',{key:p.id,style:{display:'flex',justifyContent:'space-between',fontSize:12,padding:'3px 0'}},
+          h('span',null, p.name+' ('+p.equityPct+'%)'),
+          h('span',{style:{fontWeight:600,color: pnl.netIncome>=0?'var(--green)':'var(--red)'}}, fmt(pnl.netIncome * (p.equityPct/100)))
+        ))
+      )
+    ),
+    quickEntry && h(QuickEntryModal,{
+      type: quickEntry, partners, mileageRate, accounts, categories, defaultAcct,
+      onSave:(txn)=>{ setTransactions(prev=>[...prev, txn]); setQuickEntry(null); showToast('✅ Transaction saved'); },
+      onCancel:()=>setQuickEntry(null)
+    })
   );
 }
 
