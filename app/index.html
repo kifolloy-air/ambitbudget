@@ -407,6 +407,17 @@ a:focus-visible, button:focus-visible, .btn:focus-visible { outline: 3px solid v
 @keyframes onboardFadeIn { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:translateX(0); } }
 @keyframes ambit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .ambit-spin { animation: ambit-spin 2.4s linear infinite; }
+
+/* Print styles for Tax Reports modal */
+@media print {
+  body * { visibility: hidden; }
+  .tax-report-modal, .tax-report-modal * { visibility: visible; }
+  .tax-report-modal { position: absolute !important; left: 0 !important; top: 0 !important; max-height: none !important; max-width: 100% !important; box-shadow: none !important; border: none !important; padding: 24px !important; overflow: visible !important; background: white !important; color: black !important; }
+  .tax-report-modal .no-print { display: none !important; }
+  .tax-report-modal .k1-card { page-break-after: always; border: 1px solid #999 !important; }
+  .tax-report-modal .k1-card:last-child { page-break-after: auto; }
+  .modal-overlay { background: white !important; position: static !important; }
+}
 @media (max-width:600px) {
   .onboard-card { flex-direction:column; max-width:95%; }
   .onboard-left { flex:0 0 auto; border-radius:16px 16px 0 0; padding:20px 16px; }
@@ -5518,9 +5529,172 @@ function QuickEntryModal({type, partners, mileageRate, accounts, categories, def
   );
 }
 
+// ── Business Mode: Tax Reports (Schedule C / K-1) ──
+function TaxReportsModal({transactions, categories, partners, structure, entity, onClose}) {
+  const currentYear = new Date().getFullYear();
+  const yearsWithData = useMemo(()=>{
+    const years = new Set();
+    transactions.forEach(t=>{ const y = (t.date||'').slice(0,4); if(y) years.add(y); });
+    years.add(String(currentYear));
+    return [...years].sort().reverse();
+  },[transactions]);
+  const [year, setYear] = useState(String(currentYear));
+
+  const data = useMemo(()=>{
+    const yearTxns = transactions.filter(t=> (t.date||'').startsWith(year));
+    let income = 0, cogs = 0, opEx = 0;
+    const byScheduleCLine = {}; // SC line -> {label, amount}
+    const drawsByPartnerId = {}; // partnerId -> total draws
+    for(const t of yearTxns) {
+      const cat = categories.find(c=>c.name===t.category);
+      const grp = cat?.group || 'Other';
+      if(grp==='Income') income += t.amount;
+      else if(grp==='Cost of Goods Sold') cogs += Math.abs(t.amount);
+      else if(grp==='Partner Equity') {
+        // Track draws (negative) per partner via the equityType field on the category
+        if(cat?.equityType === 'draw' && cat.partnerId && t.amount < 0) {
+          drawsByPartnerId[cat.partnerId] = (drawsByPartnerId[cat.partnerId]||0) + Math.abs(t.amount);
+        }
+      } else if(t.amount < 0) {
+        opEx += Math.abs(t.amount);
+        // Group by Schedule C line for single-owner reports
+        const line = cat?.scheduleC || 'Other';
+        if(!byScheduleCLine[line]) byScheduleCLine[line] = {label: cat?.name || 'Other', amount: 0};
+        byScheduleCLine[line].amount += Math.abs(t.amount);
+      }
+    }
+    const netIncome = income - cogs - opEx;
+    return {yearTxns, income, cogs, opEx, netIncome, byScheduleCLine, drawsByPartnerId};
+  },[transactions, categories, year]);
+
+  const fmt = n => '$' + (n<0?'(':'') + Math.abs(n).toFixed(2) + (n<0?')':'');
+  const labelStyle = {fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)'};
+
+  const isSingleOwner = !entity?.multi;
+
+  return h('div',{className:'modal-overlay',onClick:onClose},
+    h('div',{className:'modal tax-report-modal',role:'dialog','aria-modal':'true','aria-label':'Tax reports',
+      style:{maxWidth:720,maxHeight:'90vh',overflowY:'auto'},onClick:e=>e.stopPropagation()},
+
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,flexWrap:'wrap',gap:10},className:'no-print'},
+        h('h3',{style:{margin:0,display:'flex',alignItems:'center',gap:8}},h('span','📑'),'Tax Reports'),
+        h('div',{style:{display:'flex',gap:8,alignItems:'center'}},
+          h('label',{style:{fontSize:12,color:'var(--card-text2)'}},'Year'),
+          h('select',{value:year,onChange:e=>setYear(e.target.value),
+            style:{padding:'5px 8px',fontSize:13,border:'1px solid var(--border)',borderRadius:6,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit'}
+          }, yearsWithData.map(y=>h('option',{key:y,value:y},y))),
+          h('button',{className:'btn primary',style:{fontSize:12,padding:'6px 12px'},onClick:()=>window.print()},'🖨️ Print'),
+          h('button',{className:'btn',style:{fontSize:12,padding:'6px 12px'},onClick:onClose},'Close')
+        )
+      ),
+
+      // Header on each report (also visible in print)
+      h('div',{className:'tax-report-header',style:{padding:'14px 18px',background:'var(--surface2)',borderRadius:8,marginBottom:14}},
+        h('div',{style:{fontSize:18,fontWeight:800,color:'var(--card-text)',marginBottom:4}}, structure?.businessName || '(Business name not set)'),
+        h('div',{style:{fontSize:12,color:'var(--card-text2)',display:'flex',gap:14,flexWrap:'wrap'}},
+          structure?.ein && h('span',null,'EIN: ',h('strong',null,structure.ein)),
+          h('span',null,'Tax year: ',h('strong',null,year)),
+          h('span',null,'Entity: ',h('strong',null,entity?.label||'—')),
+          h('span',null,'Files: ',h('strong',{style:{color:'var(--accent2)'}},entity?.tax||'—'))
+        )
+      ),
+
+      // ── Schedule C view (single owner) ──
+      isSingleOwner && h('div',null,
+        h('div',{style:{...labelStyle,marginBottom:8}},'Schedule C — Profit or Loss From Business'),
+        h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:13}},
+          h('thead',null,
+            h('tr',null,
+              h('th',{style:{textAlign:'left',padding:'8px 10px',borderBottom:'1px solid var(--border)',color:'var(--card-text2)',fontWeight:600,width:120}},'Line'),
+              h('th',{style:{textAlign:'left',padding:'8px 10px',borderBottom:'1px solid var(--border)',color:'var(--card-text2)',fontWeight:600}},'Item'),
+              h('th',{style:{textAlign:'right',padding:'8px 10px',borderBottom:'1px solid var(--border)',color:'var(--card-text2)',fontWeight:600,width:120}},'Amount')
+            )
+          ),
+          h('tbody',null,
+            h('tr',{style:{background:'rgba(64,192,128,0.05)'}},
+              h('td',{style:{padding:'8px 10px',fontFamily:'monospace',fontSize:11}},'Line 1'),
+              h('td',{style:{padding:'8px 10px',fontWeight:600}},'Gross receipts or sales'),
+              h('td',{style:{padding:'8px 10px',textAlign:'right',fontWeight:600,color:'var(--green)'}}, fmt(data.income))
+            ),
+            data.cogs > 0 && h('tr',null,
+              h('td',{style:{padding:'8px 10px',fontFamily:'monospace',fontSize:11}},'Line 4'),
+              h('td',{style:{padding:'8px 10px'}},'Cost of goods sold'),
+              h('td',{style:{padding:'8px 10px',textAlign:'right'}}, fmt(-data.cogs))
+            ),
+            // Sort SC lines naturally (Line N then alphabetical)
+            Object.keys(data.byScheduleCLine).sort((a,b)=>{
+              const na = parseInt((a.match(/\d+/)||[999])[0]);
+              const nb = parseInt((b.match(/\d+/)||[999])[0]);
+              return na - nb || a.localeCompare(b);
+            }).map(line => h('tr',{key:line},
+              h('td',{style:{padding:'8px 10px',fontFamily:'monospace',fontSize:11}}, line),
+              h('td',{style:{padding:'8px 10px'}}, data.byScheduleCLine[line].label),
+              h('td',{style:{padding:'8px 10px',textAlign:'right'}}, fmt(-data.byScheduleCLine[line].amount))
+            )),
+            h('tr',{style:{borderTop:'2px solid var(--border)',background: data.netIncome>=0?'rgba(64,192,128,0.08)':'rgba(224,80,80,0.08)'}},
+              h('td',{style:{padding:'10px',fontFamily:'monospace',fontSize:11,fontWeight:700}},'Line 31'),
+              h('td',{style:{padding:'10px',fontWeight:700}}, data.netIncome>=0?'Net profit':'Net loss'),
+              h('td',{style:{padding:'10px',textAlign:'right',fontWeight:800,fontSize:15,color: data.netIncome>=0?'var(--green)':'var(--red)'}}, fmt(data.netIncome))
+            )
+          )
+        ),
+        h('p',{style:{fontSize:11,color:'var(--card-text2)',marginTop:14,fontStyle:'italic',lineHeight:1.5}},
+          'This is a working summary, not a filed return. Carry these totals into your tax software (or your accountant) when filing Schedule C.'
+        )
+      ),
+
+      // ── K-1 view (multi-owner) ──
+      !isSingleOwner && h('div',null,
+        h('div',{style:{...labelStyle,marginBottom:8}}, entity.tax+' — '+(entity.ownerLabel||'Partner')+' Statements'),
+        h('div',{style:{padding:'10px 14px',background:'rgba(232,160,32,0.08)',border:'1px solid rgba(232,160,32,0.3)',borderRadius:6,fontSize:12,color:'var(--card-text)',marginBottom:14,lineHeight:1.5}},
+          'Total ordinary business income (loss) for the year: ',
+          h('strong',{style:{color: data.netIncome>=0?'var(--green)':'var(--red)'}}, fmt(data.netIncome)),
+          '. Each '+entity.ownerLabel.toLowerCase().replace(/s$/,'')+'\'s share is calculated by their equity %.'
+        ),
+        partners.filter(p=>p.active!==false).map(p => {
+          const share = data.netIncome * (p.equityPct/100);
+          const draws = data.drawsByPartnerId[p.id] || 0;
+          return h('div',{key:p.id, className:'k1-card', style:{padding:'16px 18px',border:'1px solid var(--border)',borderRadius:8,marginBottom:12,pageBreakAfter:'always'}},
+            h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:10}},
+              h('div',null,
+                h('div',{style:{fontSize:16,fontWeight:700,color:'var(--card-text)'}}, p.name),
+                h('div',{style:{fontSize:11,color:'var(--card-text2)'}}, p.equityPct+'% equity · Tax year '+year)
+              ),
+              h('div',{style:{fontSize:11,color:'var(--card-text2)',fontFamily:'monospace'}}, 'Schedule K-1')
+            ),
+            h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:13}},
+              h('tbody',null,
+                h('tr',null,
+                  h('td',{style:{padding:'6px 8px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)',width:80}},'Line 1'),
+                  h('td',{style:{padding:'6px 8px'}}, 'Ordinary business income (loss)'),
+                  h('td',{style:{padding:'6px 8px',textAlign:'right',fontWeight:600,color: share>=0?'var(--green)':'var(--red)'}}, fmt(share))
+                ),
+                entity.id==='partnership' || entity.id==='multi-member-llc' ? h('tr',null,
+                  h('td',{style:{padding:'6px 8px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)'}},'Line 14a'),
+                  h('td',{style:{padding:'6px 8px'}}, 'Self-employment earnings (loss)'),
+                  h('td',{style:{padding:'6px 8px',textAlign:'right'}}, fmt(share))
+                ) : null,
+                h('tr',null,
+                  h('td',{style:{padding:'6px 8px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)'}}, (entity.id==='s-corp'||entity.id==='c-corp')?'Line 16D':'Line 19a'),
+                  h('td',{style:{padding:'6px 8px'}}, 'Cash distributions / draws'),
+                  h('td',{style:{padding:'6px 8px',textAlign:'right'}}, fmt(-draws))
+                )
+              )
+            ),
+            h('div',{style:{marginTop:8,fontSize:11,color:'var(--card-text2)',fontStyle:'italic'}},
+              'Working summary only — line numbers refer to ', entity.tax.replace(' + K-1',''), ' Schedule K-1.'
+            )
+          );
+        })
+      )
+    )
+  );
+}
+
 // ── Business Mode: Dashboard panel (Quick Entry + P&L) ──
-function BusinessDashboardPanel({transactions, categories, accounts, partners, mileageRate, setTransactions, defaultAcct, showToast, entity, businessName}) {
+function BusinessDashboardPanel({transactions, categories, accounts, partners, mileageRate, setTransactions, defaultAcct, showToast, entity, businessName, structure}) {
   const [quickEntry, setQuickEntry] = useState(null);
+  const [showTaxReports, setShowTaxReports] = useState(false);
   const pnl = useMemo(()=>{
     const yr = new Date().getFullYear();
     const ytd = transactions.filter(t=> t.date && t.date.startsWith(String(yr)));
@@ -5540,12 +5714,15 @@ function BusinessDashboardPanel({transactions, categories, accounts, partners, m
 
   return h('div',{style:{marginBottom:18}},
     h('div',{className:'card',style:{marginBottom:12}},
-      h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)',marginBottom:10}},'Quick Entry'),
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10,gap:8,flexWrap:'wrap'}},
+        h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)'}},'Quick Entry'),
+        h('button',{className:'btn sm',style:{fontSize:11,padding:'4px 10px'},onClick:()=>setShowTaxReports(true)}, '📑 Tax Reports')
+      ),
       h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))',gap:8}},
         h('button',{className:'btn',style:{borderColor:'var(--green)',color:'var(--green)',fontWeight:600},onClick:()=>setQuickEntry('income')},'💰 Money In'),
         h('button',{className:'btn',style:{borderColor:'var(--red)',color:'var(--red)',fontWeight:600},onClick:()=>setQuickEntry('expense')},'🛒 Money Out'),
         h('button',{className:'btn',style:{borderColor:'var(--orange)',color:'var(--orange)',fontWeight:600},onClick:()=>setQuickEntry('mileage')},'🚗 Log Miles'),
-        h('button',{className:'btn',style:{borderColor:'var(--blue)',color:'var(--blue)',fontWeight:600},onClick:()=>setQuickEntry('draw'),disabled:partners.filter(p=>p.active!==false).length===0},'💼 Partner Draw')
+        h('button',{className:'btn',style:{borderColor:'var(--blue)',color:'var(--blue)',fontWeight:600},onClick:()=>setQuickEntry('draw'),disabled:partners.filter(p=>p.active!==false).length===0||!entity?.multi},'💼 '+(entity?.multi?'Partner':'Owner')+' Draw')
       )
     ),
     h('div',{className:'card',style:{marginBottom:12}},
@@ -5582,6 +5759,9 @@ function BusinessDashboardPanel({transactions, categories, accounts, partners, m
       type: quickEntry, partners, mileageRate, accounts, categories, defaultAcct,
       onSave:(txn)=>{ setTransactions(prev=>[...prev, txn]); setQuickEntry(null); showToast('✅ Transaction saved'); },
       onCancel:()=>setQuickEntry(null)
+    }),
+    showTaxReports && h(TaxReportsModal,{
+      transactions, categories, partners, structure, entity, onClose:()=>setShowTaxReports(false)
     })
   );
 }
