@@ -2628,14 +2628,18 @@ function App({idbData}) {
       h('div',{style:{padding:'8px 20px',display:'flex',alignItems:'center',gap:10}},h('span',{style:{fontSize:11,color:currentTheme.sidebarText2,fontWeight:500}},'Theme'),h('div',{style:{display:'flex',gap:6}},[['dark','#0c1445'],['light','#FAFAFA'],['warm','#FDF6E3']].map(function(item){var k=item[0],c=item[1];return h('div',{key:k,...a11yClick(function(){setTheme(k);},'Switch to '+k+' theme'),style:{width:20,height:20,borderRadius:'50%',background:c,border:theme===k?'2px solid var(--accent)':'2px solid '+(k==='dark'?'#2a3580':'#ccc'),cursor:'pointer',transition:'border-color 0.15s',boxShadow:theme===k?'0 0 0 2px rgba(232,160,32,0.3)':'none'}});}))),
       h('div',{className:'nav-sep'}),
       isLicensed
-        ? h('div',{style:{padding:'8px 16px',fontSize:11,display:'flex',flexDirection:'column',gap:4}},
+        ? h('div',{style:{padding:'8px 16px',fontSize:11,display:'flex',flexDirection:'column',gap:6}},
             h('div',{style:{display:'flex',alignItems:'center',gap:6}},
               h('span',{style:{color:'var(--green)',fontSize:13}},'✓'),
-              h('span',{style:{color:'var(--text2)',fontWeight:600,letterSpacing:0.5,textTransform:'uppercase'}}, tier ? tier.label : 'Licensed')
+              h('span',{style:{color:currentTheme.sidebarText,fontWeight:600,letterSpacing:0.5,textTransform:'uppercase',fontSize:11}}, tier ? tier.label : 'Licensed')
             ),
-            h('span',{style:{cursor:'pointer',color:'var(--text2)',opacity:0.5,fontSize:10}, ...a11yClick(()=>{
-              if(confirm('Deactivate your license? You\'ll return to the Free plan.')) deactivateLicense();
-            }, 'Deactivate license')}, 'Deactivate License')
+            license?.key && h('div',{title:'Active license key', style:{fontSize:10,color:currentTheme.sidebarText2,opacity:0.55,fontFamily:'monospace',letterSpacing:0.3}}, '…'+(license.key||'').slice(-14)),
+            h('button',{type:'button', 'aria-label':'Deactivate license',
+              style:{padding:'5px 10px',fontSize:11,background:'transparent',border:'1px solid '+currentTheme.sidebarBorder,borderRadius:6,color:currentTheme.sidebarText2,cursor:'pointer',fontFamily:'inherit',width:'fit-content',marginTop:2,transition:'all 0.15s'},
+              onMouseEnter:e=>{e.currentTarget.style.borderColor='var(--red)';e.currentTarget.style.color='var(--red)';},
+              onMouseLeave:e=>{e.currentTarget.style.borderColor=currentTheme.sidebarBorder;e.currentTarget.style.color=currentTheme.sidebarText2;},
+              onClick:()=>{ if(confirm('Deactivate your license? You\'ll return to the Free plan. Your data stays put.')) deactivateLicense(); }
+            }, 'Deactivate License')
           )
         : h('div',{style:{display:'flex',flexDirection:'column',gap:4}},
             h('div',{style:{padding:'4px 16px',fontSize:10,display:'flex',alignItems:'center',gap:6}},
