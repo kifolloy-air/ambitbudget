@@ -2066,7 +2066,11 @@ function App({idbData}) {
   const API_BASE = 'https://ambitbudget.com';
 
   // Comp / one-off keys (owner-issued). Add a key + tier here when granting comp access.
-  const BETA_KEYS = { 'AMBIT-KIFOLLOY-2026':'Pro' };
+  // KIFOLLOY-2026 = Budget Pro Pro tier only. KIFOLLOY-BOSS-2026 = Budget Pro Pro + Business unlock (owner-only master key).
+  const BETA_KEYS = {
+    'AMBIT-KIFOLLOY-2026':'Pro',
+    'AMBIT-KIFOLLOY-BOSS-2026':'Pro'
+  };
 
   const activateLicense = async (key) => {
     // Check for beta keys first (offline, no API call needed)
@@ -2151,11 +2155,13 @@ function App({idbData}) {
   const isTierDemo = !!(urlMode === 'demo' && urlTier);
   const demoBypass = isDemo && !isTierDemo;
 
-  // Business Mode unlock — only visible to owner or Books license holders.
-  // Everyone else: feature is completely hidden.
-  const isOwner = license?.key === 'AMBIT-KIFOLLOY-2026';
+  // Business Mode unlock — only visible to "boss" master key or Books license holders.
+  // The plain owner key (AMBIT-KIFOLLOY-2026) gets Budget Pro Pro only — Business stays hidden.
+  // The boss key (AMBIT-KIFOLLOY-BOSS-2026) is owner-only and unlocks Budget AND Business.
+  // Real Books customers will eventually activate via Lemon Squeezy with tier='Books'.
+  const isBoss = license?.key === 'AMBIT-KIFOLLOY-BOSS-2026';
   const hasBooks = license?.tier === 'Books' || license?.tier === 'Books Pro';
-  const businessUnlocked = isOwner || hasBooks;
+  const businessUnlocked = isBoss || hasBooks;
 
   // Active app mode: 'personal' or 'business'. Persisted; force 'personal' if locked.
   const [appMode, setAppMode] = useState(()=>{
