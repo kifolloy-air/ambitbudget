@@ -825,6 +825,21 @@ const DEFAULT_BUSINESS_PARTNERS = [
 
 // IRS standard mileage rate (deductible $/mile). Make this user-editable via Settings later.
 const DEFAULT_IRS_MILEAGE_RATE = 0.67;
+
+// Default business structure
+const DEFAULT_BUSINESS_STRUCTURE = {
+  businessName: '',
+  entityType: 'partnership',  // sole-prop | single-member-llc | partnership | multi-member-llc | s-corp | c-corp
+  ein: ''
+};
+const ENTITY_TYPES = [
+  {id:'sole-prop',         label:'Sole Proprietor',                tax:'Schedule C',     ownerLabel:'Owner',      multi:false},
+  {id:'single-member-llc', label:'Single-Member LLC',              tax:'Schedule C',     ownerLabel:'Owner',      multi:false},
+  {id:'partnership',       label:'Partnership',                    tax:'Form 1065 + K-1',ownerLabel:'Partners',   multi:true},
+  {id:'multi-member-llc',  label:'Multi-Member LLC (Partnership)', tax:'Form 1065 + K-1',ownerLabel:'Partners',   multi:true},
+  {id:'s-corp',            label:'S-Corporation',                  tax:'Form 1120-S + K-1',ownerLabel:'Shareholders',multi:true},
+  {id:'c-corp',            label:'C-Corporation',                  tax:'Form 1120',      ownerLabel:'Shareholders',multi:true}
+];
 const DEFAULT_BUSINESS_CATEGORIES = [
   // Income
   {name:'Sales / Services Revenue',group:'Income',catType:'fixed',budget:0,scheduleC:'Line 1'},
@@ -2158,6 +2173,8 @@ function App({idbData}) {
   const [bizGroups, setBizGroups] = useState(()=> bizSaved?.groups || DEFAULT_BUSINESS_GROUPS);
   const [bizPartners, setBizPartners] = useState(()=> bizSaved?.partners || DEFAULT_BUSINESS_PARTNERS);
   const [bizMileageRate, setBizMileageRate] = useState(()=> bizSaved?.mileageRate ?? DEFAULT_IRS_MILEAGE_RATE);
+  const [bizStructure, setBizStructure] = useState(()=> ({...DEFAULT_BUSINESS_STRUCTURE, ...(bizSaved?.structure || {})}));
+  const bizEntity = useMemo(()=> ENTITY_TYPES.find(e=>e.id===bizStructure.entityType) || ENTITY_TYPES[2], [bizStructure.entityType]);
 
   // ── Active data based on mode ──
   // Tier demos use demo data but apply tier-specific feature gates via demoTier
@@ -2288,7 +2305,7 @@ function App({idbData}) {
         return;
       }
       try {
-        const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate} : null;
+        const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure} : null;
         const payload = buildBackupPayload({
           accounts: myAccounts, categories: myCategories, dictionary: myDictionary,
           transactions: myTransactions, groups: myGroups, license, business
@@ -2313,9 +2330,24 @@ function App({idbData}) {
   // Save Business data separately (only when unlocked)
   useEffect(()=>{
     if(!businessUnlocked) return;
-    const state = {accounts: bizAccounts, categories: bizCategories, dictionary: bizDictionary, transactions: bizTransactions, groups: bizGroups, partners: bizPartners, mileageRate: bizMileageRate};
+    const state = {accounts: bizAccounts, categories: bizCategories, dictionary: bizDictionary, transactions: bizTransactions, groups: bizGroups, partners: bizPartners, mileageRate: bizMileageRate, structure: bizStructure};
     try { localStorage.setItem(BIZ_STORE_KEY, JSON.stringify(state)); } catch(e) {}
-  },[bizAccounts, bizCategories, bizDictionary, bizTransactions, bizGroups, bizPartners, bizMileageRate, businessUnlocked]);
+  },[bizAccounts, bizCategories, bizDictionary, bizTransactions, bizGroups, bizPartners, bizMileageRate, bizStructure, businessUnlocked]);
+
+  // When entity type changes to a single-owner type, ensure exactly one owner at 100% (preserve name)
+  useEffect(()=>{
+    if(!businessUnlocked) return;
+    if(!bizEntity.multi) {
+      setBizPartners(prev => {
+        const active = prev.filter(p=>p.active!==false);
+        if(active.length === 1 && active[0].equityPct === 100) return prev; // already correct
+        // Keep the first active partner (or first overall), set to 100%
+        const keep = active[0] || prev[0];
+        if(!keep) return [{id:'p1', name:bizEntity.ownerLabel||'Owner', equityPct:100, active:true}];
+        return prev.map(p => p.id===keep.id ? {...p, equityPct:100, active:true} : {...p, active:false});
+      });
+    }
+  },[bizEntity.multi, businessUnlocked]);
 
   // Auto-sync per-partner Draw/Contribution categories whenever partners change.
   // Adds missing categories for active partners; we never auto-delete (preserves transaction history if a partner leaves).
@@ -2545,38 +2577,82 @@ function App({idbData}) {
               )
         ),
 
-        // ── Business / Partners section (only in business mode) ──
+        // ── Business Structure (only in business mode) ──
         inBusiness && h('div',{style:{marginBottom:18,paddingBottom:18,borderBottom:'1px solid var(--border)'}},
-          h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)',marginBottom:8}},'Partners (Business)'),
+          h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)',marginBottom:8}},'Business Structure'),
           h('p',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:10,lineHeight:1.4}},
-            'Add each partner with their equity %. The app auto-creates a Draw and Contribution category per partner, and splits net profit by equity for the P&L.'
+            'Tells the app which tax form to organize toward and whether to track multiple owners.'
           ),
-          // Partner list
+          h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}},
+            h('div',null,
+              h('label',{style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Business name'),
+              h('input',{type:'text',value:bizStructure.businessName,placeholder:'Kifolloy AIR, LLC',
+                onChange:e=>setBizStructure(prev=>({...prev,businessName:e.target.value})),
+                style:{width:'100%',padding:'6px 8px',fontSize:13,border:'1px solid var(--border)',borderRadius:6,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit'}
+              })
+            ),
+            h('div',null,
+              h('label',{style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'EIN (optional)'),
+              h('input',{type:'text',value:bizStructure.ein,placeholder:'12-3456789',
+                onChange:e=>setBizStructure(prev=>({...prev,ein:e.target.value})),
+                style:{width:'100%',padding:'6px 8px',fontSize:13,border:'1px solid var(--border)',borderRadius:6,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit',fontFamily:'monospace'}
+              })
+            )
+          ),
+          h('div',null,
+            h('label',{style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}},'Entity type'),
+            h('select',{value:bizStructure.entityType,
+              onChange:e=>setBizStructure(prev=>({...prev,entityType:e.target.value})),
+              style:{width:'100%',padding:'6px 8px',fontSize:13,border:'1px solid var(--border)',borderRadius:6,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit'}
+            },
+              ENTITY_TYPES.map(et=>h('option',{key:et.id,value:et.id}, et.label+' — '+et.tax))
+            )
+          ),
+          h('div',{style:{marginTop:8,padding:'8px 10px',background:'var(--surface2)',borderRadius:6,fontSize:11,color:'var(--card-text2)',lineHeight:1.4}},
+            h('strong',{style:{color:'var(--card-text)'}}, bizEntity.label), ': files ',
+            h('strong',{style:{color:'var(--accent2)'}}, bizEntity.tax),
+            bizEntity.multi
+              ? '. The app tracks multiple '+bizEntity.ownerLabel.toLowerCase()+' and splits net profit by equity %.'
+              : '. The app treats this as a single-owner business (one '+bizEntity.ownerLabel.toLowerCase()+' at 100%).'
+          )
+        ),
+
+        // ── Partners / Shareholders / Owner section (only in business mode) ──
+        inBusiness && h('div',{style:{marginBottom:18,paddingBottom:18,borderBottom:'1px solid var(--border)'}},
+          h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)',marginBottom:8}},
+            bizEntity.multi ? bizEntity.ownerLabel : (bizEntity.ownerLabel + ' Info')
+          ),
+          h('p',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:10,lineHeight:1.4}},
+            bizEntity.multi
+              ? 'List each '+bizEntity.ownerLabel.toLowerCase().replace(/s$/,'')+' with their equity %. Auto-creates a Draw and Contribution category per person, and splits net profit by equity for the P&L.'
+              : 'Single-owner business. Edit the name as you like — used for the Draw/Contribution category labels.'
+          ),
+          // Partner / shareholder / owner list
           h('div',{style:{display:'flex',flexDirection:'column',gap:6,marginBottom:10}},
-            bizPartners.map((p,i)=>h('div',{key:p.id, style:{display:'flex',gap:8,alignItems:'center',padding:8,background:'var(--surface2)',borderRadius:6}},
-              h('input',{type:'text',value:p.name, placeholder:'Partner name',
+            bizPartners.filter(p=>p.active!==false).map((p,i)=>h('div',{key:p.id, style:{display:'flex',gap:8,alignItems:'center',padding:8,background:'var(--surface2)',borderRadius:6}},
+              h('input',{type:'text',value:p.name, placeholder:bizEntity.ownerLabel.replace(/s$/,'')+' name',
                 onChange:e=>setBizPartners(prev=>prev.map(q=>q.id===p.id?{...q,name:e.target.value}:q)),
                 style:{flex:1,padding:'5px 8px',fontSize:13,border:'1px solid var(--border)',borderRadius:4,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit'}
               }),
-              h('input',{type:'number',min:0,max:100,step:0.5,value:p.equityPct,
+              bizEntity.multi && h('input',{type:'number',min:0,max:100,step:0.5,value:p.equityPct,
                 onChange:e=>setBizPartners(prev=>prev.map(q=>q.id===p.id?{...q,equityPct:Math.max(0,Math.min(100,parseFloat(e.target.value)||0))}:q)),
                 style:{width:64,padding:'5px 6px',fontSize:13,border:'1px solid var(--border)',borderRadius:4,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit'}
               }),
-              h('span',{style:{fontSize:12,color:'var(--card-text2)'}},'%'),
-              bizPartners.length>1 && h('button',{type:'button','aria-label':'Remove partner',
+              bizEntity.multi && h('span',{style:{fontSize:12,color:'var(--card-text2)'}},'%'),
+              bizEntity.multi && bizPartners.filter(p=>p.active!==false).length>1 && h('button',{type:'button','aria-label':'Remove '+bizEntity.ownerLabel.toLowerCase().replace(/s$/,''),
                 style:{background:'none',border:'none',cursor:'pointer',color:'var(--text2)',fontSize:18,lineHeight:1,padding:'0 4px'},
-                onClick:()=>{ if(confirm('Remove '+(p.name||'this partner')+'? Their existing Draw/Contribution categories stay so historical transactions are preserved.')) setBizPartners(prev=>prev.filter(q=>q.id!==p.id));}
+                onClick:()=>{ if(confirm('Remove '+(p.name||'this entry')+'? Existing Draw/Contribution categories stay so historical transactions are preserved.')) setBizPartners(prev=>prev.map(q=>q.id===p.id?{...q,active:false}:q));}
               },'×')
             )),
-            // Total equity check
-            (()=>{ const total = bizPartners.reduce((s,p)=>s+(p.active!==false?p.equityPct:0),0); if(Math.abs(total-100)>0.01) return h('div',{style:{fontSize:11,color:'var(--red)',padding:'4px 4px 0'}},'⚠️ Equity totals '+total.toFixed(1)+'%. Should sum to 100%.'); return null; })()
+            // Total equity check (multi only)
+            bizEntity.multi && (()=>{ const total = bizPartners.filter(p=>p.active!==false).reduce((s,p)=>s+p.equityPct,0); if(Math.abs(total-100)>0.01) return h('div',{style:{fontSize:11,color:'var(--red)',padding:'4px 4px 0'}},'⚠️ Equity totals '+total.toFixed(1)+'%. Should sum to 100%.'); return null; })()
           ),
-          h('button',{type:'button',className:'btn sm',
+          bizEntity.multi && h('button',{type:'button',className:'btn sm',
             onClick:()=>{
               const id='p'+Date.now().toString(36);
-              setBizPartners(prev=>[...prev, {id, name:'New Partner', equityPct:0, active:true}]);
+              setBizPartners(prev=>[...prev, {id, name:'New '+bizEntity.ownerLabel.replace(/s$/,''), equityPct:0, active:true}]);
             }
-          },'+ Add Partner'),
+          },'+ Add '+bizEntity.ownerLabel.replace(/s$/,'')),
           // Mileage rate
           h('div',{style:{marginTop:14,paddingTop:12,borderTop:'1px dashed var(--border)',display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}},
             h('label',{style:{fontSize:12,color:'var(--card-text2)'}},'IRS mileage rate'),
@@ -2669,7 +2745,7 @@ function App({idbData}) {
       h('div',{className:'nav-item'+(page==='import'?' active':''), ...a11yClick(()=>setPage('import'))}, h('span',{className:'icon','aria-hidden':'true'},'📥'), h('span',null,'Import Bank Data')),
       h('div',{className:'nav-item', ...a11yClick(()=>{
         if(confirm('Export all data as JSON backup?')) {
-          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate} : null;
+          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure} : null;
           const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,license,business});
           const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
           const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
@@ -2702,6 +2778,7 @@ function App({idbData}) {
                 if(d.business.groups) setBizGroups(d.business.groups);
                 if(d.business.partners) setBizPartners(d.business.partners);
                 if(typeof d.business.mileageRate === 'number') setBizMileageRate(d.business.mileageRate);
+                if(d.business.structure) setBizStructure({...DEFAULT_BUSINESS_STRUCTURE, ...d.business.structure});
                 bizMsg = ' + business';
               }
               // Restore license if backup includes one (lets users recover access after a clear-history)
@@ -2830,7 +2907,7 @@ function App({idbData}) {
             : 'Last backup: '+backupNeeded.days+' days ago. Your local data file needs updating. Export a backup now to prevent data loss. For extra protection, save your backup to OneDrive, Google Drive, or iCloud.'
         ),
         h('button',{className:'btn sm primary',onClick:()=>{
-          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate} : null;
+          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure} : null;
           const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,license,business});
           const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
           const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
@@ -2859,7 +2936,7 @@ function App({idbData}) {
 
       page==='dashboard' && inBusiness && h(BusinessDashboardPanel, {
         transactions: liveTxns, categories, accounts, partners: bizPartners, mileageRate: bizMileageRate,
-        setTransactions, defaultAcct, showToast
+        setTransactions, defaultAcct, showToast, entity: bizEntity, businessName: bizStructure.businessName
       }),
       page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, demoBypass, isTierDemo, groupColors, defaultAcct, setPage, onUpgrade:()=>setShowLicenseGate(true)}),
       page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors, tier, onUpgrade:()=>setShowLicenseGate(true)}),
@@ -5442,7 +5519,7 @@ function QuickEntryModal({type, partners, mileageRate, accounts, categories, def
 }
 
 // ── Business Mode: Dashboard panel (Quick Entry + P&L) ──
-function BusinessDashboardPanel({transactions, categories, accounts, partners, mileageRate, setTransactions, defaultAcct, showToast}) {
+function BusinessDashboardPanel({transactions, categories, accounts, partners, mileageRate, setTransactions, defaultAcct, showToast, entity, businessName}) {
   const [quickEntry, setQuickEntry] = useState(null);
   const pnl = useMemo(()=>{
     const yr = new Date().getFullYear();
@@ -5493,8 +5570,8 @@ function BusinessDashboardPanel({transactions, categories, accounts, partners, m
         h('span',{style:{fontSize:13,fontWeight:600,color:'var(--card-text)'}},'Net Income'),
         h('span',{style:{fontSize:22,fontWeight:800,color: pnl.netIncome>=0?'var(--green)':'var(--red)'}}, fmt(pnl.netIncome))
       ),
-      partners.filter(p=>p.active!==false).length > 0 && h('div',{style:{marginTop:12,paddingTop:10,borderTop:'1px dashed var(--border)'}},
-        h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1,color:'var(--text2)',marginBottom:6}},'Partner Allocation (before draws)'),
+      entity?.multi && partners.filter(p=>p.active!==false).length > 0 && h('div',{style:{marginTop:12,paddingTop:10,borderTop:'1px dashed var(--border)'}},
+        h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1,color:'var(--text2)',marginBottom:6}}, (entity?.ownerLabel||'Partner')+' Allocation (before draws)'),
         partners.filter(p=>p.active!==false).map(p=>h('div',{key:p.id,style:{display:'flex',justifyContent:'space-between',fontSize:12,padding:'3px 0'}},
           h('span',null, p.name+' ('+p.equityPct+'%)'),
           h('span',{style:{fontWeight:600,color: pnl.netIncome>=0?'var(--green)':'var(--red)'}}, fmt(pnl.netIncome * (p.equityPct/100)))
