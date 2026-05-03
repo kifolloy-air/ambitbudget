@@ -525,6 +525,49 @@ function getForecastDates(category, accountId, year, month) {
 const APP_VERSION = '1.0.0';
 const VERSION_CHECK_URL = 'https://ambitbudget.com/api/version';
 
+// ── Receipt storage (IndexedDB blobs, separate from app state DB) ──
+const RECEIPT_DB_NAME = 'ambit-receipts';
+const RECEIPT_DB_STORE = 'receipts';
+const RECEIPT_MAX_BYTES = 8 * 1024 * 1024; // 8 MB cap per receipt
+function _openReceiptDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(RECEIPT_DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(RECEIPT_DB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveReceipt(id, blob) {
+  const db = await _openReceiptDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(RECEIPT_DB_STORE, 'readwrite');
+    tx.objectStore(RECEIPT_DB_STORE).put(blob, id);
+    tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error);
+  });
+}
+async function loadReceipt(id) {
+  try {
+    const db = await _openReceiptDB();
+    return await new Promise((res) => {
+      const tx = db.transaction(RECEIPT_DB_STORE, 'readonly');
+      const r = tx.objectStore(RECEIPT_DB_STORE).get(id);
+      r.onsuccess = () => res(r.result || null);
+      r.onerror = () => res(null);
+    });
+  } catch { return null; }
+}
+async function deleteReceipt(id) {
+  try {
+    const db = await _openReceiptDB();
+    await new Promise(res => {
+      const tx = db.transaction(RECEIPT_DB_STORE, 'readwrite');
+      tx.objectStore(RECEIPT_DB_STORE).delete(id);
+      tx.oncomplete = res; tx.onerror = res;
+    });
+  } catch {}
+}
+function _newReceiptId() { return 'rcpt_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+
 // ── Auto-backup helpers ─────────────────────────────────
 const SUPPORTS_FS_ACCESS = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 const IDB_NAME = 'ambit-prefs';
@@ -2082,10 +2125,14 @@ function App({idbData}) {
 
   // ── License / Tier system ──
   const TIERS = useMemo(()=>({
-    Free:    { limit:1, label:'Free', price:0, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:false, payeeRules:false, groups:false, autoCategorize:false, savingsGoals:false },
-    Starter: { limit:2, label:'Starter', price:9.99, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:false },
-    Plus:    { limit:3, label:'Plus', price:19.99, forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true },
-    Pro:     { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true }
+    Free:        { limit:1, label:'Free', price:0, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:false, payeeRules:false, groups:false, autoCategorize:false, savingsGoals:false },
+    Starter:     { limit:2, label:'Starter', price:9.99, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:false },
+    Plus:        { limit:3, label:'Plus', price:19.99, forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true },
+    Pro:         { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true },
+    // Books tiers — also unlock all Pro-style budget features so Books customers
+    // get a full personal-side experience too (one app, two modes, one license).
+    Books:       { limit:Infinity, label:'Books', price:49.99, forecast:true, dayByDay:false, review:true, yearView:true, debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true },
+    'Books Pro': { limit:Infinity, label:'Books Pro', price:79.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true }
   }),[]);
   const [license, setLicense] = useState(()=>{ try { return JSON.parse(localStorage.getItem('ambit_license'))||null; } catch{ return null; } });
   const [showLicenseGate, setShowLicenseGate] = useState(false);
@@ -2127,7 +2174,17 @@ function App({idbData}) {
       const data = await res.json();
       if(data.activated) {
         const pName = (data.meta?.product_name || data.meta?.variant_name || '').toLowerCase();
-        const tierName = pName.endsWith('- pro') || pName === 'pro' ? 'Pro' : pName.endsWith('- plus') || pName === 'plus' ? 'Plus' : pName.endsWith('- starter') || pName === 'starter' ? 'Starter' : pName.includes('pro') && !pName.includes('starter') && !pName.includes('plus') ? 'Pro' : pName.includes('plus') ? 'Plus' : 'Starter';
+        // Tier mapping — order matters: check 'books pro' before 'books', and 'pro' last.
+        const tierName = (() => {
+          if (pName.includes('books pro')) return 'Books Pro';
+          if (pName.includes('books')) return 'Books';
+          if (pName.endsWith('- pro') || pName === 'pro') return 'Pro';
+          if (pName.endsWith('- plus') || pName === 'plus') return 'Plus';
+          if (pName.endsWith('- starter') || pName === 'starter') return 'Starter';
+          if (pName.includes('pro') && !pName.includes('starter') && !pName.includes('plus')) return 'Pro';
+          if (pName.includes('plus')) return 'Plus';
+          return 'Starter';
+        })();
         const lic = {valid:true, key:key.trim(), tier:tierName, instance_id:data.instance?.id, at:new Date().toISOString()};
         localStorage.setItem('ambit_license', JSON.stringify(lic));
         setLicense(lic);
@@ -4633,9 +4690,12 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
                           h('button',{className:'btn sm',onClick:()=>savePayee(t.id)},'\u2713'),
                           h('button',{className:'btn sm',onClick:()=>setEditPayeeId(null)},'\u2717')
                         )
-                      : h('span',{onClick:()=>startEditPayee(t), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();startEditPayee(t);}}, tabIndex:0, role:'button', style:{cursor:'pointer'},title:'Click to edit payee'},t.cleanName,
-                          t.checkNumber && h('span',{style:{fontSize:10,color:'var(--text2)',marginLeft:6}},'#'+t.checkNumber),
-                          t.cleanName!==t.description && h('div',{style:{fontSize:10,color:'var(--text2)',marginTop:1}},t.description.substring(0,30))
+                      : h('span',{style:{display:'inline-flex',alignItems:'center',gap:0,flexWrap:'wrap'}},
+                          h('span',{onClick:()=>startEditPayee(t), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();startEditPayee(t);}}, tabIndex:0, role:'button', style:{cursor:'pointer'},title:'Click to edit payee'},t.cleanName,
+                            t.checkNumber && h('span',{style:{fontSize:10,color:'var(--text2)',marginLeft:6}},'#'+t.checkNumber),
+                            t.cleanName!==t.description && h('div',{style:{fontSize:10,color:'var(--text2)',marginTop:1}},t.description.substring(0,30))
+                          ),
+                          h(ReceiptButton,{txn:t, setTransactions, showToast})
                         )
                   ),
                   h('td',null,
@@ -5426,6 +5486,99 @@ function BudgetMonthlyTab({categories, setCategories, transactions, dictionary, 
   );
 }
 
+// ── Receipt: per-transaction attach button + preview modal ──
+function ReceiptButton({txn, setTransactions, showToast}) {
+  const inputRef = useRef(null);
+  const [previewing, setPreviewing] = useState(false);
+  const has = !!txn.receiptId;
+
+  const onPick = async (e) => {
+    const f = e.target.files?.[0];
+    if(!f) return;
+    if(f.size > RECEIPT_MAX_BYTES) { showToast('⚠️ Receipt too large (max 8 MB)'); return; }
+    const id = _newReceiptId();
+    try {
+      await saveReceipt(id, f);
+      setTransactions(prev => prev.map(t => t.id === txn.id ? {...t, receiptId:id, receiptMeta:{name:f.name, type:f.type, size:f.size}} : t));
+      showToast('📎 Receipt attached');
+    } catch (err) {
+      showToast('❌ Could not save receipt');
+    }
+    e.target.value = ''; // reset so picking the same file again still triggers change
+  };
+
+  const click = () => {
+    if(has) setPreviewing(true);
+    else inputRef.current?.click();
+  };
+
+  return h('span',{style:{display:'inline-flex',alignItems:'center',marginLeft:6,verticalAlign:'middle'}},
+    h('button',{type:'button', 'aria-label': has?'View receipt':'Attach receipt',
+      title: has ? ('Receipt: '+(txn.receiptMeta?.name||'attached')) : 'Attach receipt',
+      onClick:(e)=>{e.stopPropagation(); click();},
+      style:{background:'none',border:'none',cursor:'pointer',padding:'2px 4px',fontSize:14,opacity: has?1:0.35,color: has?'var(--accent2)':'var(--text2)',lineHeight:1}
+    }, '📎'),
+    h('input',{ref:inputRef,type:'file',accept:'image/*,application/pdf,.pdf',style:{display:'none'},onChange:onPick}),
+    previewing && h(ReceiptPreviewModal,{txn, onClose:()=>setPreviewing(false), setTransactions, showToast})
+  );
+}
+
+function ReceiptPreviewModal({txn, onClose, setTransactions, showToast}) {
+  const [url, setUrl] = useState(null);
+  const [type, setType] = useState(null);
+  useEffect(()=>{
+    let active = true;
+    let objectUrl = null;
+    loadReceipt(txn.receiptId).then(blob => {
+      if(!active) return;
+      if(!blob) { setUrl(null); return; }
+      objectUrl = URL.createObjectURL(blob);
+      setUrl(objectUrl);
+      setType(blob.type || txn.receiptMeta?.type || '');
+    });
+    return () => { active = false; if(objectUrl) URL.revokeObjectURL(objectUrl); };
+  },[txn.receiptId]);
+
+  const onDelete = async () => {
+    if(!confirm('Remove this receipt? The transaction will stay; only the receipt file is deleted.')) return;
+    await deleteReceipt(txn.receiptId);
+    setTransactions(prev => prev.map(t => t.id === txn.id ? {...t, receiptId: undefined, receiptMeta: undefined} : t));
+    showToast('🗑️ Receipt removed');
+    onClose();
+  };
+
+  const meta = txn.receiptMeta || {};
+  const isImage = (type||'').startsWith('image/');
+  const isPdf = (type||'').includes('pdf');
+
+  return h('div',{className:'modal-overlay',onClick:onClose},
+    h('div',{className:'modal',role:'dialog','aria-modal':'true','aria-label':'Receipt preview',
+      style:{maxWidth:720,maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column'},onClick:e=>e.stopPropagation()},
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10,gap:10,flexWrap:'wrap'}},
+        h('div',null,
+          h('div',{style:{fontSize:14,fontWeight:700,color:'var(--card-text)'}}, '📎 '+(meta.name||'Receipt')),
+          h('div',{style:{fontSize:11,color:'var(--card-text2)'}}, txn.cleanName||txn.description||'', ' · ', txn.date||'')
+        ),
+        h('div',{style:{display:'flex',gap:6}},
+          url && h('a',{href:url,download:meta.name||'receipt',className:'btn sm'}, '⬇ Download'),
+          h('button',{className:'btn sm',style:{borderColor:'var(--red)',color:'var(--red)'},onClick:onDelete},'🗑 Remove'),
+          h('button',{className:'btn sm',onClick:onClose},'Close')
+        )
+      ),
+      h('div',{style:{flex:1,overflow:'auto',background:'var(--surface2)',borderRadius:8,minHeight:240,display:'flex',alignItems:'center',justifyContent:'center'}},
+        !url ? h('div',{style:{padding:24,color:'var(--card-text2)',fontSize:13}}, 'Loading receipt…')
+        : isImage ? h('img',{src:url, alt:'Receipt', style:{maxWidth:'100%',maxHeight:'70vh',objectFit:'contain',borderRadius:6}})
+        : isPdf ? h('iframe',{src:url, title:'Receipt PDF', style:{width:'100%',height:'70vh',border:'none',borderRadius:6,background:'#fff'}})
+        : h('div',{style:{padding:24,textAlign:'center',color:'var(--card-text2)',fontSize:13}},
+            'Preview not supported for this file type.',
+            h('br'),
+            h('a',{href:url,download:meta.name||'receipt',className:'btn sm primary',style:{marginTop:10,display:'inline-block'}}, '⬇ Download to view')
+          )
+      )
+    )
+  );
+}
+
 // ── Business Mode: Quick Entry Modal ───────────────────
 function QuickEntryModal({type, partners, mileageRate, accounts, categories, defaultAcct, onSave, onCancel}) {
   const today = new Date().toISOString().slice(0,10);
@@ -5533,7 +5686,55 @@ function QuickEntryModal({type, partners, mileageRate, accounts, categories, def
 // Important: this is bookkeeping output, not a tax form. We reference IRS lines
 // for accountant convenience, but the report is framed as a working summary
 // that the user hands off to their tax professional.
-function TaxReportsModal({transactions, categories, partners, structure, entity, onClose}) {
+
+// CSV escaping: wrap in quotes if needed, double internal quotes
+function _csvCell(v) {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+function exportTransactionsCSV(transactions, categories, accounts, year, businessName) {
+  const filename = ((businessName||'ambit').replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'')||'ambit') + '-bookkeeping-' + year + '.csv';
+  const yearTxns = transactions.filter(t => (t.date||'').startsWith(year));
+  const acctById = Object.fromEntries(accounts.map(a => [a.id, a.name]));
+  const catByName = Object.fromEntries(categories.map(c => [c.name, c]));
+  const headers = ['Date','Type','Account','Payee','Description','Category','Group','Tax reference','Amount','Status','Has receipt'];
+  const rows = [headers.map(_csvCell).join(',')];
+  // Sort chronologically
+  yearTxns.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  for (const t of yearTxns) {
+    const cat = catByName[t.category];
+    const grp = cat?.group || '';
+    let type = 'Expense';
+    if (t.amount > 0) type = 'Income';
+    if (cat?.equityType === 'draw') type = 'Draw';
+    else if (cat?.equityType === 'contribution') type = 'Contribution';
+    else if (t.catType === 'transfer') type = 'Transfer';
+    const ref = cat?.scheduleC ? '~ Sched C, '+cat.scheduleC : '';
+    rows.push([
+      t.date||'',
+      type,
+      acctById[t.accountId] || '',
+      t.cleanName || '',
+      t.description || '',
+      t.category || '',
+      grp,
+      ref,
+      t.amount.toFixed(2),
+      t.pending ? 'Pending' : 'Cleared',
+      t.receiptId ? 'Yes' : 'No'
+    ].map(_csvCell).join(','));
+  }
+  const blob = new Blob([rows.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  return {count: yearTxns.length, filename};
+}
+
+function TaxReportsModal({transactions, categories, partners, structure, entity, accounts, showToast, onClose}) {
   const currentYear = new Date().getFullYear();
   const yearsWithData = useMemo(()=>{
     const years = new Set();
@@ -5594,6 +5795,10 @@ function TaxReportsModal({transactions, categories, partners, structure, entity,
           h('select',{value:year,onChange:e=>setYear(e.target.value),
             style:{padding:'5px 8px',fontSize:13,border:'1px solid var(--border)',borderRadius:6,background:'var(--surface)',color:'var(--card-text)',fontFamily:'inherit'}
           }, yearsWithData.map(y=>h('option',{key:y,value:y},y))),
+          h('button',{className:'btn',style:{fontSize:12,padding:'6px 12px'},onClick:()=>{
+            const r = exportTransactionsCSV(transactions, categories, accounts||[], year, structure?.businessName);
+            showToast?.('✅ Exported '+r.count+' rows: '+r.filename);
+          }},'⬇ CSV'),
           h('button',{className:'btn primary',style:{fontSize:12,padding:'6px 12px'},onClick:()=>window.print()},'🖨️ Print'),
           h('button',{className:'btn',style:{fontSize:12,padding:'6px 12px'},onClick:onClose},'Close')
         )
@@ -5781,7 +5986,7 @@ function BusinessDashboardPanel({transactions, categories, accounts, partners, m
       onCancel:()=>setQuickEntry(null)
     }),
     showTaxReports && h(TaxReportsModal,{
-      transactions, categories, partners, structure, entity, onClose:()=>setShowTaxReports(false)
+      transactions, categories, partners, structure, entity, accounts, showToast, onClose:()=>setShowTaxReports(false)
     })
   );
 }
