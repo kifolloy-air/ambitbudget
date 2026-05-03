@@ -514,6 +514,64 @@ function getForecastDates(category, accountId, year, month) {
 const APP_VERSION = '1.0.0';
 const VERSION_CHECK_URL = 'https://ambitbudget.com/api/version';
 
+// ── Auto-backup helpers ─────────────────────────────────
+const SUPPORTS_FS_ACCESS = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
+const IDB_NAME = 'ambit-prefs';
+const IDB_STORE = 'handles';
+function _openHandleDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveBackupHandle(handle) {
+  const db = await _openHandleDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(handle, 'backupDir');
+    tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error);
+  });
+}
+async function loadBackupHandle() {
+  try {
+    const db = await _openHandleDB();
+    return await new Promise((res, rej) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const r = tx.objectStore(IDB_STORE).get('backupDir');
+      r.onsuccess = () => res(r.result || null); r.onerror = () => rej(r.error);
+    });
+  } catch { return null; }
+}
+async function verifyHandlePerm(handle, mode='readwrite') {
+  if (!handle?.queryPermission) return false;
+  if ((await handle.queryPermission({mode})) === 'granted') return true;
+  if ((await handle.requestPermission({mode})) === 'granted') return true;
+  return false;
+}
+async function writeBackupToFolder(handle, payload) {
+  const fileName = 'ambit-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  const fileHandle = await handle.getFileHandle(fileName, {create:true});
+  const writable = await fileHandle.createWritable();
+  await writable.write(JSON.stringify(payload, null, 2));
+  await writable.close();
+  return fileName;
+}
+function buildBackupPayload(state) {
+  return {
+    _format: 'ambit-backup',
+    _version: APP_VERSION,
+    _exportedAt: new Date().toISOString(),
+    accounts: state.accounts,
+    categories: state.categories,
+    dictionary: state.dictionary,
+    transactions: state.transactions,
+    groups: state.groups,
+    license: state.license || null
+  };
+}
+
 // ── Persistence ─────────────────────────────────────────
 const STORE_KEY = 'budgetpro_v2';
 function loadState() {
@@ -2097,6 +2155,67 @@ function App({idbData}) {
     }).catch(()=>{}); // silent fail if offline or server down
   },[]);
 
+  // Auto-backup settings
+  const [autoBackupMode, setAutoBackupMode] = useState(()=> localStorage.getItem('ambit_auto_backup_mode') || 'off');
+  const [showBackupSettings, setShowBackupSettings] = useState(false);
+  const [backupFolderName, setBackupFolderName] = useState(null);
+  useEffect(()=>{ localStorage.setItem('ambit_auto_backup_mode', autoBackupMode); },[autoBackupMode]);
+  useEffect(()=>{
+    if(!SUPPORTS_FS_ACCESS) return;
+    loadBackupHandle().then(h=>{ if(h) setBackupFolderName(h.name); });
+  },[]);
+
+  // Pick a folder for auto-backup (Chrome/Edge desktop + Android Chrome)
+  const pickBackupFolder = useCallback(async ()=>{
+    if(!SUPPORTS_FS_ACCESS) { showToast('❌ Auto-save not supported in this browser'); return null; }
+    try {
+      const handle = await window.showDirectoryPicker({mode:'readwrite', id:'ambit-backup'});
+      await saveBackupHandle(handle);
+      setBackupFolderName(handle.name);
+      setAutoBackupMode('autosave');
+      showToast('✅ Backup folder set: '+handle.name);
+      return handle;
+    } catch(e) {
+      // user cancelled or denied — silent
+      return null;
+    }
+  },[]);
+
+  // Run auto-backup when conditions are met (mode=autosave, 7+ days since last)
+  // Only runs after license-aware "mine" data is loaded; depends on state, but we throttle to once per mount.
+  const autoBackupRanRef = useRef(false);
+  useEffect(()=>{
+    if(autoBackupMode !== 'autosave') return;
+    if(autoBackupRanRef.current) return;
+    if(!myAccounts || !myTransactions) return; // wait for state to load
+    if(isDemo) return; // never auto-backup demo data
+    const last = localStorage.getItem('ambit_last_backup');
+    const days = last ? Math.floor((Date.now() - new Date(last).getTime()) / 86400000) : 999;
+    if(days < 7) return;
+    autoBackupRanRef.current = true;
+    (async ()=>{
+      const handle = await loadBackupHandle();
+      if(!handle) return;
+      if(!(await verifyHandlePerm(handle))) {
+        showToast('⚠️ Auto-backup needs folder permission — open Backup Settings');
+        return;
+      }
+      try {
+        const payload = buildBackupPayload({
+          accounts: myAccounts, categories: myCategories, dictionary: myDictionary,
+          transactions: myTransactions, groups: myGroups, license
+        });
+        const fileName = await writeBackupToFolder(handle, payload);
+        localStorage.setItem('ambit_last_backup', new Date().toISOString());
+        setBackupDismissed(true);
+        showToast('✅ Auto-saved backup: '+fileName);
+      } catch(e) {
+        console.warn('Auto-backup failed', e);
+        showToast('⚠️ Auto-backup failed — check Backup Settings');
+      }
+    })();
+  },[autoBackupMode, myAccounts, myTransactions, isDemo]);
+
   // Save "My Budget" data on change (never save demo data)
   useEffect(()=>{
     const state = {accounts: myAccounts, categories: myCategories, dictionary: myDictionary, transactions: myTransactions, groups: myGroups};
@@ -2278,6 +2397,50 @@ function App({idbData}) {
       setShowFirstRun(false);
     }}),
 
+    // Backup settings modal
+    showBackupSettings && h('div',{className:'modal-overlay',onClick:()=>setShowBackupSettings(false)},
+      h('div',{className:'modal',role:'dialog','aria-modal':'true','aria-label':'Backup settings',style:{maxWidth:520},onClick:e=>e.stopPropagation()},
+        h('h3',{style:{marginBottom:6,display:'flex',alignItems:'center',gap:8}},h('span','💾'),'Backup Settings'),
+        h('p',{style:{fontSize:13,color:'var(--text2)',marginBottom:16,lineHeight:1.5}},
+          "Your data lives only on this device. Pick a backup rhythm that fits how you work."
+        ),
+        h('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+          h('label',{style:{display:'flex',gap:10,padding:12,border:'1px solid '+(autoBackupMode==='off'?'var(--accent)':'var(--border)'),borderRadius:8,cursor:'pointer',background:autoBackupMode==='off'?'rgba(232,160,32,0.06)':'transparent'}},
+            h('input',{type:'radio',name:'autoBackupMode',checked:autoBackupMode==='off',onChange:()=>setAutoBackupMode('off'),style:{marginTop:3}}),
+            h('div',null,
+              h('div',{style:{fontWeight:600,fontSize:14}},'Off'),
+              h('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}},"I'll back up manually using Export Backup.")
+            )
+          ),
+          h('label',{style:{display:'flex',gap:10,padding:12,border:'1px solid '+(autoBackupMode==='reminder'?'var(--accent)':'var(--border)'),borderRadius:8,cursor:'pointer',background:autoBackupMode==='reminder'?'rgba(232,160,32,0.06)':'transparent'}},
+            h('input',{type:'radio',name:'autoBackupMode',checked:autoBackupMode==='reminder',onChange:()=>setAutoBackupMode('reminder'),style:{marginTop:3}}),
+            h('div',null,
+              h('div',{style:{fontWeight:600,fontSize:14}},'Weekly reminder'),
+              h('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}},"Show a banner once a week (or after 7+ days) with a one-click Download Backup button. Works in every browser.")
+            )
+          ),
+          h('label',{style:{display:'flex',gap:10,padding:12,border:'1px solid '+(autoBackupMode==='autosave'?'var(--accent)':'var(--border)'),borderRadius:8,cursor:SUPPORTS_FS_ACCESS?'pointer':'not-allowed',background:autoBackupMode==='autosave'?'rgba(232,160,32,0.06)':'transparent',opacity:SUPPORTS_FS_ACCESS?1:0.55}},
+            h('input',{type:'radio',name:'autoBackupMode',checked:autoBackupMode==='autosave',disabled:!SUPPORTS_FS_ACCESS,onChange:async()=>{
+              if(backupFolderName) { setAutoBackupMode('autosave'); }
+              else { await pickBackupFolder(); }
+            },style:{marginTop:3}}),
+            h('div',{style:{flex:1}},
+              h('div',{style:{fontWeight:600,fontSize:14}},'Auto-save weekly to a folder',backupFolderName?h('span',{style:{fontWeight:400,color:'var(--text2)',fontSize:12}},'  ('+backupFolderName+')'):null),
+              h('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}},
+                SUPPORTS_FS_ACCESS
+                  ? 'Pick a folder once. Each week (next time you open Ambit), a dated backup file lands in that folder. Great for OneDrive, Google Drive, or iCloud folders.'
+                  : 'Not available in this browser. Use Chrome, Edge, or Android Chrome for auto-save. Firefox and Safari support the Weekly reminder mode.'
+              ),
+              SUPPORTS_FS_ACCESS && autoBackupMode==='autosave' && h('button',{className:'btn sm',style:{marginTop:8,fontSize:12},onClick:async(e)=>{e.preventDefault(); await pickBackupFolder();}},backupFolderName?'Change folder':'Pick folder')
+            )
+          )
+        ),
+        h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:20}},
+          h('button',{className:'btn primary',onClick:()=>setShowBackupSettings(false)},'Done')
+        )
+      )
+    ),
+
     // Sidebar
     h('nav',{className:'sidebar', 'aria-label':'Main navigation', style:{background:currentTheme.sidebarBg,borderRightColor:currentTheme.sidebarBorder,color:currentTheme.sidebarText}},
       h('h1',{className:'logo', style:{display:'flex',flexDirection:'column',alignItems:'center',gap:6,padding:'6px 0 10px'}},
@@ -2304,8 +2467,9 @@ function App({idbData}) {
       h('div',{className:'nav-item'+(page==='import'?' active':''), ...a11yClick(()=>setPage('import'))}, h('span',{className:'icon','aria-hidden':'true'},'📥'), h('span',null,'Import Bank Data')),
       h('div',{className:'nav-item', ...a11yClick(()=>{
         if(confirm('Export all data as JSON backup?')) {
-          const blob = new Blob([JSON.stringify({accounts,categories,dictionary,transactions,groups},null,2)],{type:'application/json'});
-          const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup.json'; a.click();
+          const payload = buildBackupPayload({accounts,categories,dictionary,transactions,groups,license});
+          const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+          const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
           localStorage.setItem('ambit_last_backup', new Date().toISOString());
           setBackupDismissed(true);
           showToast('✅ Backup saved');
@@ -2324,13 +2488,25 @@ function App({idbData}) {
               if(d.dictionary) setDictionary(d.dictionary);
               if(d.transactions) setTransactions(d.transactions);
               if(d.groups) setGroups(d.groups);
-              showToast('✅ Data restored successfully');
+              // Restore license if backup includes one (lets users recover access after a clear-history)
+              if(d.license && d.license.valid && d.license.tier) {
+                localStorage.setItem('ambit_license', JSON.stringify(d.license));
+                setLicense(d.license);
+                showToast('✅ Data + license restored');
+              } else {
+                showToast('✅ Data restored successfully');
+              }
             } catch(e) { showToast('❌ Invalid file'); }
           };
           r.readAsText(f);
         };
         inp.click();
       })}, h('span',{className:'icon','aria-hidden':'true'},'📂'), h('span',null,'Restore Backup')),
+      h('div',{className:'nav-item', ...a11yClick(()=>setShowBackupSettings(true), 'Open backup settings')},
+        h('span',{className:'icon','aria-hidden':'true'},'⚙️'),
+        h('span',null,'Backup Settings'),
+        autoBackupMode!=='off' && h('span',{style:{marginLeft:'auto',fontSize:10,color:'var(--accent2)',fontWeight:600,textTransform:'uppercase',letterSpacing:0.5}},autoBackupMode==='autosave'?'AUTO':'WEEKLY')
+      ),
       h('div',{className:'nav-sep'}),
       h('div',{className:'nav-item', ...a11yClick(()=>{
         window.location.href='mailto:'+_fb()+'?subject=Ambit Budget Pro Feedback';
@@ -2440,7 +2616,8 @@ function App({idbData}) {
             : 'Last backup: '+backupNeeded.days+' days ago. Your local data file needs updating. Export a backup now to prevent data loss. For extra protection, save your backup to OneDrive, Google Drive, or iCloud.'
         ),
         h('button',{className:'btn sm primary',onClick:()=>{
-          const blob = new Blob([JSON.stringify({accounts,categories,dictionary,transactions,groups},null,2)],{type:'application/json'});
+          const payload = buildBackupPayload({accounts,categories,dictionary,transactions,groups,license});
+          const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
           const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
           localStorage.setItem('ambit_last_backup', new Date().toISOString());
           setBackupDismissed(true);
