@@ -3189,10 +3189,18 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
       transferCatCreated = true;
     }
 
+    // Some banks put "Pending" / "Posting" in the date column for un-cleared rows.
+    // Detect that, swap to today's date for sorting, and flag the txn as pending.
+    const PENDING_DATE_RE = /^(pending|pending\.\.\.|posting|processing|p)$/i;
+    const todayISO = (() => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+
     for(const row of rows) {
-      const dateStr = (row[dateCol]||'').trim();
+      const rawDateStr = (row[dateCol]||'').trim();
       const desc = (row[descCol]||'').trim();
-      if(!dateStr || !desc) { errors++; continue; }
+      if(!desc) { errors++; continue; }
+      const isPendingByDate = PENDING_DATE_RE.test(rawDateStr);
+      const dateStr = isPendingByDate ? todayISO : rawDateStr;
+      if(!dateStr) { errors++; continue; }
 
       let amt;
       if(amountCol >= 0) {
@@ -3210,8 +3218,9 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
       if(existingKeys.has(key)) { dupes++; existingKeys.add(key); continue; }
       existingKeys.add(key);
 
-      // Check if this imported row matches a pending transaction
-      const pendingMatch = pendingTxns.find(pt=>{
+      // Check if this imported row matches a pending transaction.
+      // (If the imported row is *itself* still pending, skip — it should stay pending, not auto-clear.)
+      const pendingMatch = isPendingByDate ? null : pendingTxns.find(pt=>{
         if(matchedPendingIds.has(pt.id)) return false;
         if(Math.abs(pt.amount - amt) > 0.011) return false;
         const dateDiff = Math.abs(safeDate(pt.date) - safeDate(dateStr));
@@ -3229,6 +3238,8 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
       const match = isFree ? null : categorize(desc);
       let txn;
 
+      const pendingFlag = isPendingByDate ? {pending:true} : {};
+
       if(match) {
         // If description looks like a transfer, override catType to 'transfer' even if category is discretionary
         const looksLikeTransferMatch = /TRANSFER|XFER|TRNSFR|ONLINE.*(?:TO|FROM)|ACH.*(?:TO|FROM)/i.test(desc.toUpperCase());
@@ -3237,7 +3248,8 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
           date: dateStr, description: desc, amount: amt,
           cleanName: match.cleanName, category: match.category,
           group: match.group, catType: looksLikeTransferMatch ? 'transfer' : match.catType,
-          accountId: selectedAccount
+          accountId: selectedAccount,
+          ...pendingFlag
         };
         matched.push(txn);
         if(looksLikeTransferMatch) autoTransfers++;
@@ -3253,7 +3265,8 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
             group: transferCat.group || 'Other',
             catType: 'transfer',
             accountId: selectedAccount,
-            _autoTransferDest: destAcct.id
+            _autoTransferDest: destAcct.id,
+            ...pendingFlag
           };
           matched.push(txn);
           autoTransfers++;
@@ -3269,7 +3282,8 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
               category: transferCat.name,
               group: transferCat.group || 'Other',
               catType: 'transfer',
-              accountId: selectedAccount
+              accountId: selectedAccount,
+              ...pendingFlag
             };
             matched.push(txn);
             autoTransfers++;
@@ -3279,7 +3293,8 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
               date: dateStr, description: desc, amount: amt,
               cleanName: desc, category: 'Uncategorized',
               group: 'Other', catType: 'discretionary',
-              accountId: selectedAccount
+              accountId: selectedAccount,
+              ...pendingFlag
             };
             unmatched.push(txn);
           }
