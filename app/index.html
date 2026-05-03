@@ -5529,7 +5529,10 @@ function QuickEntryModal({type, partners, mileageRate, accounts, categories, def
   );
 }
 
-// ── Business Mode: Tax Reports (Schedule C / K-1) ──
+// ── Business Mode: Year-End Summary (for accountant use) ──
+// Important: this is bookkeeping output, not a tax form. We reference IRS lines
+// for accountant convenience, but the report is framed as a working summary
+// that the user hands off to their tax professional.
 function TaxReportsModal({transactions, categories, partners, structure, entity, onClose}) {
   const currentYear = new Date().getFullYear();
   const yearsWithData = useMemo(()=>{
@@ -5572,12 +5575,20 @@ function TaxReportsModal({transactions, categories, partners, structure, entity,
 
   const isSingleOwner = !entity?.multi;
 
+  // Disclaimer block — shown at top AND bottom (and printed). Never fluff this.
+  const disclaimer = h('div',{className:'tax-disclaimer',style:{padding:'10px 14px',background:'rgba(224,80,80,0.06)',border:'1px solid rgba(224,80,80,0.25)',borderRadius:6,fontSize:12,color:'var(--card-text)',lineHeight:1.5}},
+    h('strong',{style:{color:'var(--red)'}},'Not tax advice. Not a filed return.'),
+    ' This is a bookkeeping summary derived from the transactions you entered. ',
+    'Hand it to a qualified tax professional. They are responsible for verifying the numbers, ',
+    'choosing the correct line items, and filing your actual return. Ambit makes no warranty about tax correctness.'
+  );
+
   return h('div',{className:'modal-overlay',onClick:onClose},
-    h('div',{className:'modal tax-report-modal',role:'dialog','aria-modal':'true','aria-label':'Tax reports',
+    h('div',{className:'modal tax-report-modal',role:'dialog','aria-modal':'true','aria-label':'Year-end summary',
       style:{maxWidth:720,maxHeight:'90vh',overflowY:'auto'},onClick:e=>e.stopPropagation()},
 
       h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,flexWrap:'wrap',gap:10},className:'no-print'},
-        h('h3',{style:{margin:0,display:'flex',alignItems:'center',gap:8}},h('span','📑'),'Tax Reports'),
+        h('h3',{style:{margin:0,display:'flex',alignItems:'center',gap:8}},h('span','📑'),'Year-End Summary'),
         h('div',{style:{display:'flex',gap:8,alignItems:'center'}},
           h('label',{style:{fontSize:12,color:'var(--card-text2)'}},'Year'),
           h('select',{value:year,onChange:e=>setYear(e.target.value),
@@ -5588,105 +5599,114 @@ function TaxReportsModal({transactions, categories, partners, structure, entity,
         )
       ),
 
-      // Header on each report (also visible in print)
+      // Top disclaimer — visible on screen AND in print
+      h('div',{style:{marginBottom:14}}, disclaimer),
+
+      // Business header (also visible in print)
       h('div',{className:'tax-report-header',style:{padding:'14px 18px',background:'var(--surface2)',borderRadius:8,marginBottom:14}},
-        h('div',{style:{fontSize:18,fontWeight:800,color:'var(--card-text)',marginBottom:4}}, structure?.businessName || '(Business name not set)'),
+        h('div',{style:{fontSize:18,fontWeight:800,color:'var(--card-text)',marginBottom:4}}, (structure?.businessName || '(Business name not set)')+' — Bookkeeping Summary'),
         h('div',{style:{fontSize:12,color:'var(--card-text2)',display:'flex',gap:14,flexWrap:'wrap'}},
           structure?.ein && h('span',null,'EIN: ',h('strong',null,structure.ein)),
-          h('span',null,'Tax year: ',h('strong',null,year)),
-          h('span',null,'Entity: ',h('strong',null,entity?.label||'—')),
-          h('span',null,'Files: ',h('strong',{style:{color:'var(--accent2)'}},entity?.tax||'—'))
+          h('span',null,'Period: Calendar year ',h('strong',null,year)),
+          h('span',null,'Entity (per user): ',h('strong',null,entity?.label||'—')),
+          h('span',null,'Typical filing form: ',h('strong',{style:{color:'var(--accent2)'}},entity?.tax||'—'))
         )
       ),
 
-      // ── Schedule C view (single owner) ──
+      // ── Single-owner view: Business Summary by Tax Line ──
       isSingleOwner && h('div',null,
-        h('div',{style:{...labelStyle,marginBottom:8}},'Schedule C — Profit or Loss From Business'),
+        h('div',{style:{...labelStyle,marginBottom:8}},'Business Summary by Tax Line'),
+        h('p',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:10,lineHeight:1.5}},
+          'Categorized expense and income totals for the period. The "Reference" column suggests where each item ',
+          h('em',null,'typically'),' goes on Schedule C — your accountant should confirm the right placement.'
+        ),
         h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:13}},
           h('thead',null,
             h('tr',null,
-              h('th',{style:{textAlign:'left',padding:'8px 10px',borderBottom:'1px solid var(--border)',color:'var(--card-text2)',fontWeight:600,width:120}},'Line'),
               h('th',{style:{textAlign:'left',padding:'8px 10px',borderBottom:'1px solid var(--border)',color:'var(--card-text2)',fontWeight:600}},'Item'),
+              h('th',{style:{textAlign:'left',padding:'8px 10px',borderBottom:'1px solid var(--border)',color:'var(--card-text2)',fontWeight:600,width:140}},'Reference'),
               h('th',{style:{textAlign:'right',padding:'8px 10px',borderBottom:'1px solid var(--border)',color:'var(--card-text2)',fontWeight:600,width:120}},'Amount')
             )
           ),
           h('tbody',null,
             h('tr',{style:{background:'rgba(64,192,128,0.05)'}},
-              h('td',{style:{padding:'8px 10px',fontFamily:'monospace',fontSize:11}},'Line 1'),
-              h('td',{style:{padding:'8px 10px',fontWeight:600}},'Gross receipts or sales'),
+              h('td',{style:{padding:'8px 10px',fontWeight:600}},'Gross income (revenue)'),
+              h('td',{style:{padding:'8px 10px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)'}},'~ Sched C, Line 1'),
               h('td',{style:{padding:'8px 10px',textAlign:'right',fontWeight:600,color:'var(--green)'}}, fmt(data.income))
             ),
             data.cogs > 0 && h('tr',null,
-              h('td',{style:{padding:'8px 10px',fontFamily:'monospace',fontSize:11}},'Line 4'),
               h('td',{style:{padding:'8px 10px'}},'Cost of goods sold'),
+              h('td',{style:{padding:'8px 10px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)'}},'~ Sched C, Line 4'),
               h('td',{style:{padding:'8px 10px',textAlign:'right'}}, fmt(-data.cogs))
             ),
-            // Sort SC lines naturally (Line N then alphabetical)
+            // Sort by referenced line number
             Object.keys(data.byScheduleCLine).sort((a,b)=>{
               const na = parseInt((a.match(/\d+/)||[999])[0]);
               const nb = parseInt((b.match(/\d+/)||[999])[0]);
               return na - nb || a.localeCompare(b);
             }).map(line => h('tr',{key:line},
-              h('td',{style:{padding:'8px 10px',fontFamily:'monospace',fontSize:11}}, line),
               h('td',{style:{padding:'8px 10px'}}, data.byScheduleCLine[line].label),
+              h('td',{style:{padding:'8px 10px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)'}}, line==='Other'?'(no SC mapping)':'~ Sched C, '+line),
               h('td',{style:{padding:'8px 10px',textAlign:'right'}}, fmt(-data.byScheduleCLine[line].amount))
             )),
             h('tr',{style:{borderTop:'2px solid var(--border)',background: data.netIncome>=0?'rgba(64,192,128,0.08)':'rgba(224,80,80,0.08)'}},
-              h('td',{style:{padding:'10px',fontFamily:'monospace',fontSize:11,fontWeight:700}},'Line 31'),
-              h('td',{style:{padding:'10px',fontWeight:700}}, data.netIncome>=0?'Net profit':'Net loss'),
+              h('td',{style:{padding:'10px',fontWeight:700}}, data.netIncome>=0?'Net business income':'Net business loss'),
+              h('td',{style:{padding:'10px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)'}},'~ Sched C, Line 31'),
               h('td',{style:{padding:'10px',textAlign:'right',fontWeight:800,fontSize:15,color: data.netIncome>=0?'var(--green)':'var(--red)'}}, fmt(data.netIncome))
             )
           )
-        ),
-        h('p',{style:{fontSize:11,color:'var(--card-text2)',marginTop:14,fontStyle:'italic',lineHeight:1.5}},
-          'This is a working summary, not a filed return. Carry these totals into your tax software (or your accountant) when filing Schedule C.'
         )
       ),
 
-      // ── K-1 view (multi-owner) ──
+      // ── Multi-owner view: Owner Allocation Report ──
       !isSingleOwner && h('div',null,
-        h('div',{style:{...labelStyle,marginBottom:8}}, entity.tax+' — '+(entity.ownerLabel||'Partner')+' Statements'),
-        h('div',{style:{padding:'10px 14px',background:'rgba(232,160,32,0.08)',border:'1px solid rgba(232,160,32,0.3)',borderRadius:6,fontSize:12,color:'var(--card-text)',marginBottom:14,lineHeight:1.5}},
-          'Total ordinary business income (loss) for the year: ',
+        h('div',{style:{...labelStyle,marginBottom:8}}, (entity.ownerLabel||'Owner')+' Allocation Report'),
+        h('p',{style:{fontSize:12,color:'var(--card-text2)',marginBottom:14,lineHeight:1.5}},
+          'Per-',entity.ownerLabel.toLowerCase().replace(/s$/,''),' breakdown of net business income (allocated by equity %) and cash distributions taken during the period. ',
+          h('strong',null,'Total net business income for the year: '),
           h('strong',{style:{color: data.netIncome>=0?'var(--green)':'var(--red)'}}, fmt(data.netIncome)),
-          '. Each '+entity.ownerLabel.toLowerCase().replace(/s$/,'')+'\'s share is calculated by their equity %.'
+          '.'
         ),
         partners.filter(p=>p.active!==false).map(p => {
           const share = data.netIncome * (p.equityPct/100);
           const draws = data.drawsByPartnerId[p.id] || 0;
-          return h('div',{key:p.id, className:'k1-card', style:{padding:'16px 18px',border:'1px solid var(--border)',borderRadius:8,marginBottom:12,pageBreakAfter:'always'}},
-            h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:10}},
+          const formNote = (entity.id==='s-corp'||entity.id==='c-corp') ? '~ '+entity.tax.replace(' + K-1','')+' K-1' : '~ Form 1065 K-1';
+          const distRef = (entity.id==='s-corp'||entity.id==='c-corp') ? formNote+', Line 16D' : formNote+', Line 19a';
+          return h('div',{key:p.id, className:'k1-card', style:{padding:'16px 18px',border:'1px solid var(--border)',borderRadius:8,marginBottom:12}},
+            h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}},
               h('div',null,
                 h('div',{style:{fontSize:16,fontWeight:700,color:'var(--card-text)'}}, p.name),
-                h('div',{style:{fontSize:11,color:'var(--card-text2)'}}, p.equityPct+'% equity · Tax year '+year)
-              ),
-              h('div',{style:{fontSize:11,color:'var(--card-text2)',fontFamily:'monospace'}}, 'Schedule K-1')
+                h('div',{style:{fontSize:11,color:'var(--card-text2)'}}, p.equityPct+'% equity · '+year+' summary')
+              )
             ),
             h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:13}},
               h('tbody',null,
                 h('tr',null,
-                  h('td',{style:{padding:'6px 8px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)',width:80}},'Line 1'),
-                  h('td',{style:{padding:'6px 8px'}}, 'Ordinary business income (loss)'),
-                  h('td',{style:{padding:'6px 8px',textAlign:'right',fontWeight:600,color: share>=0?'var(--green)':'var(--red)'}}, fmt(share))
+                  h('td',{style:{padding:'6px 8px'}}, 'Share of net business income'),
+                  h('td',{style:{padding:'6px 8px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)',width:160}}, formNote+', Line 1'),
+                  h('td',{style:{padding:'6px 8px',textAlign:'right',fontWeight:600,color: share>=0?'var(--green)':'var(--red)',width:110}}, fmt(share))
                 ),
-                entity.id==='partnership' || entity.id==='multi-member-llc' ? h('tr',null,
-                  h('td',{style:{padding:'6px 8px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)'}},'Line 14a'),
-                  h('td',{style:{padding:'6px 8px'}}, 'Self-employment earnings (loss)'),
+                (entity.id==='partnership' || entity.id==='multi-member-llc') && h('tr',null,
+                  h('td',{style:{padding:'6px 8px'}}, 'Self-employment portion (typical for partners)'),
+                  h('td',{style:{padding:'6px 8px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)'}}, formNote+', Line 14a'),
                   h('td',{style:{padding:'6px 8px',textAlign:'right'}}, fmt(share))
-                ) : null,
+                ),
                 h('tr',null,
-                  h('td',{style:{padding:'6px 8px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)'}}, (entity.id==='s-corp'||entity.id==='c-corp')?'Line 16D':'Line 19a'),
-                  h('td',{style:{padding:'6px 8px'}}, 'Cash distributions / draws'),
+                  h('td',{style:{padding:'6px 8px'}}, 'Cash drawn / distributed during period'),
+                  h('td',{style:{padding:'6px 8px',fontFamily:'monospace',fontSize:11,color:'var(--card-text2)'}}, distRef),
                   h('td',{style:{padding:'6px 8px',textAlign:'right'}}, fmt(-draws))
                 )
               )
             ),
-            h('div',{style:{marginTop:8,fontSize:11,color:'var(--card-text2)',fontStyle:'italic'}},
-              'Working summary only — line numbers refer to ', entity.tax.replace(' + K-1',''), ' Schedule K-1.'
+            h('div',{style:{marginTop:10,fontSize:11,color:'var(--card-text2)',fontStyle:'italic'}},
+              'Reference column shows where these amounts ',h('em',null,'typically'),' map on the named tax form. Your accountant determines the actual placement.'
             )
           );
         })
-      )
+      ),
+
+      // Bottom disclaimer (always visible, prints with the report)
+      h('div',{style:{marginTop:18}}, disclaimer)
     )
   );
 }
@@ -5716,7 +5736,7 @@ function BusinessDashboardPanel({transactions, categories, accounts, partners, m
     h('div',{className:'card',style:{marginBottom:12}},
       h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10,gap:8,flexWrap:'wrap'}},
         h('div',{style:{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'var(--text2)'}},'Quick Entry'),
-        h('button',{className:'btn sm',style:{fontSize:11,padding:'4px 10px'},onClick:()=>setShowTaxReports(true)}, '📑 Tax Reports')
+        h('button',{className:'btn sm',style:{fontSize:11,padding:'4px 10px'},onClick:()=>setShowTaxReports(true)}, '📑 Year-End Summary')
       ),
       h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))',gap:8}},
         h('button',{className:'btn',style:{borderColor:'var(--green)',color:'var(--green)',fontWeight:600},onClick:()=>setQuickEntry('income')},'💰 Money In'),
