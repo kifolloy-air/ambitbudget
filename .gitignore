@@ -1,1 +1,12 @@
 .vercel
+
+# Rust / Tauri build artifacts
+src-tauri/target
+src-tauri/Cargo.lock.bak
+
+# Editor / OS junk
+.DS_Store
+Thumbs.db
+*.swp
+.idea
+.vscode

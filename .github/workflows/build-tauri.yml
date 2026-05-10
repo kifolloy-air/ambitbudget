@@ -1,0 +1,70 @@
+name: Build Tauri (Windows)
+
+# Builds the desktop app on a Windows runner and uploads the MSI + NSIS installers
+# as workflow artifacts. Submit the MSI/NSIS to the Microsoft Store, or download
+# the installer for direct distribution.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src-tauri/**'
+      - 'app/**'
+      - '.github/workflows/build-tauri.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src-tauri/**'
+      - 'app/**'
+      - '.github/workflows/build-tauri.yml'
+  workflow_dispatch: # allows manual run from the Actions tab
+
+jobs:
+  build-windows:
+    name: Build Windows installers
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'src-tauri -> target'
+
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
+
+      - name: Show toolchain versions
+        run: |
+          rustc --version
+          cargo --version
+          tauri --version
+
+      - name: Build Tauri app
+        working-directory: src-tauri
+        run: tauri build
+
+      - name: Upload NSIS installer (.exe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ambit-budget-pro-windows-nsis
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: warn
+
+      - name: Upload MSI installer (.msi)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ambit-budget-pro-windows-msi
+          path: src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: warn
