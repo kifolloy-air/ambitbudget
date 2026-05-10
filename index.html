@@ -391,9 +391,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 /* ── Download / Install ── */
 .install-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
-  max-width: 700px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  max-width: 980px; margin: 0 auto;
 }
+@media (max-width: 768px) { .install-grid { grid-template-columns: 1fr; } }
 .install-card {
   background: #F5ECD0; border: 1px solid #E8DBB8;
   border-radius: var(--radius); padding: 32px 28px; text-align: center;
@@ -959,20 +960,26 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <section class="section" id="download">
     <div class="container">
       <h2 class="section-title">Get Ambit&trade; Budget Pro</h2>
-      <p class="section-sub">Install as a PWA on any device or get it from the Microsoft Store.</p>
+      <p class="section-sub">Pick whichever fits how you use Windows. All three are the same app.</p>
 
       <div class="install-grid">
         <div class="install-card">
           <div class="install-card-icon">&#x1F4F1;</div>
-          <h3>Install as PWA</h3>
-          <p>Add to your home screen from any browser. Works on phones, tablets, and desktops — no app store needed.</p>
+          <h3>Web / PWA</h3>
+          <p>Open in any browser, or "Add to Home Screen" on phone, tablet, or desktop. No install. Works everywhere.</p>
           <a href="./app/index.html" class="install-btn install-btn-primary">Open App &#x2192;</a>
+        </div>
+        <div class="install-card">
+          <div class="install-card-icon">&#x1F5A5;</div>
+          <h3>Windows Desktop</h3>
+          <p>Native Windows install. Your data lives in <code style="font-size:11px;background:rgba(232,160,32,0.12);padding:1px 4px;border-radius:3px;">Documents&#92;Ambit</code> as visible files — copy, sync, edit, own.</p>
+          <a href="https://github.com/kifolloy-air/ambitbudget/releases/latest" class="install-btn install-btn-primary" target="_blank" rel="noopener">Download .exe &#x2192;</a>
         </div>
         <div class="install-card">
           <div class="install-card-icon">&#x1F6CD;</div>
           <h3>Microsoft Store</h3>
-          <p>Get the native Windows experience with automatic updates and seamless integration.</p>
-          <span class="install-btn install-btn-outline" style="opacity:0.5;cursor:default;">Coming Soon</span>
+          <p>Get it from the Store on Windows 10 / 11. Auto-updates as we ship new versions.</p>
+          <a href="https://apps.microsoft.com/detail/9P4V21SHBK8X" class="install-btn install-btn-primary" target="_blank" rel="noopener">View in Store &#x2192;</a>
         </div>
       </div>
     </div>
