@@ -430,6 +430,76 @@ a:focus-visible, button:focus-visible, .btn:focus-visible { outline: 3px solid v
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="root"></div>
+
+<!-- ── Tauri Storage Bridge ──────────────────────────────────
+     Detects whether we're running inside the Tauri desktop shell.
+     If yes: reads ~/Documents/Ambit/data.json into localStorage
+     before the React app boots, then installs a debounced save
+     hook so any localStorage writes also write back to the file.
+     If no (we're a web PWA): no-op.
+     window.__ambitReady is the gate the app awaits before mounting. -->
+<script>
+window.__ambit = window.__ambit || {};
+window.__ambit.isTauri = !!(window.__TAURI__ || window.__TAURI_INTERNALS__);
+window.__ambitReady = (async function bootstrap(){
+  if (!window.__ambit.isTauri) return; // web — nothing to do
+  // Tauri 2 exposes invoke at window.__TAURI__.core.invoke
+  const tauri = window.__TAURI__;
+  const invoke = tauri && tauri.core && tauri.core.invoke;
+  if (typeof invoke !== 'function') {
+    console.warn('Tauri detected but invoke is missing — skipping filesystem bridge');
+    return;
+  }
+  try {
+    const paths = await invoke('ambit_paths');
+    window.__ambit.paths = paths;
+    const raw = await invoke('ambit_read_data');
+    if (raw) {
+      let data; try { data = JSON.parse(raw); } catch { data = null; }
+      if (data && typeof data === 'object') {
+        // Hydrate localStorage from the file. Stored values are always strings.
+        for (const [k, v] of Object.entries(data)) {
+          try { localStorage.setItem(k, String(v)); } catch {}
+        }
+      }
+    }
+    // Install debounced auto-save: every localStorage write triggers a fresh
+    // dump of the whole store to disk after 300ms of quiet.
+    let saveTimer = null;
+    let saving = false;
+    async function doSave() {
+      saving = true;
+      const dump = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k != null) dump[k] = localStorage.getItem(k);
+      }
+      try { await invoke('ambit_write_data', { content: JSON.stringify(dump) }); }
+      catch (e) { console.error('ambit_write_data failed', e); }
+      saving = false;
+    }
+    function schedule() {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(doSave, 300);
+    }
+    const proto = Storage.prototype;
+    const origSet = proto.setItem;
+    const origRemove = proto.removeItem;
+    const origClear = proto.clear;
+    proto.setItem = function(k, v) { origSet.call(this, k, v); if (this === localStorage) schedule(); };
+    proto.removeItem = function(k) { origRemove.call(this, k); if (this === localStorage) schedule(); };
+    proto.clear = function() { origClear.call(this); if (this === localStorage) schedule(); };
+    // Flush on close so we don't lose the last edit
+    window.addEventListener('beforeunload', () => {
+      if (saveTimer) { clearTimeout(saveTimer); doSave(); }
+    });
+    console.log('Ambit storage bridge active. Data file:', paths.data_file);
+  } catch (e) {
+    console.error('Ambit storage bridge init failed:', e);
+  }
+})();
+</script>
+
 <script src="lib/react.min.js"></script>
 <script src="lib/react-dom.min.js"></script>
 <script>
@@ -537,7 +607,18 @@ function _openReceiptDB() {
     req.onerror = () => reject(req.error);
   });
 }
+// Receipts: on Tauri desktop they live as actual files in ~/Documents/Ambit/receipts/{id}.bin;
+// on the web they live as Blobs in IndexedDB. Same external interface either way.
 async function saveReceipt(id, blob) {
+  if (window.__ambit?.isTauri) {
+    const buf = await blob.arrayBuffer();
+    const bytes = Array.from(new Uint8Array(buf));
+    const mime = blob.type || '';
+    await window.__TAURI__.core.invoke('ambit_save_receipt', {id, bytes});
+    // Stash mime in localStorage so we can reconstruct a typed Blob on load
+    try { localStorage.setItem('ambit_receipt_mime_'+id, mime); } catch {}
+    return;
+  }
   const db = await _openReceiptDB();
   return new Promise((res, rej) => {
     const tx = db.transaction(RECEIPT_DB_STORE, 'readwrite');
@@ -546,6 +627,13 @@ async function saveReceipt(id, blob) {
   });
 }
 async function loadReceipt(id) {
+  if (window.__ambit?.isTauri) {
+    try {
+      const bytes = await window.__TAURI__.core.invoke('ambit_load_receipt', {id});
+      const mime = localStorage.getItem('ambit_receipt_mime_'+id) || 'application/octet-stream';
+      return new Blob([new Uint8Array(bytes)], {type: mime});
+    } catch { return null; }
+  }
   try {
     const db = await _openReceiptDB();
     return await new Promise((res) => {
@@ -557,6 +645,11 @@ async function loadReceipt(id) {
   } catch { return null; }
 }
 async function deleteReceipt(id) {
+  if (window.__ambit?.isTauri) {
+    try { await window.__TAURI__.core.invoke('ambit_delete_receipt', {id}); } catch {}
+    try { localStorage.removeItem('ambit_receipt_mime_'+id); } catch {}
+    return;
+  }
   try {
     const db = await _openReceiptDB();
     await new Promise(res => {
@@ -8460,13 +8553,16 @@ function AppLoader() {
   return h(App, {idbData});
 }
 
-// ── Service Worker Registration ─────────────────────────
-if('serviceWorker' in navigator) {
+// ── Service Worker Registration (web only — Tauri ships full code) ──
+if(!window.__ambit?.isTauri && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 
-// ── Render ──────────────────────────────────────────────
-ReactDOM.createRoot(document.getElementById('root')).render(h(ErrorBoundary, null, h(AppLoader)));
+// ── Render (wait for Tauri storage bridge to hydrate before mounting) ──
+(async function mountAmbit(){
+  try { await window.__ambitReady; } catch(e) { console.error('storage bridge failed, mounting anyway', e); }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(ErrorBoundary, null, h(AppLoader)));
+})();
 </script>
 </body>
 </html>

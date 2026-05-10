@@ -1,13 +1,13 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicholasgasior/tauri/fix/generate/cli/schema.json",
   "productName": "Ambit Budget Pro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "com.kifolloyair.ambitbudget",
   "build": {
     "frontendDist": "../app"
   },
   "app": {
-    "withGlobalTauri": false,
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "Ambit Budget Pro",
