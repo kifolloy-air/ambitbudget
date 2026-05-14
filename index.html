@@ -960,6 +960,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <section class="section" id="download">
     <div class="container">
       <h2 class="section-title">Get Ambit&trade; Budget Pro</h2>
+      <!-- TODO: when Google Play approves, update this subtitle (currently Windows-centric) to read e.g. "Pick whichever fits your platform. All are the same app." -->
       <p class="section-sub">Pick whichever fits how you use Windows. All three are the same app.</p>
 
       <div class="install-grid">
@@ -981,6 +982,22 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <p>Get it from the Store on Windows 10 / 11. Auto-updates as we ship new versions.</p>
           <a href="https://apps.microsoft.com/detail/9P4V21SHBK8X" class="install-btn install-btn-primary" target="_blank" rel="noopener">View in Store &#x2192;</a>
         </div>
+        <!--
+          GOOGLE PLAY CARD - pre-staged, hidden until Play approves.
+          TO ENABLE on approval day:
+            1. Delete the line above (the comment opener) and the line below
+               (the comment closer) to uncomment the card block.
+            2. Update the section subtitle above ("Pick whichever fits how you
+               use Windows..." -> platform-neutral wording).
+            3. Optionally swap the emoji icon for the official "Get it on Google
+               Play" SVG badge from https://play.google.com/intl/en_us/badges/
+        <div class="install-card">
+          <div class="install-card-icon">&#x1F916;</div>
+          <h3>Google Play</h3>
+          <p>Install on Android phone or tablet. Auto-updates from the Play Store. Same private, local-only app.</p>
+          <a href="https://play.google.com/store/apps/details?id=com.kifolloyair.ambitbudget" class="install-btn install-btn-primary" target="_blank" rel="noopener">View in Play &#x2192;</a>
+        </div>
+        -->
       </div>
     </div>
   </section>

@@ -289,6 +289,12 @@ a:focus-visible, button:focus-visible, .btn:focus-visible { outline: 3px solid v
   .btn { padding: 6px 12px; font-size: 0.75rem; }
   .table th, .table td { padding: 6px 8px; font-size: 0.75rem; }
   .compact-budget th, .compact-budget td { font-size: 0.6875rem; padding: 4px 6px; }
+  /* Dashboard Balance Forecast: 3 columns get too cramped under ~400px,
+     so stack them vertically and hide the vertical dividers. */
+  .forecast-row { flex-direction: column !important; gap: 6px; align-items: stretch !important; }
+  .forecast-cell { padding: 8px 6px !important; }
+  .forecast-divider { display: none; }
+  .forecast-value { font-size: 1.25rem !important; }
 }
 
 /* ── Print ── */
@@ -2999,7 +3005,7 @@ function App({idbData}) {
     h('nav',{className:'bottom-tabs', 'aria-label':'Mobile navigation'},
       [{id:'dashboard',icon:'📊',label:'Dashboard'},
        ...(tier && tier.budget !== false ? [{id:'accounts',icon:'🏦',label:'Accounts'},{id:'budget',icon:'💰',label:'Budget'}] : []),
-       {id:'transactions',icon:'📋',label:'Txns'},
+       {id:'transactions',icon:'📋',label:'Activity'},
        {id:'import',icon:'📥',label:'Import'},
        ...(!isLicensed && isFreeTier ? [{id:'_upgrade',icon:'⬆',label:'Upgrade'}] : [])
       ].map(t => h('div',{
@@ -6599,25 +6605,25 @@ function DashboardPage({categories, transactions, catMap, accounts, setAccounts,
           h('h3',{style:{margin:0,fontSize:13}}, h('span',{className:'icon'},'🔮'), 'Balance Forecast', h(InfoPill,{text:'End of Month = Current Balance + Remaining Income \u2212 Unpaid Bills \u2212 Remaining Discretionary Budget. \"Remaining Disc\" = your total discretionary budget minus what you have already spent this month. Next Month projects a full month of income, bills, and discretionary spending. Red means projected negative.'})),
           h('span',{style:{fontSize:10,color:'var(--card-text2)'}},'budget + expected bills')
         ),
-        h('div',{style:{display:'flex',gap:0,alignItems:'center'}},
-          h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px'}},
+        h('div',{className:'forecast-row',style:{display:'flex',gap:0,alignItems:'center'}},
+          h('div',{className:'forecast-cell',style:{flex:1,textAlign:'center',padding:'4px 6px'}},
             h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'Current'),
-            h('div',{style:{fontSize:22,fontWeight:700,color:bbWindow.currentBalance>=0?'var(--green)':'var(--red)'}},
+            h('div',{className:'forecast-value',style:{fontSize:22,fontWeight:700,color:bbWindow.currentBalance>=0?'var(--green)':'var(--red)'}},
               fmt(bbWindow.currentBalance))
           ),
-          h('div',{style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
-          h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px',
+          h('div',{className:'forecast-divider',style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
+          h('div',{className:'forecast-cell',style:{flex:1,textAlign:'center',padding:'4px 6px',
             background:bbWindow.endOfMonthBalance<0?'rgba(224,80,80,0.08)':'transparent',borderRadius:6}},
             h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'End of Month'),
-            h('div',{style:{fontSize:22,fontWeight:700,color:bbWindow.endOfMonthBalance>=0?'var(--green)':'var(--red)'}},
+            h('div',{className:'forecast-value',style:{fontSize:22,fontWeight:700,color:bbWindow.endOfMonthBalance>=0?'var(--green)':'var(--red)'}},
               fmt(bbWindow.endOfMonthBalance),
               bbWindow.endOfMonthBalance<0&&h('span',{style:{fontSize:10,marginLeft:4}},'⚠️'))
           ),
-          h('div',{style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
-          h('div',{style:{flex:1,textAlign:'center',padding:'4px 6px',
+          h('div',{className:'forecast-divider',style:{width:1,background:'var(--border)',alignSelf:'stretch',margin:'2px 0'}}),
+          h('div',{className:'forecast-cell',style:{flex:1,textAlign:'center',padding:'4px 6px',
             background:bbWindow.nextMonthBalance<0?'rgba(224,80,80,0.08)':'transparent',borderRadius:6}},
             h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:2}},'Next Month'),
-            h('div',{style:{fontSize:22,fontWeight:700,color:bbWindow.nextMonthBalance>=0?'var(--green)':'var(--red)'}},
+            h('div',{className:'forecast-value',style:{fontSize:22,fontWeight:700,color:bbWindow.nextMonthBalance>=0?'var(--green)':'var(--red)'}},
               fmt(bbWindow.nextMonthBalance),
               bbWindow.nextMonthBalance<0&&h('span',{style:{fontSize:10,marginLeft:4}},'⚠️'))
           )
