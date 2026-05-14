@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kifolloyair.ambitbudget",
+      "sha256_cert_fingerprints": [
+        "92:2C:9D:65:87:01:46:5B:69:D9:3C:5A:27:AC:B2:C4:B4:0B:83:25:F1:F4:0A:33:7D:C0:49:03:A0:89:E2:AF"
+      ]
+    }
+  }
+]
