@@ -2921,6 +2921,45 @@ function App({idbData}) {
           showToast('✅ Backup saved');
         }
       })}, h('span',{className:'icon','aria-hidden':'true'},'💾'), h('span',null,'Export Backup')),
+      // Send to Another Device — uses Web Share API to invoke the OS share
+      // sheet (AirDrop, Nearby Share, email, Drive, iMessage, etc.) so the
+      // user can move their backup to another device without uploading the
+      // file to disk first. Receiving side: the user opens Ambit on the
+      // other device and imports via the existing Import Backup flow. A
+      // share_target manifest entry + service worker handler would make
+      // this fully automatic, but that's a follow-up after Play approval.
+      h('div',{className:'nav-item', ...a11yClick(async ()=>{
+        const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure} : null;
+        const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,license,business});
+        const fileName = 'ambit-backup-'+new Date().toISOString().slice(0,10)+'.json';
+        let file;
+        try {
+          file = new File([JSON.stringify(payload,null,2)], fileName, {type:'application/json'});
+        } catch (_) {
+          showToast('⚠️ This browser can\'t package files for sharing. Use Export Backup instead.');
+          return;
+        }
+        const shareData = {
+          files: [file],
+          title: 'Ambit Budget backup',
+          text: 'Ambit Budget Pro data. Open this file in Ambit on another device to copy your budget over.'
+        };
+        if (typeof navigator.canShare === 'function' && navigator.canShare(shareData) && typeof navigator.share === 'function') {
+          try {
+            await navigator.share(shareData);
+            localStorage.setItem('ambit_last_backup', new Date().toISOString());
+            setBackupDismissed(true);
+            showToast('✅ Backup sent');
+          } catch (err) {
+            // Silent on user-cancel (AbortError); show a toast on real failures.
+            if (err && err.name !== 'AbortError') {
+              showToast('⚠️ Share failed — try Export Backup instead');
+            }
+          }
+        } else {
+          showToast('⚠️ This browser doesn\'t support sharing files. Use Export Backup instead.');
+        }
+      })}, h('span',{className:'icon','aria-hidden':'true'},'📲'), h('span',null,'Send to Device')),
       h('div',{className:'nav-item', ...a11yClick(()=>{
         const inp = document.createElement('input'); inp.type='file'; inp.accept='.json';
         inp.onchange = e => {
