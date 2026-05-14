@@ -55,9 +55,28 @@ fn ambit_read_data() -> Result<String, String> {
 
 #[tauri::command]
 fn ambit_write_data(content: String) -> Result<(), String> {
+    // Atomic write: temp file -> rotate previous version to .bak -> rename
+    // temp -> live. Crash mid-write leaves an orphaned .tmp; the live
+    // data.json is never half-written. The .bak is the previous good copy
+    // so we can recover if the new write was bad logic.
     let dir = data_root();
     fs::create_dir_all(&dir).map_err(|e| format!("mkdir {}: {}", dir.display(), e))?;
-    fs::write(data_file(), content).map_err(|e| format!("write data: {}", e))
+
+    let target = data_file();
+    let tmp = target.with_extension("json.tmp");
+    let backup = target.with_extension("json.bak");
+
+    fs::write(&tmp, content).map_err(|e| format!("write tmp: {}", e))?;
+
+    if target.exists() {
+        if backup.exists() {
+            let _ = fs::remove_file(&backup);
+        }
+        fs::rename(&target, &backup).map_err(|e| format!("rotate backup: {}", e))?;
+    }
+
+    fs::rename(&tmp, &target).map_err(|e| format!("commit write: {}", e))?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -90,6 +109,17 @@ fn ambit_delete_receipt(id: String) -> Result<(), String> {
 
 fn main() {
     tauri::Builder::default()
+        // Single-instance plugin: if the user double-clicks the launcher,
+        // focus the existing window instead of opening a second process
+        // (which would race on data.json writes and lose data).
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            use tauri::Manager;
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
         .invoke_handler(tauri::generate_handler![
             ambit_paths,
             ambit_read_data,
