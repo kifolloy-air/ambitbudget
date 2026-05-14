@@ -34,8 +34,9 @@ the same Play listing.
 | Manifest | `website/app/manifest.json` (PWA, served from the live site) |
 | versionCode | `1` *(first upload)* |
 | versionName | `1.0.0` |
-| Internal app ID *(Play-assigned)* | _TBD — fill in after creating the app in Play Console_ |
-| Play Store URL *(after publish)* | _TBD — fill in after first release_ |
+| Internal app ID *(Play-assigned)* | `com.kifolloyair.ambitbudget` *(same as applicationId)* |
+| Play Store URL *(after publish)* | `https://play.google.com/store/apps/details?id=com.kifolloyair.ambitbudget` *(live after review approval)* |
+| Submission status | **Submitted for review** on 2026-05-13 (first-time review typically 3–7 business days) |
 
 ## Signing keys
 
