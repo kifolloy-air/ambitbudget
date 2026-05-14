@@ -5,15 +5,69 @@ use std::fs;
 use std::path::PathBuf;
 use serde::Serialize;
 
-// All Ambit data lives under ~/Documents/Ambit/ — visible, copyable, syncable.
+// Live Ambit data lives in the OS-managed app-data location:
+//   Windows: %LOCALAPPDATA%\Ambit                          (C:\Users\<u>\AppData\Local\Ambit)
+//   macOS:   ~/Library/Application Support/Ambit
+//   Linux:   ~/.local/share/Ambit                           (XDG_DATA_HOME)
+// This is where serious desktop apps put working data: out of the way of
+// the user, out of cloud-sync paths that can corrupt files mid-write,
+// and not affected by OneDrive/iCloud Documents redirection (which
+// caused real confusion during earlier testing).
+//
+// User-controlled backups still go wherever the user wants them via the
+// existing Export Backup / Send to Device flows in the app.
 fn data_root() -> PathBuf {
-    dirs::document_dir()
+    dirs::data_local_dir()
+        .or_else(dirs::data_dir)
         .or_else(dirs::home_dir)
         .unwrap_or_else(|| PathBuf::from("."))
         .join("Ambit")
 }
 fn receipts_root() -> PathBuf { data_root().join("receipts") }
 fn data_file()    -> PathBuf { data_root().join("data.json") }
+
+// One-time migration from the old ~/Documents/Ambit location used by
+// builds prior to this change. Runs at most once per machine: if the new
+// data file doesn't exist but the old one does, copy the old file (plus
+// .bak and the receipts subfolder if present) into the new location.
+// The old folder is left in place as a safety backup; the user can
+// delete it manually once they're confident the migration took.
+fn try_migrate_from_documents() {
+    let new_data = data_file();
+    if new_data.exists() {
+        return; // already on the new location
+    }
+    let old_root = match dirs::document_dir() {
+        Some(d) => d.join("Ambit"),
+        None => return,
+    };
+    let old_data = old_root.join("data.json");
+    if !old_data.exists() {
+        return; // nothing to migrate
+    }
+    let new_dir = data_root();
+    if fs::create_dir_all(&new_dir).is_err() { return; }
+    let _ = fs::copy(&old_data, &new_data);
+    let old_bak = old_root.join("data.json.bak");
+    if old_bak.exists() {
+        let _ = fs::copy(&old_bak, new_dir.join("data.json.bak"));
+    }
+    let old_receipts = old_root.join("receipts");
+    if old_receipts.is_dir() {
+        let new_receipts = receipts_root();
+        let _ = fs::create_dir_all(&new_receipts);
+        if let Ok(entries) = fs::read_dir(&old_receipts) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.is_file() {
+                    if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
+                        let _ = fs::copy(&p, new_receipts.join(name));
+                    }
+                }
+            }
+        }
+    }
+}
 
 // Reject filenames containing any of these characters to avoid path traversal
 // or hitting Windows reserved chars.
@@ -49,6 +103,12 @@ fn ambit_paths() -> PathInfo {
 #[tauri::command]
 fn ambit_read_data() -> Result<String, String> {
     let p = data_file();
+    if !p.exists() {
+        // First read after the AppData relocation. Try to lift the user's
+        // existing data from the old Documents/Ambit folder before treating
+        // this as a fresh install.
+        try_migrate_from_documents();
+    }
     if !p.exists() { return Ok(String::new()); }
     fs::read_to_string(&p).map_err(|e| format!("read {}: {}", p.display(), e))
 }
