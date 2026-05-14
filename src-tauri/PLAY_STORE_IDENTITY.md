@@ -46,7 +46,7 @@ breakage for users).
 | Key | Held by | Used for | SHA-256 fingerprint |
 |---|---|---|---|
 | Upload key | Developer (this laptop) | Signs every `.aab` we upload to Play Console | `92:2C:9D:65:87:01:46:5B:69:D9:3C:5A:27:AC:B2:C4:B4:0B:83:25:F1:F4:0A:33:7D:C0:49:03:A0:89:E2:AF` |
-| App signing key | Google (Play App Signing HSM) | Signs every `.apk` Play delivers to user devices | _TBD — fill in after Play enables App Signing on first upload_ |
+| App signing key | Google (Play App Signing HSM) | Signs every `.apk` Play delivers to user devices | `4E:BA:1D:62:3D:81:E4:A1:47:57:0D:97:C5:24:1B:AA:3E:B4:65:0F:2D:71:7A:DF:90:1E:B1:FF:A9:23:9F:B8` |
 
 ### How to read the fingerprints later
 
