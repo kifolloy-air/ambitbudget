@@ -476,17 +476,49 @@ window.__ambitReady = (async function bootstrap(){
       // Import Backup.
       window.__ambit.isFirstLaunch = true;
       if (!localStorage.getItem('ambit_tauri_welcome_seen')) {
-        // Defer the alert one tick so the WebView paints its window chrome
-        // before blocking on user input.
-        setTimeout(() => {
-          alert(
-            'Welcome to Ambit Budget Pro Desktop!\n\n' +
-            'If you have data from a previous install (web, mobile, or another computer), ' +
-            'use "Import Backup" in the left sidebar to bring it in before adding new data.\n\n' +
-            'No previous data? Just dismiss this and start using Ambit.'
-          );
-          try { localStorage.setItem('ambit_tauri_welcome_seen', '1'); } catch {}
-        }, 250);
+        // Use a custom HTML modal instead of window.alert(): WebView2 (the
+        // browser embedded in the Tauri shell on Windows) suppresses native
+        // alert/confirm/prompt calls that aren't tied to a user gesture, so
+        // setTimeout-driven alerts are silently no-op'd. A handmade overlay
+        // works everywhere and doesn't depend on WebView dialog support.
+        const renderWelcome = () => {
+          if (!document.body) {
+            // body not ready yet, try again on the next paint
+            requestAnimationFrame(renderWelcome);
+            return;
+          }
+          const overlay = document.createElement('div');
+          overlay.id = 'ambit-tauri-welcome-overlay';
+          overlay.style.cssText = [
+            'position:fixed','inset:0','background:rgba(8,12,40,0.78)',
+            'z-index:2147483647','display:flex','align-items:center',
+            'justify-content:center','padding:24px',
+            'font-family:system-ui,-apple-system,Segoe UI,sans-serif'
+          ].join(';');
+          const modal = document.createElement('div');
+          modal.style.cssText = [
+            'background:#1a2566','color:#fff','max-width:480px','width:100%',
+            'padding:28px 32px','border-radius:14px',
+            'box-shadow:0 18px 60px rgba(0,0,0,0.55)',
+            'border:1px solid rgba(126,200,227,0.18)'
+          ].join(';');
+          modal.innerHTML =
+            '<h2 style="margin:0 0 14px;font-size:20px;font-weight:700;color:#e8a020;">Welcome to Ambit Budget Pro Desktop</h2>' +
+            '<p style="margin:0 0 12px;line-height:1.55;font-size:15px;">If you have data from a previous install &mdash; the web app, your phone, or another computer &mdash; use <strong>Import Backup</strong> in the left sidebar to bring it in <em>before</em> you start adding new data.</p>' +
+            '<p style="margin:0 0 22px;line-height:1.55;font-size:14px;color:#cfd6ff;">No previous data? Just dismiss this and start using Ambit.</p>' +
+            '<button id="ambit-welcome-dismiss" type="button" style="background:#e8a020;color:#0c1445;border:none;padding:10px 22px;border-radius:7px;font-weight:700;cursor:pointer;font-size:14px;font-family:inherit;">Got it</button>';
+          overlay.appendChild(modal);
+          document.body.appendChild(overlay);
+          const btn = modal.querySelector('#ambit-welcome-dismiss');
+          btn.focus();
+          const dismiss = () => {
+            overlay.remove();
+            try { localStorage.setItem('ambit_tauri_welcome_seen', '1'); } catch {}
+          };
+          btn.addEventListener('click', dismiss);
+          overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape' || e.key === 'Enter') dismiss(); });
+        };
+        renderWelcome();
       }
     }
     // Install debounced auto-save: every localStorage write triggers a fresh
