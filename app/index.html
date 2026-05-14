@@ -468,6 +468,26 @@ window.__ambitReady = (async function bootstrap(){
           try { localStorage.setItem(k, String(v)); } catch {}
         }
       }
+    } else {
+      // First launch on this machine — data.json is empty. If the user has
+      // data from a web/PWA install elsewhere they should import it before
+      // they start using the app, otherwise their first save will write a
+      // fresh-empty data.json. Show a one-time welcome that points them at
+      // Import Backup.
+      window.__ambit.isFirstLaunch = true;
+      if (!localStorage.getItem('ambit_tauri_welcome_seen')) {
+        // Defer the alert one tick so the WebView paints its window chrome
+        // before blocking on user input.
+        setTimeout(() => {
+          alert(
+            'Welcome to Ambit Budget Pro Desktop!\n\n' +
+            'If you have data from a previous install (web, mobile, or another computer), ' +
+            'use "Import Backup" in the left sidebar to bring it in before adding new data.\n\n' +
+            'No previous data? Just dismiss this and start using Ambit.'
+          );
+          try { localStorage.setItem('ambit_tauri_welcome_seen', '1'); } catch {}
+        }, 250);
+      }
     }
     // Install debounced auto-save: every localStorage write triggers a fresh
     // dump of the whole store to disk after 300ms of quiet.
@@ -763,6 +783,12 @@ const AmbitDB = {
   },
 
   async load() {
+    // In Tauri, the bootstrap bridge has already hydrated localStorage from
+    // the authoritative data.json. Bypass IndexedDB here so we don't load
+    // a stale snapshot from a previous session (e.g. when the user has
+    // copied a fresh data.json onto this machine). The localStorage
+    // fallback inside App reads what the bridge wrote.
+    if (window.__ambit && window.__ambit.isTauri) return null;
     try {
       const db = await this._open();
       return new Promise((resolve) => {
