@@ -3945,6 +3945,25 @@ function lineToText(line) {
   return line.items.map(it => it.str).join(' ').replace(/\s+/g,' ').trim();
 }
 
+// For 2-column statement layouts (PNC, Chase): take only the left-column
+// portion of a line. Detects the first big x-gap between consecutive items
+// and returns text up to that gap. Falls back to full text if no gap found.
+// pdf.js inserts synthetic whitespace-only items spanning column gaps to
+// preserve the visual layout — filter those out before measuring gaps.
+function leftColumnText(line, gapThreshold) {
+  const tol = gapThreshold ?? 40;
+  if(!line.items || line.items.length < 2) return lineToText(line);
+  const items = line.items.filter(it => it.str.trim().length > 0);
+  if(items.length < 2) return lineToText(line);
+  let cutIdx = items.length;
+  for(let i = 1; i < items.length; i++) {
+    const prevEnd = items[i-1].x + (items[i-1].width || 0);
+    const gap = items[i].x - prevEnd;
+    if(gap > tol) { cutIdx = i; break; }
+  }
+  return items.slice(0, cutIdx).map(it => it.str).join(' ').replace(/\s+/g,' ').trim();
+}
+
 // Detect a date in a string. Returns { iso, match, index } or null.
 // Handles MM/DD/YYYY, M/D/YY, YYYY-MM-DD.
 function findDateInText(text) {
@@ -4048,6 +4067,105 @@ function extractTransactionsFromLines(lines) {
     if(!desc || desc.length < 2) continue;
     out.push({ date: dateMatch.iso, description: desc, amount, rawLine: text });
   }
+  return out;
+}
+
+// Infer the year for a MM/DD date from a known statement period. Banks
+// like PNC drop the year from per-transaction dates to save space.
+function inferYearForMonthDay(month, day, metadata) {
+  if(!metadata?.periodStart || !metadata?.periodEnd) {
+    return new Date().getFullYear();
+  }
+  const psY = +metadata.periodStart.slice(0,4);
+  const psM = +metadata.periodStart.slice(5,7);
+  const peY = +metadata.periodEnd.slice(0,4);
+  if(psY === peY) return psY;
+  // Period spans a year boundary. Use the period-start year for months >=
+  // the period-start month, and the period-end year otherwise.
+  return month >= psM ? psY : peY;
+}
+
+// Section-aware transaction parser, tuned for multi-section US bank
+// statements (PNC's "Deposits and Other Additions" / "Banking/Debit Card
+// Withdrawals" / "Online and Electronic Banking Deductions" layout). Each
+// section's sign rule is honored. Right-column annotations are stripped
+// by taking only the left x-column of each line.
+function extractTransactionsSectioned(lines, metadata) {
+  const out = [];
+  // Date at start, then amount, then description. Supports MM/DD or MM/DD/YYYY.
+  const TXN_RE = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s+\$?(-?[\d,]+\.\d{2})\s+(.+)$/;
+  const SECTIONS = [
+    { name:'deposits', sign:1,  re:/Deposits\s+and\s+Other\s+Additions|Deposits\s+and\s+Credits/i },
+    { name:'card',     sign:-1, re:/Banking\/Debit\s+Card\s+Withdrawals|ATM\s+and\s+Debit\s+Card\s+Withdrawals|Withdrawals\s+and\s+Other\s+Debits/i },
+    { name:'online',   sign:-1, re:/Online\s+and\s+Electronic\s+Banking\s+Deductions|Electronic\s+Withdrawals/i },
+    { name:'checks',   sign:-1, re:/^Checks(\s|$)|Checks\s+Paid/i }
+  ];
+  const STOP_RE = /Daily\s+Balance\s+Detail|Beginning\s+Balance|Member\s+FDIC\s+Equal\s+Housing/i;
+  const ANNOTATION_RES = [
+    /^There\s+(was|were)\b/i,
+    /\btotaling\s+\$/i,
+    /\bcontinued\s+(on\s+next\s+page|from\s+previous)/i,
+    /^Member\s+FDIC/i,
+    /^Page\s+\d/i,
+    /^For\s+(the\s+period|customer|24)/i,
+    /^Account\s+Number/i,
+    /^Virtual\s+Wallet/i,
+    /^Date\s+Amount\s+Description/i,
+    /^on\s+pnc\.com/i,
+    /JONATHAN\s+M\s+KIFOLO/i
+  ];
+  const isAnnotation = (t) => ANNOTATION_RES.some(re => re.test(t));
+
+  let section = null;
+  let lastTxn = null;
+  let stopped = false;
+
+  for(let i = 0; i < lines.length; i++) {
+    if(stopped) break;
+    // First, get the raw + left-column versions. Some lines need the full
+    // text (section headers may straddle columns); transactions need left.
+    const rawText = lineToText(lines[i]);
+    if(!rawText || rawText.length < 2) continue;
+    const leftText = leftColumnText(lines[i]);
+
+    if(STOP_RE.test(rawText)) { stopped = true; lastTxn = null; continue; }
+
+    const sectionMatch = SECTIONS.find(s => s.re.test(rawText));
+    if(sectionMatch) { section = sectionMatch; lastTxn = null; continue; }
+
+    if(!section) continue;
+
+    // Transaction line — match against the left-column-only text so the
+    // right-column annotation doesn't get appended to the description.
+    const m = leftText.match(TXN_RE);
+    if(m) {
+      const mo = +m[1], day = +m[2];
+      if(mo<1||mo>12||day<1||day>31) continue;
+      const year = m[3] ? (+m[3] < 100 ? (+m[3] < 50 ? 2000+(+m[3]) : 1900+(+m[3])) : +m[3]) : inferYearForMonthDay(mo, day, metadata);
+      const iso = year+'-'+String(mo).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+      const amountAbs = parseFloat(m[4].replace(/,/g,''));
+      if(isNaN(amountAbs)) continue;
+      const amount = section.sign * Math.abs(amountAbs);
+      let desc = m[5].trim();
+      // Strip any inline annotation that crept in despite the column cut.
+      for(const re of ANNOTATION_RES) {
+        const am = desc.match(re);
+        if(am && am.index !== undefined && am.index > 0) desc = desc.slice(0, am.index).trim();
+      }
+      desc = desc.replace(/[\s,;:.-]+$/, '').trim();
+      if(!desc) continue;
+      lastTxn = { date: iso, description: desc, amount, rawLine: rawText, section: section.name };
+      out.push(lastTxn);
+      continue;
+    }
+
+    // Not a transaction line. Possibly description continuation for lastTxn:
+    // short, doesn't contain a date or amount, isn't an annotation phrase.
+    if(lastTxn && !isAnnotation(leftText) && !/\d{1,2}\/\d{1,2}/.test(leftText) && !/[\d,]+\.\d{2}/.test(leftText) && leftText.length <= 60) {
+      lastTxn.description = (lastTxn.description + ' ' + leftText).replace(/\s+/g,' ').trim();
+    }
+  }
+
   return out;
 }
 
@@ -5037,21 +5155,24 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     try {
       const pages = await extractPdfPositionalText(file);
       const fullText = pages.map(items => items.map(i=>i.str).join(' ')).join('\n');
-      // Try multiple y-tolerances to handle banks that typeset numbers and
-      // text at slightly different baselines. Pick the version that yields
-      // the most transactions. Track the longest-lines version too so we
-      // always have something to show in the diagnostic on parse failure.
-      let best = { lines: [], transactions: [], tolerance: 3 };
+      const metadata = detectStatementMetadata(fullText);
+      // Run both parsers across multiple y-tolerances. Bank PDFs typeset
+      // numbers vs. text at slightly different baselines, so the right
+      // clustering varies. Take whichever (parser, tolerance) combo
+      // yields the most transactions. Track the longest-lines version
+      // too so the diagnostic always has something to show on failure.
+      let best = { lines: [], transactions: [], tolerance: 3, parser: 'none' };
       let diagLines = [];
       for(const tol of [3, 6, 10, 14]) {
         const lines = pages.flatMap(items => groupItemsIntoLines(items, tol));
         if(lines.length > diagLines.length) diagLines = lines;
-        const transactions = extractTransactionsFromLines(lines);
-        if(transactions.length > best.transactions.length) best = { lines, transactions, tolerance: tol };
+        const sectioned = extractTransactionsSectioned(lines, metadata);
+        if(sectioned.length > best.transactions.length) best = { lines, transactions: sectioned, tolerance: tol, parser: 'sectioned' };
+        const loose = extractTransactionsFromLines(lines);
+        if(loose.length > best.transactions.length) best = { lines, transactions: loose, tolerance: tol, parser: 'loose' };
       }
       const lines = best.transactions.length > 0 ? best.lines : diagLines;
       const transactions = best.transactions;
-      const metadata = detectStatementMetadata(fullText);
       if(transactions.length === 0) {
         // Diagnostic dump — extracted lines so we can debug why parsing
         // failed. Stays local (no upload). 1000 cap covers even dense
