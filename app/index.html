@@ -4608,6 +4608,18 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     setReconcileMode(false);
     setCheckedTxnIds(new Set());
   };
+  // Undo a per-row manual reconciliation. Strips the txn.reconciled flag so
+  // the row drops back to cleared (green). Date-based reconciled rows aren't
+  // touched — those are undone by clearing the account.reconciledThrough date.
+  const undoManualReconcile = (id)=>{
+    if(!confirm('Un-reconcile this transaction?\n\nIt will go back to cleared (green). The transaction itself isn’t changed.')) return;
+    setTransactions(prev=>prev.map(t=>{
+      if(t.id!==id) return t;
+      const next = {...t};
+      delete next.reconciled;
+      return next;
+    }));
+  };
 
   // Build a map of starting balances from accounts
   const startBalMap = useMemo(()=>{
@@ -4955,7 +4967,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       }},
         h('span',null, '✓ ', h('strong',null,acctMap[acctFilter].name), ' reconciled through ', h('strong',null, fmtDate(acctMap[acctFilter].reconciledThrough))),
         h('button',{className:'btn sm', onClick:()=>{
-          if(confirm('Clear reconciliation date for '+acctMap[acctFilter].name+'?\n\nThis flips all formerly-reconciled (blue) transactions back to cleared (green). It does not delete anything.')) {
+          if(confirm('Clear the reconciled-through date for '+acctMap[acctFilter].name+'?\n\nDate-based reconciled rows go back to cleared (green). Manually-reconciled rows (checked individually) are not affected — click their blue dot to un-reconcile.')) {
             setAccounts(prev=>prev.map(a=>a.id===acctFilter?{...a, reconciledThrough:null}:a));
           }
         }}, 'Clear')
@@ -5024,7 +5036,19 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
                       ? h('input',{type:'checkbox',checked:isChecked,onChange:()=>toggleReconcileCheck(t.id),'aria-label':'Mark '+t.cleanName+' as matching the statement',style:{cursor:'pointer',width:16,height:16}})
                       : h('span',{style:{fontSize:10,color:'var(--text2)'},title:t.pending?'Pending — clear before reconciling':'Already reconciled'}, t.pending?'—':'✓')
                   ),
-                  h('td',{onClick:()=>{if(!rec)togglePending(t.id)},style:{textAlign:'center',fontSize:12,cursor:rec?'default':'pointer',userSelect:'none'},title:t.pending?'Pending — click to clear':rec?'Reconciled':'Cleared — click to mark pending'}, h('span',{style:{display:'inline-block',width:10,height:10,borderRadius:'50%',background:t.pending?'#e8a020':rec?'#5090e8':'#40c080'}})),
+                  (()=>{
+                    const isManualRec = t.reconciled === true;
+                    const dotClickable = !rec || isManualRec;
+                    const onDotClick = ()=>{
+                      if(t.pending || !rec) togglePending(t.id);
+                      else if(isManualRec) undoManualReconcile(t.id);
+                    };
+                    const dotTitle = t.pending ? 'Pending — click to clear'
+                      : isManualRec ? 'Reconciled (manual) — click to un-reconcile'
+                      : rec ? 'Reconciled by date — clear the account date to undo'
+                      : 'Cleared — click to mark pending';
+                    return h('td',{onClick:dotClickable?onDotClick:undefined,style:{textAlign:'center',fontSize:12,cursor:dotClickable?'pointer':'default',userSelect:'none'},title:dotTitle}, h('span',{style:{display:'inline-block',width:10,height:10,borderRadius:'50%',background:t.pending?'#e8a020':rec?'#5090e8':'#40c080'}}));
+                  })(),
                   h('td',{style:{color:t.pending?'var(--accent2)':'var(--text2)',fontSize:12,fontStyle:t.pending?'italic':'normal'}},t.pending?'Pending':t.date),
                   h('td',{style:{fontWeight:500}},
                     editPayeeId===t.id
