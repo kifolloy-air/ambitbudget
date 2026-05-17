@@ -4157,8 +4157,11 @@ function extractTransactionsSectioned(lines, metadata) {
   // usually print debits as positive numbers and rely on the section
   // header to convey "this is money out").
   const SECTIONS = [
-    // Deposits / credits — positive amounts
-    { name:'deposits', sign:1,  re:/Deposits\s+and\s+(?:Other\s+)?(?:Additions|Credits)|Payments\s+(?:Received|and\s+Credits)/i },
+    // Deposits / credits — positive amounts. Covers PNC ("Deposits and
+    // Other Additions"), BoA ("Deposits and other additions"), Wells
+    // ("Deposits and interest"), Chase credit-card ("Payments and Other
+    // Credits"), and generic variants.
+    { name:'deposits', sign:1,  re:/Deposits\s+and\s+(?:Other\s+)?(?:Additions|Credits|interest)|Payments\s+(?:Received|and\s+(?:Other\s+)?Credits)/i },
     // Debit card / ATM purchases — negative
     { name:'card',     sign:-1, re:/Banking\/Debit\s+Card|ATM\s+(?:and|&)\s+Debit\s+Card(?:\s+(?:Withdrawals|Purchases|Subtractions))?|Debit\s+Card\s+(?:Withdrawals|Purchases|Subtractions)|Card\s+Purchases/i },
     // ACH / online banking — negative
@@ -4170,7 +4173,7 @@ function extractTransactionsSectioned(lines, metadata) {
   ];
   // Lines that mean "stop parsing transactions" — daily-balance lookups,
   // disclaimers, etc. Add more as we encounter them in real PDFs.
-  const STOP_RE = /Daily\s+(?:Balance\s+Detail|Ending\s+Balance)|Member\s+FDIC\s+Equal\s+Housing|End\s+of\s+Statement/i;
+  const STOP_RE = /Daily\s+(?:Balance\s+Detail|balance\s+summary|Ending\s+Balance)|Member\s+FDIC\s+Equal\s+Housing|End\s+of\s+Statement/i;
   // Lines that are page-header / footer / column-header noise — never
   // transactions, never description continuations. These patterns are
   // bank-agnostic.
@@ -4210,6 +4213,43 @@ function extractTransactionsSectioned(lines, metadata) {
   let lastTxn = null;
   let stopped = false;
 
+  // Helper: emit a transaction from a parsed line, applying section sign.
+  const emitTxn = (parsed, rawText) => {
+    const year = parsed.year || inferYearForMonthDay(parsed.month, parsed.day, metadata);
+    const iso = year+'-'+String(parsed.month).padStart(2,'0')+'-'+String(parsed.day).padStart(2,'0');
+    const amount = parsed.explicitSign === -1 ? -parsed.amountAbs : (section.sign * parsed.amountAbs);
+    let desc = parsed.description;
+    for(const re of ANNOTATION_RES) {
+      const am = desc.match(re);
+      if(am && am.index !== undefined && am.index > 0) desc = desc.slice(0, am.index).trim();
+    }
+    desc = desc.replace(/[\s,;:.-]+$/, '').trim();
+    if(!desc) return null;
+    const txn = { date: iso, description: desc, amount, rawLine: rawText, section: section.name };
+    out.push(txn);
+    return txn;
+  };
+
+  // Wells Fargo "Checks" section has a 2-up grid: "5254 04/08 21.33  5259
+  // 04/23 40.00". Detect those by leading check-number rather than date.
+  // Returns array of transactions (could be 1 or 2 per line) or null if
+  // the line doesn't look like a check-grid row.
+  const parseCheckRow = (text) => {
+    const CHECK_RE = /(\d{2,6})\*?\s+(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s+\$?([\d,]+\.\d{2})/g;
+    const matches = [];
+    let m;
+    while((m = CHECK_RE.exec(text))) {
+      const num = m[1], mo = +m[2], day = +m[3];
+      if(mo<1||mo>12||day<1||day>31) continue;
+      const y = m[4] ? (+m[4] < 100 ? (+m[4] < 50 ? 2000+(+m[4]) : 1900+(+m[4])) : +m[4]) : inferYearForMonthDay(mo, day, metadata);
+      const iso = y+'-'+String(mo).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+      const amt = parseFloat(m[5].replace(/,/g,''));
+      if(isNaN(amt)) continue;
+      matches.push({ date: iso, description: 'Check #'+num, amount: -Math.abs(amt) });
+    }
+    return matches.length > 0 ? matches : null;
+  };
+
   for(let i = 0; i < lines.length; i++) {
     if(stopped) break;
     // First, get the raw + left-column versions. Some lines need the full
@@ -4225,25 +4265,43 @@ function extractTransactionsSectioned(lines, metadata) {
 
     if(!section) continue;
 
+    // Wells-style checks: "5254 04/08 21.33  5259 04/23 40.00"
+    if(section.name === 'checks' && !/^\d{1,2}\/\d{1,2}/.test(leftText)) {
+      const checks = parseCheckRow(leftText);
+      if(checks) {
+        for(const c of checks) {
+          out.push({ ...c, rawLine: rawText, section: 'checks' });
+        }
+        lastTxn = null;
+        continue;
+      }
+    }
+
     // Transaction line — match against the left-column-only text so the
     // right-column annotation doesn't get appended to the description.
-    const parsed = parseBankTransactionLine(leftText);
-    if(parsed) {
-      const year = parsed.year || inferYearForMonthDay(parsed.month, parsed.day, metadata);
-      const iso = year+'-'+String(parsed.month).padStart(2,'0')+'-'+String(parsed.day).padStart(2,'0');
-      // Apply sign: if the line had an explicit negative (e.g. "- 80.00" in
-      // BoA), honor it. Otherwise rely on the section sign (PNC strips signs).
-      const amount = parsed.explicitSign === -1 ? -parsed.amountAbs : (section.sign * parsed.amountAbs);
-      let desc = parsed.description;
-      // Strip any inline annotation that crept in despite the column cut.
-      for(const re of ANNOTATION_RES) {
-        const am = desc.match(re);
-        if(am && am.index !== undefined && am.index > 0) desc = desc.slice(0, am.index).trim();
+    let parsed = parseBankTransactionLine(leftText);
+
+    // Multi-line transaction (Wells-style): if this line starts with a date
+    // but has no amount, look ahead 1-2 lines for the missing amount and
+    // combine. Without this, Wells "04/30 The Insurance Co. / Monthly
+    // Deposit 40.76" splits into two unparseable lines.
+    if(!parsed && /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/.test(leftText) && !/[\d,]+\.\d{2}|\.\d{2}/.test(leftText)) {
+      for(let j = i + 1; j < Math.min(i + 3, lines.length); j++) {
+        const nextRaw = lineToText(lines[j]);
+        const nextLeft = leftColumnText(lines[j]);
+        if(!nextLeft) continue;
+        if(STOP_RE.test(nextRaw)) break;
+        if(SECTIONS.some(s => s.re.test(nextRaw))) break;
+        if(/^\d{1,2}\/\d{1,2}/.test(nextLeft)) break;       // new transaction starts
+        if(isAnnotation(nextLeft)) continue;
+        // Try parsing the combined text
+        parsed = parseBankTransactionLine(leftText + ' ' + nextLeft);
+        if(parsed) { i = j; break; }
       }
-      desc = desc.replace(/[\s,;:.-]+$/, '').trim();
-      if(!desc) continue;
-      lastTxn = { date: iso, description: desc, amount, rawLine: rawText, section: section.name };
-      out.push(lastTxn);
+    }
+    if(parsed) {
+      const txn = emitTxn(parsed, rawText);
+      if(txn) lastTxn = txn;
       continue;
     }
 
