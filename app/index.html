@@ -4179,6 +4179,11 @@ function extractTransactionsSectioned(lines, metadata) {
   // bank-agnostic.
   const ANNOTATION_RES = [
     /^There\s+(?:was|were)\b/i,
+    // Looser variant — strips right-column "There was/were N..." noise that
+    // got appended mid-description because pdf.js merged columns at same y.
+    /\bThere\s+(?:was|were)\s+\d+\s+(?:Banking|Debit|Online|Card|other|Machine|Deposits|deductions)/i,
+    /\bMachine\/Debit\s+Card\s+(?:deductions|withdrawals|purchases)/i,
+    /\b(?:PIN\s+POS|POS\s+PIN)\s+purchase\s+totaling/i,
     /\btotaling\s+\$/i,
     /\bcontinued\s+(?:on\s+next\s+page|from\s+previous)/i,
     /^Member\s+FDIC/i,
@@ -4277,25 +4282,29 @@ function extractTransactionsSectioned(lines, metadata) {
       }
     }
 
-    // Transaction line — match against the left-column-only text so the
-    // right-column annotation doesn't get appended to the description.
-    let parsed = parseBankTransactionLine(leftText);
+    // Transaction line — first try left-column-only (so BoA right-column
+    // annotations don't pollute descriptions), then fall back to the full
+    // line if the column-cut version doesn't parse. PNC's layout has a
+    // big within-row gap between the date and the amount column, which
+    // would otherwise cause the column cut to truncate the line to just
+    // "MM/DD" with no amount.
+    let parsed = parseBankTransactionLine(leftText) || parseBankTransactionLine(rawText);
 
     // Multi-line transaction (Wells-style): if this line starts with a date
     // but has no amount, look ahead 1-2 lines for the missing amount and
     // combine. Without this, Wells "04/30 The Insurance Co. / Monthly
     // Deposit 40.76" splits into two unparseable lines.
-    if(!parsed && /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/.test(leftText) && !/[\d,]+\.\d{2}|\.\d{2}/.test(leftText)) {
+    if(!parsed && /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/.test(rawText) && !/[\d,]+\.\d{2}|\.\d{2}/.test(rawText)) {
       for(let j = i + 1; j < Math.min(i + 3, lines.length); j++) {
         const nextRaw = lineToText(lines[j]);
-        const nextLeft = leftColumnText(lines[j]);
-        if(!nextLeft) continue;
+        if(!nextRaw) continue;
         if(STOP_RE.test(nextRaw)) break;
         if(SECTIONS.some(s => s.re.test(nextRaw))) break;
-        if(/^\d{1,2}\/\d{1,2}/.test(nextLeft)) break;       // new transaction starts
-        if(isAnnotation(nextLeft)) continue;
-        // Try parsing the combined text
-        parsed = parseBankTransactionLine(leftText + ' ' + nextLeft);
+        if(/^\d{1,2}\/\d{1,2}/.test(nextRaw)) break;          // new transaction starts
+        if(isAnnotation(nextRaw)) continue;
+        // Try parsing the combined text (full version, then left-only)
+        parsed = parseBankTransactionLine(rawText + ' ' + nextRaw)
+              || parseBankTransactionLine(leftColumnText(lines[i]) + ' ' + leftColumnText(lines[j]));
         if(parsed) { i = j; break; }
       }
     }
