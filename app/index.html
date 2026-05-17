@@ -5033,15 +5033,36 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   };
   const ingestPdfFile = async (file)=>{
     if(!file) return;
-    setPdfSession(s=>({...s, step:'parsing', fileName:file.name, error:null}));
+    setPdfSession(s=>({...s, step:'parsing', fileName:file.name, error:null, debugLines:null}));
     try {
       const pages = await extractPdfPositionalText(file);
       const fullText = pages.map(items => items.map(i=>i.str).join(' ')).join('\n');
-      const lines = pages.flatMap(items => groupItemsIntoLines(items, 3));
-      const transactions = extractTransactionsFromLines(lines);
+      // Try multiple y-tolerances to handle banks that typeset numbers and
+      // text at slightly different baselines. Pick the version that yields
+      // the most transactions. Track the longest-lines version too so we
+      // always have something to show in the diagnostic on parse failure.
+      let best = { lines: [], transactions: [], tolerance: 3 };
+      let diagLines = [];
+      for(const tol of [3, 6, 10, 14]) {
+        const lines = pages.flatMap(items => groupItemsIntoLines(items, tol));
+        if(lines.length > diagLines.length) diagLines = lines;
+        const transactions = extractTransactionsFromLines(lines);
+        if(transactions.length > best.transactions.length) best = { lines, transactions, tolerance: tol };
+      }
+      const lines = best.transactions.length > 0 ? best.lines : diagLines;
+      const transactions = best.transactions;
       const metadata = detectStatementMetadata(fullText);
       if(transactions.length === 0) {
-        setPdfSession(s=>({...s, step:'drop', error:'No transactions detected in this PDF. The format may not be supported yet — try a CSV export from your bank instead.'}));
+        // Diagnostic dump — the first 40 non-empty extracted lines so we
+        // can debug why parsing failed. Stays local (no upload).
+        const debugLines = lines.map(l => lineToText(l)).filter(t => t.length > 1).slice(0, 50);
+        setPdfSession(s=>({
+          ...s,
+          step:'drop',
+          error:'No transactions detected. Click "Show extracted lines" below — copy those and share with support so we can teach Ambit your bank\'s format.',
+          debugLines,
+          debugMeta: { pageCount: pages.length, totalItems: pages.reduce((n,p)=>n+p.length,0), detectedPeriod: metadata.periodStart||null, detectedBalance: metadata.endingBalance||null }
+        }));
         return;
       }
       // Run the matcher against this account's transactions in the period
@@ -5825,6 +5846,27 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
             h('input',{id:'pdf-reconcile-file',type:'file',accept:'application/pdf,.pdf',style:{display:'none'},onChange:e=>{const f=e.target.files[0];if(f)ingestPdfFile(f);}})
           ),
           s.error && h('div',{style:{marginTop:12,padding:'10px 12px',background:'rgba(224,80,80,0.10)',border:'1px solid rgba(224,80,80,0.3)',borderRadius:8,fontSize:12,color:'var(--red)'}}, '⚠️ ', s.error),
+          // Diagnostic dump — only shown when a parse attempt produced zero
+          // transactions. Lets the user copy what pdf.js saw so we can tune
+          // the heuristics for their bank.
+          s.debugLines && s.debugLines.length>0 && (()=>{
+            const text = s.debugLines.join('\n');
+            const meta = s.debugMeta || {};
+            return h('details',{style:{marginTop:10,background:'rgba(255,255,255,0.03)',border:'1px solid var(--border)',borderRadius:8,padding:'8px 10px'}},
+              h('summary',{style:{cursor:'pointer',fontSize:12,fontWeight:600}},
+                '🔍 Show extracted lines (', s.debugLines.length, ' of '+meta.totalItems+' text items, ', meta.pageCount, ' page'+(meta.pageCount===1?'':'s'), ')'
+              ),
+              h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8,fontSize:11,color:'var(--card-text2)'}},
+                h('span',null,'Period detected: ', h('strong',null, meta.detectedPeriod || 'none'),
+                  ' • Ending balance: ', h('strong',null, meta.detectedBalance != null ? fmt(meta.detectedBalance) : 'none')),
+                h('button',{className:'btn sm',onClick:()=>{
+                  try { navigator.clipboard.writeText(text); showToast('📋 Copied to clipboard'); }
+                  catch(e) { showToast('Use Ctrl+C — clipboard API blocked'); }
+                }}, '📋 Copy')
+              ),
+              h('pre',{style:{marginTop:8,padding:'8px 10px',background:'rgba(0,0,0,0.3)',borderRadius:6,fontSize:11,maxHeight:260,overflow:'auto',whiteSpace:'pre-wrap',color:'var(--text)',fontFamily:'monospace'}}, text)
+            );
+          })(),
           h('div',{style:{display:'flex',justifyContent:'flex-end',gap:8,marginTop:14}},
             h('button',{className:'btn',onClick:cancelPdfReconcile},'Cancel')
           )
