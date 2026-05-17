@@ -1127,6 +1127,43 @@ const _fb = ()=> atob('bWF0dEBtYWxsb3kta2lmb2xvLmNvbQ==');
 const fmt = (n) => { const abs = '$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); return n < 0 ? '('+abs+')' : abs; };
 const fmtDate = (d) => { const dt=new Date(d); return (dt.getMonth()+1)+'/'+dt.getDate()+'/'+dt.getFullYear(); };
 
+// Some banks put "PENDING", "PENDING - 5/8/2026", "Posting 05/08/2026",
+// "Processing: 2026-05-08" etc. in the date column. Detect that, extract
+// the embedded date (if any), and return a pending flag. Used by both
+// the CSV importer (so new imports get the right shape) and the one-time
+// data migration that runs at load (so any stored transactions written by
+// older builds get cleaned up).
+function extractPendingFromDate(rawDateStr) {
+  if (rawDateStr == null) return { date: '', pending: false };
+  const s = String(rawDateStr).trim();
+  if (!s) return { date: '', pending: false };
+  // Bare-token case: "PENDING", "Pending...", "Posting", "Processing", "P"
+  if (/^(pending|pending\.\.\.|posting|processing|p)$/i.test(s)) {
+    return { date: '', pending: true };
+  }
+  // Token followed by an embedded date: "PENDING - 5/8/2026",
+  // "Posting: 05/08/2026", "Processing 2026-05-08".
+  const m = s.match(/^(?:pending|posting|processing)[\s.\-:]*(\d{1,4}[\/\-]\d{1,2}[\/\-]\d{1,4})\s*$/i);
+  if (m) {
+    return { date: m[1], pending: true };
+  }
+  return { date: s, pending: false };
+}
+
+// One-time migration helper: if a stored transaction's date string still
+// has a pending prefix from older builds before extractPendingFromDate
+// existed, clean it up so it sorts correctly, displays correctly, and is
+// excluded from the running-balance walk. Idempotent — safe to re-run on
+// already-clean data.
+function normalizeTransaction(t) {
+  if (!t || typeof t !== 'object' || typeof t.date !== 'string') return t;
+  const info = extractPendingFromDate(t.date);
+  if (info.pending && info.date && info.date !== t.date) {
+    return { ...t, date: info.date, pending: true };
+  }
+  return t;
+}
+
 // Robust date parsing — extracts year/month/day without timezone shift
 function parseDateParts(dateStr) {
   if(!dateStr) return null;
@@ -2377,7 +2414,11 @@ function App({idbData}) {
     return (saved?.categories || []).map(c => ({...c, catType: normCatType(c)}));
   });
   const [myDictionary, setMyDictionary] = useState(saved?.dictionary || []);
-  const [myTransactions, setMyTransactions] = useState(saved?.transactions || []);
+  // Initial transactions go through normalizeTransaction so any rows
+  // written by older builds with a "PENDING - <date>" string baked into
+  // the date field get split into a clean date + a pending:true flag.
+  // Idempotent on already-clean data, so this is safe to keep running.
+  const [myTransactions, setMyTransactions] = useState(()=>(saved?.transactions || []).map(normalizeTransaction));
   const [myGroups, setMyGroups] = useState(saved?.groups || DEFAULT_GROUPS);
 
   // ── Demo state (in-memory only, not persisted) ──
@@ -3030,7 +3071,7 @@ function App({idbData}) {
               if(d.accounts) setMyAccounts(d.accounts);
               if(d.categories) setMyCategories(d.categories.map(c=>({...c, catType:normCatType(c)})));
               if(d.dictionary) setMyDictionary(d.dictionary);
-              if(d.transactions) setMyTransactions(d.transactions);
+              if(d.transactions) setMyTransactions(d.transactions.map(normalizeTransaction));
               if(d.groups) setMyGroups(d.groups);
               // Business data (if present in backup AND unlocked)
               let bizMsg = '';
@@ -3926,17 +3967,20 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
       transferCatCreated = true;
     }
 
-    // Some banks put "Pending" / "Posting" in the date column for un-cleared rows.
-    // Detect that, swap to today's date for sorting, and flag the txn as pending.
-    const PENDING_DATE_RE = /^(pending|pending\.\.\.|posting|processing|p)$/i;
+    // Some banks put "Pending" / "Posting" / "PENDING - 5/8/2026" in the
+    // date column for un-cleared rows. extractPendingFromDate detects both
+    // the bare-token form and the prefix-with-embedded-date form, returns
+    // a clean date + a pending flag. Bare-token gets today's date for
+    // sorting so it doesn't disappear into 1970; an embedded date wins.
     const todayISO = (() => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
 
     for(const row of rows) {
       const rawDateStr = (row[dateCol]||'').trim();
       const desc = (row[descCol]||'').trim();
       if(!desc) { errors++; continue; }
-      const isPendingByDate = PENDING_DATE_RE.test(rawDateStr);
-      const dateStr = isPendingByDate ? todayISO : rawDateStr;
+      const pendingInfo = extractPendingFromDate(rawDateStr);
+      const isPendingByDate = pendingInfo.pending;
+      const dateStr = isPendingByDate ? (pendingInfo.date || todayISO) : rawDateStr;
       if(!dateStr) { errors++; continue; }
 
       let amt;
