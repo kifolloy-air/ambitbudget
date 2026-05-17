@@ -4094,27 +4094,46 @@ function extractTransactionsSectioned(lines, metadata) {
   const out = [];
   // Date at start, then amount, then description. Supports MM/DD or MM/DD/YYYY.
   const TXN_RE = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s+\$?(-?[\d,]+\.\d{2})\s+(.+)$/;
+  // Section markers — broad enough to catch the common US-bank phrasings
+  // (PNC, Chase, BoA, Wells Fargo, Capital One, credit unions). When you
+  // hit a bank that uses different wording, add another disjunct here.
+  // The "sign" is what the section implies about its amounts (banks
+  // usually print debits as positive numbers and rely on the section
+  // header to convey "this is money out").
   const SECTIONS = [
-    { name:'deposits', sign:1,  re:/Deposits\s+and\s+Other\s+Additions|Deposits\s+and\s+Credits/i },
-    { name:'card',     sign:-1, re:/Banking\/Debit\s+Card\s+Withdrawals|ATM\s+and\s+Debit\s+Card\s+Withdrawals|Withdrawals\s+and\s+Other\s+Debits/i },
-    { name:'online',   sign:-1, re:/Online\s+and\s+Electronic\s+Banking\s+Deductions|Electronic\s+Withdrawals/i },
-    { name:'checks',   sign:-1, re:/^Checks(\s|$)|Checks\s+Paid/i }
+    { name:'deposits', sign:1,  re:/(?:Deposits|Credits|Additions|Payments\s+(?:Received|and\s+Credits))\b/i },
+    { name:'card',     sign:-1, re:/(?:Banking\/Debit\s+Card|ATM\s+(?:and|&)\s+Debit\s+Card|Debit\s+Card\s+(?:Withdrawals|Purchases)|Card\s+Purchases)\b/i },
+    { name:'online',   sign:-1, re:/(?:Online\s+(?:and|&)\s+Electronic\s+Banking\s+Deductions|Electronic\s+Withdrawals|ACH\s+(?:Withdrawals|Debits)|Online\s+Banking\s+Transfers)\b/i },
+    { name:'other',    sign:-1, re:/(?:Withdrawals\s+and\s+Other\s+Debits|Other\s+(?:Withdrawals|Debits|Deductions)|Service\s+(?:Fees|Charges)|Fees\s+and\s+Charges)\b/i },
+    { name:'checks',   sign:-1, re:/^Checks(?:\s|$)|Checks\s+Paid/i }
   ];
-  const STOP_RE = /Daily\s+Balance\s+Detail|Beginning\s+Balance|Member\s+FDIC\s+Equal\s+Housing/i;
+  // Lines that mean "stop parsing transactions" — daily-balance lookups,
+  // disclaimers, etc. Add more as we encounter them in real PDFs.
+  const STOP_RE = /Daily\s+(?:Balance\s+Detail|Ending\s+Balance)|Member\s+FDIC\s+Equal\s+Housing|End\s+of\s+Statement/i;
+  // Lines that are page-header / footer / column-header noise — never
+  // transactions, never description continuations. These patterns are
+  // bank-agnostic.
   const ANNOTATION_RES = [
-    /^There\s+(was|were)\b/i,
+    /^There\s+(?:was|were)\b/i,
     /\btotaling\s+\$/i,
-    /\bcontinued\s+(on\s+next\s+page|from\s+previous)/i,
+    /\bcontinued\s+(?:on\s+next\s+page|from\s+previous)/i,
     /^Member\s+FDIC/i,
-    /^Page\s+\d/i,
-    /^For\s+(the\s+period|customer|24)/i,
+    /^Page\s+\d+\s+of\s+\d+/i,
+    /^For\s+(?:the\s+period|customer|24-hour)/i,
     /^Account\s+Number/i,
-    /^Virtual\s+Wallet/i,
     /^Date\s+Amount\s+Description/i,
-    /^on\s+pnc\.com/i,
-    /JONATHAN\s+M\s+KIFOLO/i
+    /^on\s+\S+\.(?:com|org|net)\b/i,        // "on pnc.com" / "on chase.com" / etc.
+    /Online\s+Banking\s+at\s+\S+\.com/i,
+    /Customer\s+service\s+call/i,
+    /^P\.?O\.?\s+Box\s+\d/i,                 // mailing address line
+    /^\d{5}(?:-\d{4})?$/                     // bare ZIP code line
   ];
   const isAnnotation = (t) => ANNOTATION_RES.some(re => re.test(t));
+  // Customer-name banner lines (e.g. "JONATHAN M KIFOLO", "JANE DOE",
+  // "ROBERT P SMITH JR") show up on page headers in many bank PDFs. They
+  // could otherwise pollute a description if mid-section page break
+  // occurs. Match 2–5 all-caps tokens of letters only.
+  const NAME_BANNER_RE = /^[A-Z][A-Z'-]*(?:\s+[A-Z][A-Z'-]*){1,4}$/;
 
   let section = null;
   let lastTxn = null;
@@ -4160,8 +4179,14 @@ function extractTransactionsSectioned(lines, metadata) {
     }
 
     // Not a transaction line. Possibly description continuation for lastTxn:
-    // short, doesn't contain a date or amount, isn't an annotation phrase.
-    if(lastTxn && !isAnnotation(leftText) && !/\d{1,2}\/\d{1,2}/.test(leftText) && !/[\d,]+\.\d{2}/.test(leftText) && leftText.length <= 60) {
+    // short, doesn't contain a date or amount, isn't an annotation phrase,
+    // isn't a customer-name banner from a page-header.
+    if(lastTxn
+       && !isAnnotation(leftText)
+       && !NAME_BANNER_RE.test(leftText)
+       && !/\d{1,2}\/\d{1,2}/.test(leftText)
+       && !/[\d,]+\.\d{2}/.test(leftText)
+       && leftText.length <= 60) {
       lastTxn.description = (lastTxn.description + ' ' + leftText).replace(/\s+/g,' ').trim();
     }
   }
