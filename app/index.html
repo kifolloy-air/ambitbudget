@@ -5054,9 +5054,9 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       const metadata = detectStatementMetadata(fullText);
       if(transactions.length === 0) {
         // Diagnostic dump — extracted lines so we can debug why parsing
-        // failed. Stays local (no upload). 300 cap is enough for the
-        // typical 4-page PNC statement to reach the transaction rows.
-        const debugLines = lines.map(l => lineToText(l)).filter(t => t.length > 1).slice(0, 300);
+        // failed. Stays local (no upload). 1000 cap covers even dense
+        // multi-page bank statements without truncation.
+        const debugLines = lines.map(l => lineToText(l)).filter(t => t.length > 1).slice(0, 1000);
         setPdfSession(s=>({
           ...s,
           step:'drop',
