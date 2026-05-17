@@ -5053,9 +5053,10 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       const transactions = best.transactions;
       const metadata = detectStatementMetadata(fullText);
       if(transactions.length === 0) {
-        // Diagnostic dump — the first 40 non-empty extracted lines so we
-        // can debug why parsing failed. Stays local (no upload).
-        const debugLines = lines.map(l => lineToText(l)).filter(t => t.length > 1).slice(0, 50);
+        // Diagnostic dump — extracted lines so we can debug why parsing
+        // failed. Stays local (no upload). 300 cap is enough for the
+        // typical 4-page PNC statement to reach the transaction rows.
+        const debugLines = lines.map(l => lineToText(l)).filter(t => t.length > 1).slice(0, 300);
         setPdfSession(s=>({
           ...s,
           step:'drop',
@@ -5864,7 +5865,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
                   catch(e) { showToast('Use Ctrl+C — clipboard API blocked'); }
                 }}, '📋 Copy')
               ),
-              h('pre',{style:{marginTop:8,padding:'8px 10px',background:'rgba(0,0,0,0.3)',borderRadius:6,fontSize:11,maxHeight:260,overflow:'auto',whiteSpace:'pre-wrap',color:'var(--text)',fontFamily:'monospace'}}, text)
+              h('pre',{style:{marginTop:8,padding:'8px 10px',background:'rgba(0,0,0,0.3)',borderRadius:6,fontSize:11,maxHeight:420,overflow:'auto',whiteSpace:'pre-wrap',color:'var(--text)',fontFamily:'monospace'}}, text)
             );
           })(),
           h('div',{style:{display:'flex',justifyContent:'flex-end',gap:8,marginTop:14}},
