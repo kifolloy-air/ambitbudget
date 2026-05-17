@@ -4869,6 +4869,21 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
           )
         )
       ),
+      // Reconciled-through info bar. Sits between the filters and the
+      // transactions list so the Clear button is actually findable —
+      // previously this rendered AFTER the (potentially long) table, which
+      // meant users had to scroll past everything to un-reconcile.
+      acctFilter!=='all' && acctMap[acctFilter]?.reconciledThrough && h('div',{style:{
+        marginBottom:14, padding:'10px 16px', background:'rgba(64,192,128,0.08)', border:'1px solid rgba(64,192,128,0.2)',
+        borderRadius:8, display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:13, gap:12, flexWrap:'wrap'
+      }},
+        h('span',null, '✓ ', h('strong',null,acctMap[acctFilter].name), ' reconciled through ', h('strong',null, fmtDate(acctMap[acctFilter].reconciledThrough))),
+        h('button',{className:'btn sm', onClick:()=>{
+          if(confirm('Clear reconciliation date for '+acctMap[acctFilter].name+'?\n\nThis flips all formerly-reconciled (blue) transactions back to cleared (green). It does not delete anything.')) {
+            setAccounts(prev=>prev.map(a=>a.id===acctFilter?{...a, reconciledThrough:null}:a));
+          }
+        }}, 'Clear')
+      ),
       sorted.length === 0
         ? h('div',{className:'empty'},
             h('img',{src:'icons/ambit-symbol.png',alt:'Ambit logo',style:{width:120,height:120,objectFit:'contain',marginBottom:8}}),
@@ -4989,18 +5004,10 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
           )
     ),
 
-    // Reconciled-through info bar
-    acctFilter!=='all' && acctMap[acctFilter]?.reconciledThrough && h('div',{style:{
-      marginTop:12, padding:'10px 16px', background:'rgba(64,192,128,0.08)', border:'1px solid rgba(64,192,128,0.2)',
-      borderRadius:8, display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:13
-    }},
-      h('span',null, '✓ ', h('strong',null,acctMap[acctFilter].name), ' reconciled through ', h('strong',null, fmtDate(acctMap[acctFilter].reconciledThrough))),
-      h('button',{className:'btn sm', onClick:()=>{
-        if(confirm('Clear reconciliation date for '+acctMap[acctFilter].name+'?')) {
-          setAccounts(prev=>prev.map(a=>a.id===acctFilter?{...a, reconciledThrough:null}:a));
-        }
-      }}, 'Clear')
-    ),
+    // (Reconciled-through info bar was previously rendered here, below the
+    // transactions list. Moved up to render alongside the filters so users
+    // can actually find the "Clear" button without scrolling past hundreds
+    // of transactions. See the new location near the page filters above.)
 
     // Add Transaction modal
     showAddTxn && h(Modal, {onClose:resetNewTxn},
