@@ -2319,14 +2319,14 @@ function App({idbData}) {
 
   // ── License / Tier system ──
   const TIERS = useMemo(()=>({
-    Free:        { limit:1, label:'Free', price:0, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:false, payeeRules:false, groups:false, autoCategorize:false, savingsGoals:false },
-    Starter:     { limit:2, label:'Starter', price:9.99, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:false },
-    Plus:        { limit:3, label:'Plus', price:19.99, forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true },
-    Pro:         { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true },
+    Free:        { limit:1, label:'Free', price:0, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:false, payeeRules:false, groups:false, autoCategorize:false, savingsGoals:false, manualReconcile:false },
+    Starter:     { limit:2, label:'Starter', price:9.99, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:false, manualReconcile:false },
+    Plus:        { limit:3, label:'Plus', price:19.99, forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true },
+    Pro:         { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true },
     // Books tiers — also unlock all Pro-style budget features so Books customers
     // get a full personal-side experience too (one app, two modes, one license).
-    Books:       { limit:Infinity, label:'Books', price:49.99, forecast:true, dayByDay:false, review:true, yearView:true, debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true },
-    'Books Pro': { limit:Infinity, label:'Books Pro', price:79.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true }
+    Books:       { limit:Infinity, label:'Books', price:49.99, forecast:true, dayByDay:false, review:true, yearView:true, debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true },
+    'Books Pro': { limit:Infinity, label:'Books Pro', price:79.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true }
   }),[]);
   const [license, setLicense] = useState(()=>{ try { return JSON.parse(localStorage.getItem('ambit_license'))||null; } catch{ return null; } });
   const [showLicenseGate, setShowLicenseGate] = useState(false);
@@ -4405,6 +4405,10 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   const [editPayeeName, setEditPayeeName] = useState('');
   const [showReconcile, setShowReconcile] = useState(false);
   const [reconcileDate, setReconcileDate] = useState('');
+  // Manual reconcile session (Plus+ feature). In-memory only — checks aren't
+  // persisted until the user commits. On commit, checked rows get txn.reconciled=true.
+  const [reconcileMode, setReconcileMode] = useState(false);
+  const [checkedTxnIds, setCheckedTxnIds] = useState(()=>new Set());
   const [showAddTxn, setShowAddTxn] = useState(false);
   const [statusFilter, setStatusFilter] = useState(()=>{
     const saved = localStorage.getItem('ambit_txn_filter');
@@ -4555,8 +4559,11 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     const m = {}; accounts.forEach(a=>{m[a.id]=a;}); return m;
   },[accounts]);
 
-  // Check if a transaction is reconciled based on its account's reconciledThrough date
+  // Check if a transaction is reconciled. Two paths can flip a row blue:
+  // 1. Per-txn flag set by manual reconcile commit (Plus+ feature)
+  // 2. Date-based bulk: t.date <= account.reconciledThrough (legacy / all-paid)
   const isReconciled = useCallback((t)=>{
+    if(t.reconciled === true) return true;
     const acct = acctMap[t.accountId];
     if(!acct || !acct.reconciledThrough) return false;
     return safeDate(t.date) <= safeDate(acct.reconciledThrough);
@@ -4568,6 +4575,38 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     setAccounts(prev=>prev.map(a=>a.id===acctFilter?{...a, reconciledThrough:reconcileDate}:a));
     setShowReconcile(false);
     setReconcileDate('');
+  };
+  const startManualReconcile = ()=>{
+    if(acctFilter==='all') return;
+    setReconcileMode(true);
+    setCheckedTxnIds(new Set());
+    setShowReconcile(false);
+  };
+  // If the user switches accounts mid-session, exit reconcile mode —
+  // otherwise checked rows from another account stay in the Set and the
+  // commit could leak across accounts.
+  useEffect(()=>{
+    if(reconcileMode) { setReconcileMode(false); setCheckedTxnIds(new Set()); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[acctFilter]);
+  const cancelManualReconcile = ()=>{
+    setReconcileMode(false);
+    setCheckedTxnIds(new Set());
+  };
+  const toggleReconcileCheck = (id)=>{
+    setCheckedTxnIds(prev=>{
+      const next = new Set(prev);
+      if(next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const commitManualReconcile = ()=>{
+    if(checkedTxnIds.size===0) { cancelManualReconcile(); return; }
+    const ids = checkedTxnIds;
+    setTransactions(prev=>prev.map(t=>ids.has(t.id)?{...t, reconciled:true}:t));
+    showToast('✓ '+ids.size+' transaction'+(ids.size===1?'':'s')+' marked as reconciled');
+    setReconcileMode(false);
+    setCheckedTxnIds(new Set());
   };
 
   // Build a map of starting balances from accounts
@@ -4649,6 +4688,20 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     if(sortCol===col) setSortDir(d=>d*-1);
     else { setSortCol(col); setSortDir(-1); }
   };
+
+  // Manual reconcile tally — only computed during a reconcile session.
+  // Denominator: cleared (not pending) and not-already-reconciled txns in the
+  // currently filtered view. That lines up with what's actually checkable.
+  const reconcileTally = useMemo(()=>{
+    if(!reconcileMode) return null;
+    let eligible = 0, checked = 0, sum = 0;
+    sorted.forEach(t=>{
+      if(t.pending || isReconciled(t)) return;
+      eligible++;
+      if(checkedTxnIds.has(t.id)) { checked++; sum += t.amount; }
+    });
+    return { eligible, checked, sum };
+  },[reconcileMode, sorted, checkedTxnIds, isReconciled]);
 
   const delTxn = (id) => {
     const txn = transactions.find(t=>t.id===id);
@@ -4855,17 +4908,40 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
             h('option',{value:'uncategorized'},'⚠ Uncategorized')
           ),
           (()=>{const uc=transactions.filter(t=>t.category==='Uncategorized').length; return uc>0 && h('button',{className:'btn sm'+(statusFilter==='uncategorized'?' primary':''),onClick:()=>setStatusFilter(statusFilter==='uncategorized'?'all':'uncategorized'),style:{fontSize:11,whiteSpace:'nowrap'}},'⚠ '+uc+' Uncategorized');})(),
-          acctFilter!=='all'
-            ? h('button',{className:'btn green sm',onClick:()=>{
-                const acct = acctMap[acctFilter];
-                setReconcileDate(acct?.reconciledThrough||'');
-                setShowReconcile(true);
-              }},'✓ Reconcile')
-            : accounts.length>0 && h('span',{style:{fontSize:11,color:'var(--text2)',alignSelf:'center'}},'Select an account to reconcile'),
+          reconcileMode
+            ? h('div',{style:{display:'flex',gap:6,alignItems:'center'}},
+                h('button',{className:'btn sm',onClick:cancelManualReconcile,title:'Discard checks and exit reconcile mode'},'Cancel'),
+                h('button',{className:'btn green sm',onClick:commitManualReconcile,disabled:checkedTxnIds.size===0,title:checkedTxnIds.size===0?'Check at least one transaction first':'Flip checked rows to reconciled (blue)'},'✓ Mark '+checkedTxnIds.size+' as reconciled')
+              )
+            : acctFilter!=='all'
+              ? h('button',{className:'btn green sm',onClick:()=>{
+                  const acct = acctMap[acctFilter];
+                  setReconcileDate(acct?.reconciledThrough||'');
+                  setShowReconcile(true);
+                }},'✓ Reconcile')
+              : accounts.length>0 && h('span',{style:{fontSize:11,color:'var(--text2)',alignSelf:'center'}},'Select an account to reconcile'),
           h('div',{style:{display:'flex',gap:12,alignItems:'center',fontSize:10,color:'var(--text2)'}},
             h('span',{style:{display:'flex',alignItems:'center',gap:3}},h('span',{style:{display:'inline-block',width:8,height:8,borderRadius:'50%',background:'#e8a020'}}),'Pending'),
             h('span',{style:{display:'flex',alignItems:'center',gap:3}},h('span',{style:{display:'inline-block',width:8,height:8,borderRadius:'50%',background:'#40c080'}}),'Cleared'),
             h('span',{style:{display:'flex',alignItems:'center',gap:3}},h('span',{style:{display:'inline-block',width:8,height:8,borderRadius:'50%',background:'#5090e8'}}),'Reconciled')
+          )
+        )
+      ),
+      // Manual reconcile tally bar — shown only during an active manual
+      // reconcile session. Sits above the table per spec §3.1 so the user
+      // sees the running total without scrolling.
+      reconcileMode && reconcileTally && h('div',{style:{
+        marginBottom:14, padding:'12px 16px', background:'rgba(80,144,232,0.10)', border:'1px solid rgba(80,144,232,0.3)',
+        borderRadius:8, display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:13, gap:12, flexWrap:'wrap'
+      }},
+        h('div',{style:{display:'flex',flexDirection:'column',gap:2}},
+          h('span',null, '☑ Manual reconcile — ', h('strong',null, acctMap[acctFilter]?.name||'account'),
+            '. Check rows that match your statement, then click ',
+            h('strong',null, 'Mark as reconciled'), '.'),
+          h('span',{style:{fontSize:12,color:'var(--text2)'}},
+            'Checked: ', h('strong',{style:{color:'var(--text)'}}, reconcileTally.checked+' of '+reconcileTally.eligible),
+            ' cleared transactions. Sum of checked: ',
+            h('strong',{style:{color:reconcileTally.sum>=0?'var(--green)':'var(--text)'}}, (reconcileTally.sum>=0?'+':'')+fmt(reconcileTally.sum))
           )
         )
       ),
@@ -4894,6 +4970,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
             h('table',{className:'table txn-table'},
               h('thead',null,
                 h('tr',null,
+                  reconcileMode && h('th',{scope:'col',style:{width:32,textAlign:'center'},title:'Check rows that match your statement'},'☑'),
                   h('th',{scope:'col',style:{width:30}},null),
                   h('th',{scope:'col',onClick:()=>toggleSort('date'), onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleSort('date');}}, tabIndex:0, role:'columnheader', 'aria-sort':sortCol==='date'?(sortDir>0?'ascending':'descending'):'none', style:{cursor:'pointer',color:sortCol==='date'?'var(--accent)':'inherit'}},
                     'Date ',h('span',{style:{fontSize:10,color:sortCol==='date'?'var(--accent)':'var(--text2)'}},sortCol==='date'?(sortDir>0?'\u25b2':'\u25bc'):'\u25b4\u25be')
@@ -4913,6 +4990,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
                   h('th',{style:{width:60}},null)
                 ),
                 (showPayeeFilter || showCatFilter) && h('tr',null,
+                  reconcileMode && h('th',null),
                   h('th',null),
                   h('th',null),
                   h('th',{style:{padding:'4px 6px'}},
@@ -4934,8 +5012,18 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
               ),
               h('tbody',null, sorted.slice(0,200).map(t => {
                 const rec = isReconciled(t);
-                const rowBg = t.pending ? {background:'rgba(232,160,32,0.06)'} : rec ? {background:'rgba(64,192,128,0.06)'} : undefined;
+                const checkable = reconcileMode && !t.pending && !rec;
+                const isChecked = reconcileMode && checkedTxnIds.has(t.id);
+                const rowBg = isChecked ? {background:'rgba(80,144,232,0.10)'}
+                  : t.pending ? {background:'rgba(232,160,32,0.06)'}
+                  : rec ? {background:'rgba(64,192,128,0.06)'}
+                  : undefined;
                 return h('tr',{key:t.id, style:rowBg},
+                  reconcileMode && h('td',{style:{textAlign:'center'}},
+                    checkable
+                      ? h('input',{type:'checkbox',checked:isChecked,onChange:()=>toggleReconcileCheck(t.id),'aria-label':'Mark '+t.cleanName+' as matching the statement',style:{cursor:'pointer',width:16,height:16}})
+                      : h('span',{style:{fontSize:10,color:'var(--text2)'},title:t.pending?'Pending — clear before reconciling':'Already reconciled'}, t.pending?'—':'✓')
+                  ),
                   h('td',{onClick:()=>{if(!rec)togglePending(t.id)},style:{textAlign:'center',fontSize:12,cursor:rec?'default':'pointer',userSelect:'none'},title:t.pending?'Pending — click to clear':rec?'Reconciled':'Cleared — click to mark pending'}, h('span',{style:{display:'inline-block',width:10,height:10,borderRadius:'50%',background:t.pending?'#e8a020':rec?'#5090e8':'#40c080'}})),
                   h('td',{style:{color:t.pending?'var(--accent2)':'var(--text2)',fontSize:12,fontStyle:t.pending?'italic':'normal'}},t.pending?'Pending':t.date),
                   h('td',{style:{fontWeight:500}},
@@ -5110,20 +5198,37 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     showReconcile && h(Modal, {onClose:()=>setShowReconcile(false)},
       h('h3',null, '✓ Reconcile Account'),
       h('div',{style:{display:'flex',flexDirection:'column',gap:14}},
-        h('p',{style:{fontSize:13,color:'var(--card-text2)',margin:0}},
-          'Set a date to mark all transactions on or before that date as reconciled for ',
-          h('strong',null, acctMap[acctFilter]?.name || 'this account'), '.'
-        ),
         acctMap[acctFilter]?.reconciledThrough && h('div',{style:{fontSize:12,color:'var(--green)',padding:'8px 12px',background:'rgba(64,192,128,0.08)',borderRadius:6}},
           'Currently reconciled through: ', h('strong',null, fmtDate(acctMap[acctFilter].reconciledThrough))
         ),
-        h('div',null,
-          h('label',{htmlFor:'reconcile-date',style:{fontSize:12,color:'var(--card-text2)',display:'block',marginBottom:4}}, 'Reconcile through date'),
-          h('input',{id:'reconcile-date',className:'input',type:'date',value:reconcileDate,onChange:e=>setReconcileDate(e.target.value),style:{width:'100%'}})
+        // Date-based bulk reconcile (existing behavior — all paid tiers)
+        h('div',{style:{padding:'12px 14px',background:'rgba(64,192,128,0.05)',border:'1px solid rgba(64,192,128,0.2)',borderRadius:8}},
+          h('div',{style:{fontWeight:600,fontSize:13,marginBottom:6}},'By date'),
+          h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:'0 0 10px 0'}},
+            'Mark every transaction on or before this date as reconciled for ',
+            h('strong',null, acctMap[acctFilter]?.name || 'this account'), '.'
+          ),
+          h('div',{style:{display:'flex',gap:8,alignItems:'flex-end'}},
+            h('div',{style:{flex:1}},
+              h('label',{htmlFor:'reconcile-date',style:{fontSize:11,color:'var(--card-text2)',display:'block',marginBottom:4}}, 'Reconcile through date'),
+              h('input',{id:'reconcile-date',className:'input',type:'date',value:reconcileDate,onChange:e=>setReconcileDate(e.target.value),style:{width:'100%'}})
+            ),
+            h('button',{className:'btn green sm',onClick:doReconcile,disabled:!reconcileDate}, '✓ Reconcile by date')
+          )
+        ),
+        // Per-row manual reconcile (Plus+) — granular alternative
+        tier?.manualReconcile && h('div',{style:{padding:'12px 14px',background:'rgba(80,144,232,0.05)',border:'1px solid rgba(80,144,232,0.2)',borderRadius:8}},
+          h('div',{style:{fontWeight:600,fontSize:13,marginBottom:6}},'Per-row, against a statement', h('span',{style:{fontSize:10,marginLeft:8,padding:'2px 6px',borderRadius:4,background:'rgba(80,144,232,0.15)',color:'var(--blue)',fontWeight:600,letterSpacing:0.5}},'PLUS')),
+          h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:'0 0 10px 0'}},
+            'Walk down your paper or screen statement and check each match. Running total updates live. When you’re done, the checked rows are marked reconciled — unchecked rows stay cleared.'
+          ),
+          h('button',{className:'btn primary sm',onClick:startManualReconcile}, '☑ Start manual reconcile')
+        ),
+        !tier?.manualReconcile && tier && tier.label!=='Free' && h('div',{style:{padding:'10px 14px',background:'rgba(232,160,32,0.06)',border:'1px solid rgba(232,160,32,0.2)',borderRadius:8,fontSize:12,color:'var(--card-text2)'}},
+          '⚡ Per-row manual reconcile is a ', h('strong',null,'Plus'), ' feature. Upgrade to walk down your statement with checkboxes and a running tally.'
         ),
         h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:4}},
-          h('button',{className:'btn',onClick:()=>setShowReconcile(false)}, 'Cancel'),
-          h('button',{className:'btn green',onClick:doReconcile,disabled:!reconcileDate}, '✓ Reconcile')
+          h('button',{className:'btn',onClick:()=>setShowReconcile(false)}, 'Close')
         )
       )
     ),
