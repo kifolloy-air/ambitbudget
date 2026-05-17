@@ -5194,44 +5194,68 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       )
     ),
 
-    // Reconcile modal
-    showReconcile && h(Modal, {onClose:()=>setShowReconcile(false)},
-      h('h3',null, '✓ Reconcile Account'),
-      h('div',{style:{display:'flex',flexDirection:'column',gap:14}},
-        acctMap[acctFilter]?.reconciledThrough && h('div',{style:{fontSize:12,color:'var(--green)',padding:'8px 12px',background:'rgba(64,192,128,0.08)',borderRadius:6}},
-          'Currently reconciled through: ', h('strong',null, fmtDate(acctMap[acctFilter].reconciledThrough))
-        ),
-        // Date-based bulk reconcile (existing behavior — all paid tiers)
-        h('div',{style:{padding:'12px 14px',background:'rgba(64,192,128,0.05)',border:'1px solid rgba(64,192,128,0.2)',borderRadius:8}},
-          h('div',{style:{fontWeight:600,fontSize:13,marginBottom:6}},'By date'),
-          h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:'0 0 10px 0'}},
-            'Mark every transaction on or before this date as reconciled for ',
-            h('strong',null, acctMap[acctFilter]?.name || 'this account'), '.'
+    // Reconcile modal — three tier-stratified options.
+    // Free: by date. Plus: by date + manual checkboxes. Pro: all three (PDF
+    // shows as "Coming soon" until Phase 3 lands). Locked cards show an
+    // upgrade prompt instead of an action button.
+    showReconcile && (()=>{
+      const canManual = !!tier?.manualReconcile;
+      const canPDF = false; // Phase 3+ — toggle when PDF parser ships
+      const cardBase = {padding:'12px 14px',borderRadius:8};
+      const lockedStyle = {opacity:0.55, filter:'grayscale(0.4)'};
+      const Badge = (label, color, bg) => h('span',{style:{fontSize:10,marginLeft:8,padding:'2px 6px',borderRadius:4,background:bg,color,fontWeight:600,letterSpacing:0.5}}, label);
+      const ComingSoon = ()=>h('span',{style:{fontSize:10,marginLeft:6,padding:'2px 6px',borderRadius:4,background:'rgba(255,255,255,0.08)',color:'var(--card-text2)',fontWeight:600,letterSpacing:0.5}}, 'COMING SOON');
+      return h(Modal, {onClose:()=>setShowReconcile(false)},
+        h('h3',null, '✓ Reconcile Account'),
+        h('div',{style:{display:'flex',flexDirection:'column',gap:14}},
+          acctMap[acctFilter]?.reconciledThrough && h('div',{style:{fontSize:12,color:'var(--green)',padding:'8px 12px',background:'rgba(64,192,128,0.08)',borderRadius:6}},
+            'Currently reconciled through: ', h('strong',null, fmtDate(acctMap[acctFilter].reconciledThrough))
           ),
-          h('div',{style:{display:'flex',gap:8,alignItems:'flex-end'}},
-            h('div',{style:{flex:1}},
-              h('label',{htmlFor:'reconcile-date',style:{fontSize:11,color:'var(--card-text2)',display:'block',marginBottom:4}}, 'Reconcile through date'),
-              h('input',{id:'reconcile-date',className:'input',type:'date',value:reconcileDate,onChange:e=>setReconcileDate(e.target.value),style:{width:'100%'}})
+          // 1. By date — available to everyone
+          h('div',{style:{...cardBase,background:'rgba(64,192,128,0.05)',border:'1px solid rgba(64,192,128,0.2)'}},
+            h('div',{style:{fontWeight:600,fontSize:13,marginBottom:4}}, 'Reconcile to a specific date', Badge('FREE','var(--green)','rgba(64,192,128,0.15)')),
+            h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:'0 0 10px 0'}},
+              'Mark every transaction on or before this date as reconciled for ',
+              h('strong',null, acctMap[acctFilter]?.name || 'this account'), '.'
             ),
-            h('button',{className:'btn green sm',onClick:doReconcile,disabled:!reconcileDate}, '✓ Reconcile by date')
-          )
-        ),
-        // Per-row manual reconcile (Plus+) — granular alternative
-        tier?.manualReconcile && h('div',{style:{padding:'12px 14px',background:'rgba(80,144,232,0.05)',border:'1px solid rgba(80,144,232,0.2)',borderRadius:8}},
-          h('div',{style:{fontWeight:600,fontSize:13,marginBottom:6}},'Per-row, against a statement', h('span',{style:{fontSize:10,marginLeft:8,padding:'2px 6px',borderRadius:4,background:'rgba(80,144,232,0.15)',color:'var(--blue)',fontWeight:600,letterSpacing:0.5}},'PLUS')),
-          h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:'0 0 10px 0'}},
-            'Walk down your paper or screen statement and check each match. Running total updates live. When you’re done, the checked rows are marked reconciled — unchecked rows stay cleared.'
+            h('div',{style:{display:'flex',gap:8,alignItems:'flex-end'}},
+              h('div',{style:{flex:1}},
+                h('label',{htmlFor:'reconcile-date',style:{fontSize:11,color:'var(--card-text2)',display:'block',marginBottom:4}}, 'Reconcile through date'),
+                h('input',{id:'reconcile-date',className:'input',type:'date',value:reconcileDate,onChange:e=>setReconcileDate(e.target.value),style:{width:'100%'}})
+              ),
+              h('button',{className:'btn green sm',onClick:doReconcile,disabled:!reconcileDate}, '✓ Reconcile by date')
+            )
           ),
-          h('button',{className:'btn primary sm',onClick:startManualReconcile}, '☑ Start manual reconcile')
-        ),
-        !tier?.manualReconcile && tier && tier.label!=='Free' && h('div',{style:{padding:'10px 14px',background:'rgba(232,160,32,0.06)',border:'1px solid rgba(232,160,32,0.2)',borderRadius:8,fontSize:12,color:'var(--card-text2)'}},
-          '⚡ Per-row manual reconcile is a ', h('strong',null,'Plus'), ' feature. Upgrade to walk down your statement with checkboxes and a running tally.'
-        ),
-        h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:4}},
-          h('button',{className:'btn',onClick:()=>setShowReconcile(false)}, 'Close')
+          // 2. By transaction (manual checkboxes) — Plus+
+          h('div',{style:{...cardBase, background:'rgba(80,144,232,0.05)', border:'1px solid rgba(80,144,232,0.2)', ...(canManual?{}:lockedStyle)}},
+            h('div',{style:{fontWeight:600,fontSize:13,marginBottom:4}}, 'Reconcile by transaction', Badge('PLUS','var(--blue)','rgba(80,144,232,0.15)')),
+            h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:'0 0 10px 0'}},
+              'Walk down your paper or screen statement and check each match. Running total updates live. Checked rows become reconciled — unchecked rows stay cleared.'
+            ),
+            canManual
+              ? h('button',{className:'btn primary sm',onClick:startManualReconcile}, '☑ Start manual reconcile')
+              : h('div',{style:{fontSize:11,color:'var(--card-text2)',fontStyle:'italic'}}, '⚡ Upgrade to ', h('strong',null,'Plus'), ' to unlock per-transaction reconcile.')
+          ),
+          // 3. Auto from PDF — Pro (Phase 3+ work)
+          h('div',{style:{...cardBase, background:'rgba(184,134,11,0.05)', border:'1px solid rgba(184,134,11,0.25)', ...(canPDF?{}:lockedStyle)}},
+            h('div',{style:{fontWeight:600,fontSize:13,marginBottom:4}}, 'Reconcile auto from PDF', Badge('PRO','#d4a017','rgba(212,160,23,0.18)'), !canPDF && ComingSoon()),
+            h('p',{style:{fontSize:12,color:'var(--card-text2)',margin:'0 0 10px 0'}},
+              'Drop a bank statement PDF. Ambit extracts the transactions, matches them against your records, and surfaces only the edge cases for you to confirm. Local-only — your statement never leaves your device.'
+            ),
+            canPDF
+              ? h('button',{className:'btn primary sm',onClick:()=>{/* Phase 3 hook */}}, '📄 Drop PDF')
+              : h('div',{style:{fontSize:11,color:'var(--card-text2)',fontStyle:'italic'}},
+                  tier?.label==='Pro' || tier?.label==='Books Pro'
+                    ? 'PDF auto-reconcile is coming in a future update.'
+                    : h('span',null, '⚡ Upgrade to ', h('strong',null,'Pro'), ' to unlock PDF auto-reconcile (coming soon).')
+                )
+          ),
+          h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:4}},
+            h('button',{className:'btn',onClick:()=>setShowReconcile(false)}, 'Close')
+          )
         )
-      )
-    ),
+      );
+    })(),
 
 
     // Bulk apply popup card
