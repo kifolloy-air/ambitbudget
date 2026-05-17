@@ -4085,15 +4085,71 @@ function inferYearForMonthDay(month, day, metadata) {
   return month >= psM ? psY : peY;
 }
 
+// Parse a single transaction line. Handles two common US-bank layouts:
+//   PNC style:  MM/DD AMOUNT DESCRIPTION    (amount right after the date)
+//   BoA style:  MM/DD DESCRIPTION AMOUNT    (amount at the end of the line)
+//   BoA double-date: MM/DD/YY MM/DD DESCRIPTION AMOUNT
+// Returns { month, day, year?, description, amountAbs, sign } or null.
+function parseBankTransactionLine(text) {
+  const dateMatch = text.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+  if(!dateMatch) return null;
+  const month = +dateMatch[1], day = +dateMatch[2];
+  if(month<1||month>12||day<1||day>31) return null;
+  const yearStr = dateMatch[3];
+  let year;
+  if(yearStr) {
+    year = +yearStr;
+    if(year < 100) year += year < 50 ? 2000 : 1900;
+  }
+  const rest = text.slice(dateMatch[0].length).trim();
+  if(!rest) return null;
+  // Find all amount-like tokens (must end in .dd). Allows: 1,234.56, -12.00,
+  // - 80.00 (space-separated minus), ($45.20) paren-negative, $1.23, .03
+  const amtRe = /(-\s*)?\(\s*\$?\s*([\d,]+\.\d{2}|\.\d{2})\s*\)|(-\s*)?\$?(-?\s*)([\d,]+\.\d{2}|\.\d{2})/g;
+  const amounts = [];
+  let m;
+  while((m = amtRe.exec(rest))) {
+    const isParen = m[1] !== undefined || m[2] !== undefined;
+    const negDashSpace = (m[3] && m[3].includes('-')) || (m[4] && m[4].includes('-'));
+    const numText = m[2] || m[5];
+    const val = parseFloat(numText.replace(/,/g,''));
+    if(isNaN(val)) continue;
+    const sign = (isParen || negDashSpace) ? -1 : 1;
+    amounts.push({ value: sign * Math.abs(val), index: m.index, raw: m[0] });
+  }
+  if(amounts.length === 0) return null;
+  // PNC layout: amount immediately after date (index < 8 in `rest`).
+  // BoA layout: amount last (after description).
+  let amtToken, description;
+  if(amounts[0].index < 8) {
+    amtToken = amounts[0];
+    description = rest.slice(amtToken.index + amtToken.raw.length).trim();
+  } else {
+    amtToken = amounts[amounts.length - 1];
+    description = rest.slice(0, amtToken.index).trim();
+    // BoA double-date: posted date + transaction date. Drop the second date.
+    const secondDate = description.match(/^(\d{1,2}\/\d{1,2})(?:\/(\d{2,4}))?\s+/);
+    if(secondDate) description = description.slice(secondDate[0].length);
+  }
+  description = description.replace(/[\s,;:.-]+$/, '').trim();
+  if(!description) return null;
+  return {
+    month, day, year,
+    description,
+    amountAbs: Math.abs(amtToken.value),
+    explicitSign: amtToken.value < 0 ? -1 : 0 // 0 = no explicit sign in line
+  };
+}
+
 // Section-aware transaction parser, tuned for multi-section US bank
 // statements (PNC's "Deposits and Other Additions" / "Banking/Debit Card
-// Withdrawals" / "Online and Electronic Banking Deductions" layout). Each
-// section's sign rule is honored. Right-column annotations are stripped
-// by taking only the left x-column of each line.
+// Withdrawals" / "Online and Electronic Banking Deductions" layout, plus
+// BoA's "Deposits and other additions" / "Withdrawals and other
+// subtractions" / "Service fees" layout). Each section's sign rule is
+// honored. Right-column annotations are stripped by taking only the left
+// x-column of each line.
 function extractTransactionsSectioned(lines, metadata) {
   const out = [];
-  // Date at start, then amount, then description. Supports MM/DD or MM/DD/YYYY.
-  const TXN_RE = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s+\$?(-?[\d,]+\.\d{2})\s+(.+)$/;
   // Section markers — broad enough to catch the common US-bank phrasings
   // (PNC, Chase, BoA, Wells Fargo, Capital One, credit unions). When you
   // hit a bank that uses different wording, add another disjunct here.
@@ -4101,10 +4157,15 @@ function extractTransactionsSectioned(lines, metadata) {
   // usually print debits as positive numbers and rely on the section
   // header to convey "this is money out").
   const SECTIONS = [
-    { name:'deposits', sign:1,  re:/(?:Deposits|Credits|Additions|Payments\s+(?:Received|and\s+Credits))\b/i },
-    { name:'card',     sign:-1, re:/(?:Banking\/Debit\s+Card|ATM\s+(?:and|&)\s+Debit\s+Card|Debit\s+Card\s+(?:Withdrawals|Purchases)|Card\s+Purchases)\b/i },
-    { name:'online',   sign:-1, re:/(?:Online\s+(?:and|&)\s+Electronic\s+Banking\s+Deductions|Electronic\s+Withdrawals|ACH\s+(?:Withdrawals|Debits)|Online\s+Banking\s+Transfers)\b/i },
-    { name:'other',    sign:-1, re:/(?:Withdrawals\s+and\s+Other\s+Debits|Other\s+(?:Withdrawals|Debits|Deductions)|Service\s+(?:Fees|Charges)|Fees\s+and\s+Charges)\b/i },
+    // Deposits / credits — positive amounts
+    { name:'deposits', sign:1,  re:/Deposits\s+and\s+(?:Other\s+)?(?:Additions|Credits)|Payments\s+(?:Received|and\s+Credits)/i },
+    // Debit card / ATM purchases — negative
+    { name:'card',     sign:-1, re:/Banking\/Debit\s+Card|ATM\s+(?:and|&)\s+Debit\s+Card(?:\s+(?:Withdrawals|Purchases|Subtractions))?|Debit\s+Card\s+(?:Withdrawals|Purchases|Subtractions)|Card\s+Purchases/i },
+    // ACH / online banking — negative
+    { name:'online',   sign:-1, re:/Online\s+(?:and|&)\s+Electronic\s+Banking\s+Deductions|Electronic\s+Withdrawals|ACH\s+(?:Withdrawals|Debits)|Online\s+Banking\s+Transfers/i },
+    // Generic withdrawals / service fees / "other subtractions" — negative
+    { name:'other',    sign:-1, re:/Withdrawals\s+and\s+(?:Other\s+)?(?:Debits|Subtractions)|Other\s+(?:Withdrawals|Debits|Deductions|Subtractions)|Service\s+(?:Fees|Charges)|Fees\s+and\s+Charges|Overdraft\s+(?:Fees|and\s+NSF)/i },
+    // Checks — negative
     { name:'checks',   sign:-1, re:/^Checks(?:\s|$)|Checks\s+Paid/i }
   ];
   // Lines that mean "stop parsing transactions" — daily-balance lookups,
@@ -4121,12 +4182,22 @@ function extractTransactionsSectioned(lines, metadata) {
     /^Page\s+\d+\s+of\s+\d+/i,
     /^For\s+(?:the\s+period|customer|24-hour)/i,
     /^Account\s+Number/i,
-    /^Date\s+Amount\s+Description/i,
-    /^on\s+\S+\.(?:com|org|net)\b/i,        // "on pnc.com" / "on chase.com" / etc.
+    /^Date\s+(?:Amount\s+)?Description/i,           // also matches BoA "Date Description Amount"
+    /^Date\s+Description\s+Amount/i,
+    /^Date\s+Transaction\s+description/i,
+    /^Date\s+Check\s+#/i,
+    /^Date\s+Other\s+subtractions/i,
+    /^on\s+\S+\.(?:com|org|net)\b/i,                // "on pnc.com" / "on chase.com" / etc.
     /Online\s+Banking\s+at\s+\S+\.com/i,
     /Customer\s+service\s+call/i,
-    /^P\.?O\.?\s+Box\s+\d/i,                 // mailing address line
-    /^\d{5}(?:-\d{4})?$/                     // bare ZIP code line
+    /^P\.?O\.?\s+Box\s+\d/i,                        // mailing address line
+    /^\d{5}(?:-\d{4})?$/,                           // bare ZIP code line
+    // Subtotal / running-total lines: "Total deposits and other additions",
+    // "Total ATM and debit card subtractions", "Total checks", etc.
+    /^Total\s+(?:deposits|withdrawals|checks|service\s+fees|other\s+subtractions|ATM|Overdraft|NSF|for\s+this\s+period|year-to-date)/i,
+    // Beginning / ending balance summary lines
+    /^(?:Beginning|Ending|New|Previous|Average)\s+(?:Balance|monthly\s+balance)/i,
+    /^Note\s+your\s+Ending\s+Balance/i
   ];
   const isAnnotation = (t) => ANNOTATION_RES.some(re => re.test(t));
   // Customer-name banner lines (e.g. "JONATHAN M KIFOLO", "JANE DOE",
@@ -4156,16 +4227,14 @@ function extractTransactionsSectioned(lines, metadata) {
 
     // Transaction line — match against the left-column-only text so the
     // right-column annotation doesn't get appended to the description.
-    const m = leftText.match(TXN_RE);
-    if(m) {
-      const mo = +m[1], day = +m[2];
-      if(mo<1||mo>12||day<1||day>31) continue;
-      const year = m[3] ? (+m[3] < 100 ? (+m[3] < 50 ? 2000+(+m[3]) : 1900+(+m[3])) : +m[3]) : inferYearForMonthDay(mo, day, metadata);
-      const iso = year+'-'+String(mo).padStart(2,'0')+'-'+String(day).padStart(2,'0');
-      const amountAbs = parseFloat(m[4].replace(/,/g,''));
-      if(isNaN(amountAbs)) continue;
-      const amount = section.sign * Math.abs(amountAbs);
-      let desc = m[5].trim();
+    const parsed = parseBankTransactionLine(leftText);
+    if(parsed) {
+      const year = parsed.year || inferYearForMonthDay(parsed.month, parsed.day, metadata);
+      const iso = year+'-'+String(parsed.month).padStart(2,'0')+'-'+String(parsed.day).padStart(2,'0');
+      // Apply sign: if the line had an explicit negative (e.g. "- 80.00" in
+      // BoA), honor it. Otherwise rely on the section sign (PNC strips signs).
+      const amount = parsed.explicitSign === -1 ? -parsed.amountAbs : (section.sign * parsed.amountAbs);
+      let desc = parsed.description;
       // Strip any inline annotation that crept in despite the column cut.
       for(const re of ANNOTATION_RES) {
         const am = desc.match(re);
