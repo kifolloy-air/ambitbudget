@@ -2323,11 +2323,11 @@ function App({idbData}) {
     Free:        { limit:1, label:'Free', price:0, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:false, payeeRules:false, groups:false, autoCategorize:false, savingsGoals:false, manualReconcile:false, csvTemplates:false },
     Starter:     { limit:2, label:'Starter', price:9.99, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:false, manualReconcile:false, csvTemplates:false },
     Plus:        { limit:3, label:'Plus', price:19.99, forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:false },
-    Pro:         { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:true },
+    Pro:         { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:true, pdfReconcile:true },
     // Books tiers — also unlock all Pro-style budget features so Books customers
     // get a full personal-side experience too (one app, two modes, one license).
-    Books:       { limit:Infinity, label:'Books', price:49.99, forecast:true, dayByDay:false, review:true, yearView:true, debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:true },
-    'Books Pro': { limit:Infinity, label:'Books Pro', price:79.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:true }
+    Books:       { limit:Infinity, label:'Books', price:49.99, forecast:true, dayByDay:false, review:true, yearView:true, debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:true, pdfReconcile:true },
+    'Books Pro': { limit:Infinity, label:'Books Pro', price:79.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:true, pdfReconcile:true }
   }),[]);
   const [license, setLicense] = useState(()=>{ try { return JSON.parse(localStorage.getItem('ambit_license'))||null; } catch{ return null; } });
   const [showLicenseGate, setShowLicenseGate] = useState(false);
@@ -3874,6 +3874,268 @@ function detectColumns(headers, sampleRows) {
   return result;
 }
 
+// ── PDF reconcile helpers (Phase 3-5 reconciler) ────────
+// Lazy-load pdf.js the first time the user triggers a PDF reconcile. Keeps
+// the ~1.5MB library out of the initial app bundle for non-Pro users.
+let _pdfjsLoadPromise = null;
+function loadPdfJs() {
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if(_pdfjsLoadPromise) return _pdfjsLoadPromise;
+  _pdfjsLoadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'lib/pdf.min.js';
+    s.onload = () => {
+      try {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+        resolve(window.pdfjsLib);
+      } catch(e) { reject(e); }
+    };
+    s.onerror = () => reject(new Error('Failed to load pdf.js — check your connection'));
+    document.head.appendChild(s);
+  });
+  return _pdfjsLoadPromise;
+}
+
+// Extract positional text from a PDF File / Blob. Returns one array per page,
+// each containing { str, x, y, height } items. We use y to group lines.
+async function extractPdfPositionalText(file) {
+  const pdfjs = await loadPdfJs();
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjs.getDocument({data:buf}).promise;
+  const pages = [];
+  for(let p=1; p<=pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const items = content.items.map(it => ({
+      str: it.str,
+      // pdf.js transform: [a, b, c, d, e, f] where e=x, f=y in PDF coords
+      x: it.transform[4],
+      y: it.transform[5],
+      width: it.width,
+      height: it.height || it.transform[3]
+    }));
+    pages.push(items);
+  }
+  return pages;
+}
+
+// Group positional items into "lines" by clustering items with similar y
+// values (allowing for small variation). Items in each line are sorted by x.
+function groupItemsIntoLines(items, yTolerance) {
+  const tol = yTolerance ?? 3;
+  const lines = [];
+  // Sort by y desc (PDF y origin is bottom-left) so reading order is top-to-bottom
+  const sorted = [...items].sort((a,b)=>b.y-a.y);
+  let current = null;
+  for(const it of sorted) {
+    if(!current || Math.abs(current.y - it.y) > tol) {
+      current = { y: it.y, items: [it] };
+      lines.push(current);
+    } else {
+      current.items.push(it);
+    }
+  }
+  // Sort items in each line by x asc
+  lines.forEach(l => l.items.sort((a,b)=>a.x-b.x));
+  return lines;
+}
+
+// Render a line back to a string with spaces between adjacent items
+function lineToText(line) {
+  return line.items.map(it => it.str).join(' ').replace(/\s+/g,' ').trim();
+}
+
+// Detect a date in a string. Returns { iso, match, index } or null.
+// Handles MM/DD/YYYY, M/D/YY, YYYY-MM-DD.
+function findDateInText(text) {
+  const patterns = [
+    /(\d{1,2})\/(\d{1,2})\/(\d{2,4})/,             // MM/DD/YYYY or M/D/YY
+    /(\d{4})-(\d{1,2})-(\d{1,2})/                  // YYYY-MM-DD
+  ];
+  for(const re of patterns) {
+    const m = text.match(re);
+    if(!m) continue;
+    let y, mo, d;
+    if(m[1].length === 4) { y=+m[1]; mo=+m[2]; d=+m[3]; }
+    else { mo=+m[1]; d=+m[2]; y=+m[3]; if(y<100) y += y<50?2000:1900; }
+    if(mo<1||mo>12||d<1||d>31) continue;
+    const iso = y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    return {iso, match:m[0], index:m.index};
+  }
+  return null;
+}
+
+// Find amount-like tokens in text. Returns array of { value, raw, index }.
+// Matches "1,234.56", "1234.56", "-12.00", "($45.20)" (negative).
+function findAmountsInText(text) {
+  const out = [];
+  // Order matters — paren form first so it isn't shadowed by a bare-number match
+  const re = /\(\$?\s*[\d,]+\.\d{2}\)|-?\$?[\d,]+\.\d{2}/g;
+  let m;
+  while((m = re.exec(text))) {
+    const raw = m[0];
+    let cleaned = raw.replace(/[\$,\s]/g,'');
+    let negative = false;
+    if(/^\(.*\)$/.test(cleaned)) { negative = true; cleaned = cleaned.slice(1,-1); }
+    if(cleaned.startsWith('-')) { negative = true; cleaned = cleaned.slice(1); }
+    const value = parseFloat(cleaned);
+    if(isNaN(value)) continue;
+    out.push({ value: negative ? -value : value, raw, index: m.index });
+  }
+  return out;
+}
+
+// Detect statement period and ending balance from the full text body of a
+// PDF. These are rough heuristics — most US banks include phrasing like
+// "Statement Period: 04/08/2026 to 05/07/2026" and "Ending Balance: $1,234.56".
+function detectStatementMetadata(fullText) {
+  const meta = {};
+  // Period
+  const periodPatterns = [
+    /Statement\s+Period[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})\s*(?:to|through|-|–)\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i,
+    /Period[:\s]+(\d{1,2}\/\d{1,2}\/\d{2,4})\s*(?:to|through|-|–)\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i,
+    /(\d{1,2}\/\d{1,2}\/\d{2,4})\s*(?:through|to)\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i
+  ];
+  for(const re of periodPatterns) {
+    const m = fullText.match(re);
+    if(m) {
+      const s = findDateInText(m[1]); const e = findDateInText(m[2]);
+      if(s && e) { meta.periodStart = s.iso; meta.periodEnd = e.iso; break; }
+    }
+  }
+  // Ending balance
+  const balancePatterns = [
+    /(?:Ending|New|Closing)\s+Balance[:\s]+\$?(-?[\d,]+\.\d{2})/i,
+    /Balance\s+(?:on|as\s+of)[\s\d\/]+[:\s]+\$?(-?[\d,]+\.\d{2})/i
+  ];
+  for(const re of balancePatterns) {
+    const m = fullText.match(re);
+    if(m) { meta.endingBalance = parseFloat(m[1].replace(/,/g,'')); break; }
+  }
+  return meta;
+}
+
+// Heuristic transaction extractor. Walks each line; if it contains a date AND
+// a number that looks like an amount, treat the in-between text as the
+// description. Returns array of {date, description, amount, rawLine}.
+function extractTransactionsFromLines(lines) {
+  const out = [];
+  for(const line of lines) {
+    const text = lineToText(line);
+    if(!text || text.length < 6) continue;
+    const dateMatch = findDateInText(text);
+    if(!dateMatch) continue;
+    const amounts = findAmountsInText(text);
+    if(!amounts.length) continue;
+    // The "transaction amount" is usually the LAST amount-like token on the
+    // line (running-balance columns put balance last on many bank formats —
+    // but the running balance is itself a number, so we need to be careful).
+    // Strategy: if 2+ amounts, treat the last as balance and the second-to-
+    // last as the transaction amount. If only 1, that's the amount.
+    let amount;
+    if(amounts.length === 1) amount = amounts[0].value;
+    else amount = amounts[amounts.length - 2].value;
+    // Description = text between the date and the first amount, cleaned up
+    const startIdx = dateMatch.index + dateMatch.match.length;
+    const endIdx = amounts[0].index;
+    let desc = (endIdx > startIdx ? text.slice(startIdx, endIdx) : '').trim();
+    // Strip leading non-letters and trailing whitespace/punctuation
+    desc = desc.replace(/^[^A-Za-z0-9]+/,'').replace(/\s{2,}/g,' ').trim();
+    if(!desc) {
+      // Fall back to the full line minus the date and amounts
+      desc = text.replace(dateMatch.match, '').replace(/\(\$?\s*[\d,]+\.\d{2}\)|-?\$?[\d,]+\.\d{2}/g,'').replace(/\s{2,}/g,' ').trim();
+    }
+    if(!desc || desc.length < 2) continue;
+    out.push({ date: dateMatch.iso, description: desc, amount, rawLine: text });
+  }
+  return out;
+}
+
+// Levenshtein distance (capped at maxDist for speed)
+function levenshtein(a, b, maxDist) {
+  if(a === b) return 0;
+  const la = a.length, lb = b.length;
+  if(Math.abs(la-lb) > (maxDist ?? Infinity)) return Infinity;
+  const dp = new Array(lb+1);
+  for(let j=0;j<=lb;j++) dp[j] = j;
+  for(let i=1;i<=la;i++) {
+    let prev = dp[0]; dp[0] = i;
+    let rowMin = i;
+    for(let j=1;j<=lb;j++) {
+      const tmp = dp[j];
+      dp[j] = a[i-1] === b[j-1] ? prev : Math.min(prev, dp[j-1], dp[j]) + 1;
+      prev = tmp;
+      if(dp[j] < rowMin) rowMin = dp[j];
+    }
+    if(maxDist != null && rowMin > maxDist) return Infinity;
+  }
+  return dp[lb];
+}
+
+function descSimilarity(a, b) {
+  const A = (a||'').toUpperCase().replace(/[^A-Z0-9 ]/g,'').trim();
+  const B = (b||'').toUpperCase().replace(/[^A-Z0-9 ]/g,'').trim();
+  if(!A || !B) return 0;
+  // Cheap shortcuts: substring containment beats Levenshtein for noisy
+  // bank descriptions ("AMAZON.COM*ABCD1234" vs "AMAZON")
+  if(A.includes(B) || B.includes(A)) return 1;
+  // Token overlap (Jaccard on words >= 3 chars)
+  const aw = new Set(A.split(/\s+/).filter(w=>w.length>=3));
+  const bw = new Set(B.split(/\s+/).filter(w=>w.length>=3));
+  if(aw.size && bw.size) {
+    let inter = 0;
+    aw.forEach(w => { if(bw.has(w)) inter++; });
+    const jaccard = inter / (aw.size + bw.size - inter);
+    if(jaccard >= 0.6) return jaccard;
+  }
+  // Fall back to character-level Levenshtein on a shortened form
+  const max = Math.max(A.length, B.length);
+  const dist = levenshtein(A.slice(0, 40), B.slice(0, 40), 12);
+  if(dist === Infinity) return 0;
+  return 1 - (dist / Math.max(max, 1));
+}
+
+// Match extracted PDF transactions against in-app transactions. Returns
+// { matched: [...], fuzzy: [...], statementOnly: [...], appOnly: [...] }.
+// Greedy 1-to-1: each app txn can match at most one stmt txn and vice versa.
+function matchStatementAgainstApp(stmtTxns, appTxns) {
+  const appPool = appTxns.filter(t => !t.pending).map(t => ({...t, _used:false}));
+  const matched = [];
+  const fuzzy = [];
+  const statementOnly = [];
+
+  for(const stmt of stmtTxns) {
+    const stmtDate = safeDate(stmt.date);
+    let best = null;
+    let bestScore = 0;
+    for(const app of appPool) {
+      if(app._used) continue;
+      if(Math.abs(app.amount - stmt.amount) > 0.011) continue;
+      const dateDiff = Math.abs(safeDate(app.date) - stmtDate) / 86400000;
+      if(dateDiff > 5) continue;
+      const sim = descSimilarity(stmt.description, app.cleanName || app.description);
+      // Score: weighted combo of date proximity (closer = better) and desc sim
+      const dateScore = 1 - Math.min(dateDiff / 5, 1);
+      const score = sim * 0.7 + dateScore * 0.3;
+      if(score > bestScore) { bestScore = score; best = app; }
+    }
+    if(best) {
+      best._used = true;
+      const dateDiff = Math.abs(safeDate(best.date) - stmtDate) / 86400000;
+      const sim = descSimilarity(stmt.description, best.cleanName || best.description);
+      // Perfect: same date AND high desc similarity → auto-matched
+      if(dateDiff === 0 && sim >= 0.8) matched.push({ stmt, appTxn: best, confidence:'perfect', sim });
+      else fuzzy.push({ stmt, appTxn: best, confidence:'fuzzy', sim, dateDiff });
+    } else {
+      statementOnly.push(stmt);
+    }
+  }
+  const appOnly = appPool.filter(a => !a._used).map(a => {
+    const {_used, ...rest} = a; return rest;
+  });
+  return { matched, fuzzy, statementOnly, appOnly };
+}
+
 // ── Import template helpers (Phase 2 reconciler) ────────
 // Fingerprint = normalized header signature + delimiter + column count.
 // Two CSVs from the same bank produce identical fingerprints; the saved
@@ -4549,6 +4811,18 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
   // persisted until the user commits. On commit, checked rows get txn.reconciled=true.
   const [reconcileMode, setReconcileMode] = useState(false);
   const [checkedTxnIds, setCheckedTxnIds] = useState(()=>new Set());
+  // PDF auto-reconcile session (Pro+ feature, Phase 3-6).
+  // Steps: drop → parsing → review → committing → idle.
+  // pdfSession holds the extracted statement + match result + user resolutions.
+  const [pdfSession, setPdfSession] = useState(null);
+  // pdfSession shape:
+  // {
+  //   step: 'drop'|'parsing'|'review',
+  //   fileName, error?, parseProgress?,
+  //   extracted: { transactions, metadata, fullText, pageCount },
+  //   match: { matched, fuzzy, statementOnly, appOnly },
+  //   fuzzyDecisions: Map<stmtIdx, 'approved'|'rejected'>
+  // }
   const [showAddTxn, setShowAddTxn] = useState(false);
   const [statusFilter, setStatusFilter] = useState(()=>{
     const saved = localStorage.getItem('ambit_txn_filter');
@@ -4748,6 +5022,111 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     setReconcileMode(false);
     setCheckedTxnIds(new Set());
   };
+  // ── PDF auto-reconcile (Pro+) ──
+  const startPdfReconcile = ()=>{
+    if(acctFilter==='all') return;
+    setShowReconcile(false);
+    setPdfSession({ step:'drop', fileName:null });
+  };
+  const cancelPdfReconcile = ()=>{
+    setPdfSession(null);
+  };
+  const ingestPdfFile = async (file)=>{
+    if(!file) return;
+    setPdfSession(s=>({...s, step:'parsing', fileName:file.name, error:null}));
+    try {
+      const pages = await extractPdfPositionalText(file);
+      const fullText = pages.map(items => items.map(i=>i.str).join(' ')).join('\n');
+      const lines = pages.flatMap(items => groupItemsIntoLines(items, 3));
+      const transactions = extractTransactionsFromLines(lines);
+      const metadata = detectStatementMetadata(fullText);
+      if(transactions.length === 0) {
+        setPdfSession(s=>({...s, step:'drop', error:'No transactions detected in this PDF. The format may not be supported yet — try a CSV export from your bank instead.'}));
+        return;
+      }
+      // Run the matcher against this account's transactions in the period
+      const acctTxns = transactions ? transactionsForMatch(metadata) : [];
+      const match = matchStatementAgainstApp(transactions, acctTxns);
+      setPdfSession({
+        step:'review',
+        fileName: file.name,
+        extracted: { transactions, metadata, pageCount: pages.length },
+        match,
+        fuzzyDecisions: new Map(),
+        statementOnlyDecisions: new Map()
+      });
+    } catch(err) {
+      setPdfSession(s=>({...s, step:'drop', error:'Failed to parse PDF: '+(err?.message || 'unknown error')}));
+    }
+  };
+  // Build the list of in-app transactions that should be considered for matching:
+  // current account, not pending, in (or near) the statement period.
+  const transactionsForMatch = useCallback((metadata)=>{
+    const acctTxns = transactions.filter(t => t.accountId === acctFilter && !t.pending);
+    if(!metadata?.periodStart || !metadata?.periodEnd) return acctTxns;
+    // Include a 5-day buffer on each side so a transaction posted just outside the window can still match
+    const start = safeDate(metadata.periodStart) - 5*86400000;
+    const end = safeDate(metadata.periodEnd) + 5*86400000;
+    return acctTxns.filter(t => {
+      const d = safeDate(t.date);
+      return d >= start && d <= end;
+    });
+  },[transactions, acctFilter]);
+  const setFuzzyDecision = (idx, decision)=>{
+    setPdfSession(s=>{
+      const next = new Map(s.fuzzyDecisions);
+      if(next.get(idx) === decision) next.delete(idx); else next.set(idx, decision);
+      return {...s, fuzzyDecisions: next};
+    });
+  };
+  const setStatementOnlyDecision = (idx, decision)=>{
+    setPdfSession(s=>{
+      const next = new Map(s.statementOnlyDecisions);
+      if(next.get(idx) === decision) next.delete(idx); else next.set(idx, decision);
+      return {...s, statementOnlyDecisions: next};
+    });
+  };
+  const commitPdfReconcile = ()=>{
+    if(!pdfSession || pdfSession.step !== 'review') return;
+    const { match, fuzzyDecisions, statementOnlyDecisions, extracted } = pdfSession;
+    // 1. Collect all app-txn IDs that should be marked reconciled:
+    //    perfect matches + fuzzy matches approved by the user
+    const reconciledIds = new Set();
+    match.matched.forEach(m => reconciledIds.add(m.appTxn.id));
+    match.fuzzy.forEach((f, i) => {
+      if(fuzzyDecisions.get(i) === 'approved') reconciledIds.add(f.appTxn.id);
+    });
+    // 2. Statement-only rows the user chose to add → create new transactions
+    const newTxns = [];
+    match.statementOnly.forEach((s, i) => {
+      if(statementOnlyDecisions.get(i) === 'add') {
+        newTxns.push({
+          id: Date.now()+'_'+Math.random().toString(36).slice(2,8)+'_'+i,
+          date: s.date,
+          description: s.description,
+          cleanName: s.description,
+          amount: s.amount,
+          category: 'Uncategorized',
+          group: 'Other',
+          catType: 'discretionary',
+          accountId: acctFilter,
+          reconciled: true
+        });
+      }
+    });
+    setTransactions(prev => {
+      const updated = prev.map(t => reconciledIds.has(t.id) ? {...t, reconciled:true} : t);
+      return [...updated, ...newTxns];
+    });
+    // 3. Advance reconciledThrough to the statement period end (if known)
+    if(extracted.metadata?.periodEnd) {
+      setAccounts(prev => prev.map(a => a.id===acctFilter ? {...a, reconciledThrough: extracted.metadata.periodEnd} : a));
+    }
+    const reconciledCount = reconciledIds.size + newTxns.length;
+    showToast('✓ Reconciled '+reconciledCount+' transaction'+(reconciledCount===1?'':'s')+(newTxns.length?' (added '+newTxns.length+' from statement)':''));
+    setPdfSession(null);
+  };
+
   // Undo a per-row manual reconciliation. Strips the txn.reconciled flag so
   // the row drops back to cleared (green). Date-based reconciled rows aren't
   // touched — those are undone by clearing the account.reconciledThrough date.
@@ -5364,7 +5743,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
     // upgrade prompt instead of an action button.
     showReconcile && (()=>{
       const canManual = !!tier?.manualReconcile;
-      const canPDF = false; // Phase 3+ — toggle when PDF parser ships
+      const canPDF = !!tier?.pdfReconcile;
       const cardBase = {padding:'12px 14px',borderRadius:8};
       const lockedStyle = {opacity:0.55, filter:'grayscale(0.4)'};
       const Badge = (label, color, bg) => h('span',{style:{fontSize:10,marginLeft:8,padding:'2px 6px',borderRadius:4,background:bg,color,fontWeight:600,letterSpacing:0.5}}, label);
@@ -5407,11 +5786,9 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
               'Drop a bank statement PDF. Ambit extracts the transactions, matches them against your records, and surfaces only the edge cases for you to confirm. Local-only — your statement never leaves your device.'
             ),
             canPDF
-              ? h('button',{className:'btn primary sm',onClick:()=>{/* Phase 3 hook */}}, '📄 Drop PDF')
+              ? h('button',{className:'btn primary sm',onClick:startPdfReconcile}, '📄 Drop PDF')
               : h('div',{style:{fontSize:11,color:'var(--card-text2)',fontStyle:'italic'}},
-                  tier?.label==='Pro' || tier?.label==='Books Pro'
-                    ? 'PDF auto-reconcile is coming in a future update.'
-                    : h('span',null, '⚡ Upgrade to ', h('strong',null,'Pro'), ' to unlock PDF auto-reconcile (coming soon).')
+                  h('span',null, '⚡ Upgrade to ', h('strong',null,'Pro'), ' to unlock PDF auto-reconcile.')
                 )
           ),
           h('div',{style:{display:'flex',gap:8,justifyContent:'flex-end',marginTop:4}},
@@ -5420,6 +5797,161 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
         )
       );
     })(),
+
+    // PDF auto-reconcile modal (Pro+) — multi-step: drop → parsing → review.
+    // The review step is the headline UX: stats, period, edge-case resolution.
+    pdfSession && h(Modal, { onClose: cancelPdfReconcile }, (()=>{
+      const s = pdfSession;
+      // Common header
+      const Header = (subtitle) => h('div',{style:{borderBottom:'1px solid var(--border)',paddingBottom:10,marginBottom:14}},
+        h('h3',{style:{margin:0,display:'flex',alignItems:'center',gap:8}}, '📄 PDF Reconcile', h('span',{style:{fontSize:10,padding:'2px 6px',borderRadius:4,background:'rgba(212,160,23,0.18)',color:'#d4a017',fontWeight:600,letterSpacing:0.5}},'PRO')),
+        subtitle && h('div',{style:{fontSize:12,color:'var(--card-text2)',marginTop:4}}, subtitle)
+      );
+
+      // Step: drop
+      if(s.step === 'drop') {
+        return h('div',{style:{minWidth:380}},
+          Header('Drop a bank statement PDF. Your file never leaves this device.'),
+          h('div',{
+            onDragOver: e=>{e.preventDefault();e.currentTarget.style.background='rgba(80,144,232,0.10)';},
+            onDragLeave: e=>{e.currentTarget.style.background='rgba(255,255,255,0.02)';},
+            onDrop: e=>{e.preventDefault();e.currentTarget.style.background='rgba(255,255,255,0.02)';const f=e.dataTransfer.files[0];if(f)ingestPdfFile(f);},
+            style:{border:'2px dashed rgba(80,144,232,0.4)',borderRadius:10,padding:'30px 20px',textAlign:'center',background:'rgba(255,255,255,0.02)',cursor:'pointer'},
+            onClick:()=>document.getElementById('pdf-reconcile-file').click()
+          },
+            h('div',{style:{fontSize:36,marginBottom:6}},'📄'),
+            h('div',{style:{fontWeight:600,marginBottom:4}},'Drop your statement PDF here'),
+            h('div',{style:{fontSize:12,color:'var(--card-text2)'}},'or click to choose a file'),
+            h('input',{id:'pdf-reconcile-file',type:'file',accept:'application/pdf,.pdf',style:{display:'none'},onChange:e=>{const f=e.target.files[0];if(f)ingestPdfFile(f);}})
+          ),
+          s.error && h('div',{style:{marginTop:12,padding:'10px 12px',background:'rgba(224,80,80,0.10)',border:'1px solid rgba(224,80,80,0.3)',borderRadius:8,fontSize:12,color:'var(--red)'}}, '⚠️ ', s.error),
+          h('div',{style:{display:'flex',justifyContent:'flex-end',gap:8,marginTop:14}},
+            h('button',{className:'btn',onClick:cancelPdfReconcile},'Cancel')
+          )
+        );
+      }
+
+      // Step: parsing
+      if(s.step === 'parsing') {
+        return h('div',{style:{minWidth:380}},
+          Header('Reading '+s.fileName+'...'),
+          h('div',{style:{padding:'30px 20px',textAlign:'center',color:'var(--card-text2)'}},
+            h('div',{style:{fontSize:32,marginBottom:8,animation:'spin 1.5s linear infinite',display:'inline-block'}},'⏳'),
+            h('div',null,'Extracting transactions...')
+          ),
+          h('div',{style:{display:'flex',justifyContent:'flex-end',gap:8}},
+            h('button',{className:'btn',onClick:cancelPdfReconcile},'Cancel')
+          )
+        );
+      }
+
+      // Step: review
+      if(s.step === 'review') {
+        const { match, extracted, fuzzyDecisions, statementOnlyDecisions } = s;
+        const fuzzyApproved = match.fuzzy.filter((_,i)=>fuzzyDecisions.get(i)==='approved').length;
+        const fuzzyRejected = match.fuzzy.filter((_,i)=>fuzzyDecisions.get(i)==='rejected').length;
+        const fuzzyPending = match.fuzzy.length - fuzzyApproved - fuzzyRejected;
+        const stmtAddCount = match.statementOnly.filter((_,i)=>statementOnlyDecisions.get(i)==='add').length;
+        const totalCommit = match.matched.length + fuzzyApproved + stmtAddCount;
+        const period = (extracted.metadata.periodStart && extracted.metadata.periodEnd)
+          ? fmtDate(extracted.metadata.periodStart)+' – '+fmtDate(extracted.metadata.periodEnd)
+          : 'period unknown';
+        // Running tally: sum of all txns about to be reconciled
+        let runningSum = 0;
+        match.matched.forEach(m => runningSum += m.appTxn.amount);
+        match.fuzzy.forEach((f,i) => { if(fuzzyDecisions.get(i)==='approved') runningSum += f.appTxn.amount; });
+        match.statementOnly.forEach((st,i) => { if(statementOnlyDecisions.get(i)==='add') runningSum += st.amount; });
+
+        const Pill = (label, count, color)=>h('div',{style:{padding:'10px 12px',background:color+'10',border:'1px solid '+color+'40',borderRadius:8,minWidth:90,textAlign:'center',flex:1}},
+          h('div',{style:{fontSize:22,fontWeight:700,color}},count),
+          h('div',{style:{fontSize:10,color:'var(--card-text2)',textTransform:'uppercase',letterSpacing:0.5,marginTop:2}},label)
+        );
+
+        return h('div',{style:{minWidth:560,maxWidth:760,maxHeight:'80vh',overflowY:'auto'}},
+          Header(s.fileName+' • '+extracted.pageCount+' pages • '+period),
+          // Stats row
+          h('div',{style:{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}},
+            Pill('Matched', match.matched.length, '#40c080'),
+            Pill('Fuzzy', match.fuzzy.length, '#e8a020'),
+            Pill('In stmt only', match.statementOnly.length, '#5090e8'),
+            Pill('In app only', match.appOnly.length, '#a060c0')
+          ),
+          // Running tally + ending balance check
+          h('div',{style:{padding:'10px 14px',marginBottom:14,background:'rgba(80,144,232,0.08)',border:'1px solid rgba(80,144,232,0.25)',borderRadius:8,fontSize:13,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}},
+            h('span',null,
+              'Will reconcile ', h('strong',null, totalCommit), ' transaction', totalCommit===1?'':'s', '. ',
+              'Sum: ', h('strong',{style:{color:runningSum>=0?'var(--green)':'var(--red)'}}, (runningSum>=0?'+':'')+fmt(runningSum))
+            ),
+            extracted.metadata.endingBalance != null && h('span',{style:{fontSize:12,color:'var(--card-text2)'}},
+              'Statement ending balance: ', h('strong',null, fmt(extracted.metadata.endingBalance))
+            )
+          ),
+
+          // Fuzzy section
+          match.fuzzy.length > 0 && h('div',{style:{marginBottom:14}},
+            h('div',{style:{fontWeight:600,fontSize:13,marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'center'}},
+              h('span',null, '⚠️ Fuzzy matches — please confirm'),
+              h('span',{style:{fontSize:11,color:'var(--card-text2)'}}, fuzzyPending, ' awaiting decision')
+            ),
+            h('div',{style:{display:'flex',flexDirection:'column',gap:6}},
+              match.fuzzy.map((f, i) => {
+                const decision = fuzzyDecisions.get(i);
+                const rowBg = decision === 'approved' ? 'rgba(64,192,128,0.08)' : decision === 'rejected' ? 'rgba(224,80,80,0.06)' : 'rgba(232,160,32,0.06)';
+                return h('div',{key:i,style:{padding:'10px 12px',background:rowBg,border:'1px solid rgba(232,160,32,0.25)',borderRadius:6,fontSize:12,display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}},
+                  h('div',{style:{flex:1,minWidth:200}},
+                    h('div',null, h('strong',null, 'Statement:'), ' ', f.stmt.date, ' • ', f.stmt.description, ' • ', h('span',{style:{color:f.stmt.amount>=0?'var(--green)':'var(--red)'}}, fmt(f.stmt.amount))),
+                    h('div',{style:{marginTop:3}}, h('strong',null, 'App row:'), ' ', f.appTxn.date, ' • ', (f.appTxn.cleanName||f.appTxn.description), ' • ', fmt(f.appTxn.amount)),
+                    h('div',{style:{fontSize:10,color:'var(--card-text2)',marginTop:2}}, 'Date off by ', f.dateDiff, ' day', f.dateDiff===1?'':'s', ' • similarity ', Math.round(f.sim*100), '%')
+                  ),
+                  h('div',{style:{display:'flex',gap:4}},
+                    h('button',{className:'btn sm'+(decision==='approved'?' green':''),onClick:()=>setFuzzyDecision(i,'approved')}, decision==='approved'?'✓ Approved':'✓ Confirm'),
+                    h('button',{className:'btn sm'+(decision==='rejected'?' primary':''),onClick:()=>setFuzzyDecision(i,'rejected')}, decision==='rejected'?'✗ Rejected':'✗ Reject')
+                  )
+                );
+              })
+            )
+          ),
+
+          // Statement-only section
+          match.statementOnly.length > 0 && h('div',{style:{marginBottom:14}},
+            h('div',{style:{fontWeight:600,fontSize:13,marginBottom:6}}, '🆕 In statement but not in app'),
+            h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:6}},'Add these to Ambit as uncategorized, or skip if you already entered them differently.'),
+            h('div',{style:{display:'flex',flexDirection:'column',gap:6}},
+              match.statementOnly.map((stmt, i) => {
+                const decision = statementOnlyDecisions.get(i);
+                const rowBg = decision === 'add' ? 'rgba(64,192,128,0.08)' : decision === 'skip' ? 'rgba(255,255,255,0.04)' : 'rgba(80,144,232,0.06)';
+                return h('div',{key:i,style:{padding:'10px 12px',background:rowBg,border:'1px solid rgba(80,144,232,0.20)',borderRadius:6,fontSize:12,display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}},
+                  h('div',{style:{flex:1,minWidth:200}}, stmt.date, ' • ', stmt.description, ' • ', h('span',{style:{color:stmt.amount>=0?'var(--green)':'var(--red)',fontWeight:600}}, fmt(stmt.amount))),
+                  h('div',{style:{display:'flex',gap:4}},
+                    h('button',{className:'btn sm'+(decision==='add'?' green':''),onClick:()=>setStatementOnlyDecision(i,'add')}, decision==='add'?'✓ Will add':'+ Add to app'),
+                    h('button',{className:'btn sm'+(decision==='skip'?' primary':''),onClick:()=>setStatementOnlyDecision(i,'skip')}, decision==='skip'?'⏭ Skipped':'Skip')
+                  )
+                );
+              })
+            )
+          ),
+
+          // App-only section (informational — these stay cleared, not reconciled)
+          match.appOnly.length > 0 && h('div',{style:{marginBottom:14}},
+            h('div',{style:{fontWeight:600,fontSize:13,marginBottom:6}}, '❓ In app but not in this statement'),
+            h('div',{style:{fontSize:11,color:'var(--card-text2)',marginBottom:6}},'These stay cleared (green). They may be pending posts or fall outside this statement’s period.'),
+            h('div',{style:{display:'flex',flexDirection:'column',gap:4}},
+              match.appOnly.slice(0,10).map((app, i) => h('div',{key:i,style:{padding:'6px 10px',background:'rgba(160,96,192,0.06)',border:'1px solid rgba(160,96,192,0.20)',borderRadius:6,fontSize:11}},
+                app.date, ' • ', (app.cleanName||app.description), ' • ', fmt(app.amount)
+              )),
+              match.appOnly.length > 10 && h('div',{style:{fontSize:11,color:'var(--card-text2)',fontStyle:'italic'}}, '...and ', match.appOnly.length-10, ' more')
+            )
+          ),
+
+          // Actions
+          h('div',{style:{display:'flex',justifyContent:'space-between',gap:8,marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)'}},
+            h('button',{className:'btn',onClick:cancelPdfReconcile},'Cancel'),
+            h('button',{className:'btn green',onClick:commitPdfReconcile,disabled:totalCommit===0}, '✓ Reconcile '+totalCommit+' transaction'+(totalCommit===1?'':'s'))
+          )
+        );
+      }
+      return null;
+    })()),
 
 
     // Bulk apply popup card
