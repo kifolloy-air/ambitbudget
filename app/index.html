@@ -774,6 +774,7 @@ function buildBackupPayload(state) {
     dictionary: state.dictionary,
     transactions: state.transactions,
     groups: state.groups,
+    importTemplates: state.importTemplates || [],
     license: state.license || null,
     // Business data (only set if the user has business-mode unlocked)
     business: state.business || null
@@ -2319,14 +2320,14 @@ function App({idbData}) {
 
   // ── License / Tier system ──
   const TIERS = useMemo(()=>({
-    Free:        { limit:1, label:'Free', price:0, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:false, payeeRules:false, groups:false, autoCategorize:false, savingsGoals:false, manualReconcile:false },
-    Starter:     { limit:2, label:'Starter', price:9.99, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:false, manualReconcile:false },
-    Plus:        { limit:3, label:'Plus', price:19.99, forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true },
-    Pro:         { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true },
+    Free:        { limit:1, label:'Free', price:0, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:false, payeeRules:false, groups:false, autoCategorize:false, savingsGoals:false, manualReconcile:false, csvTemplates:false },
+    Starter:     { limit:2, label:'Starter', price:9.99, forecast:false, dayByDay:false, review:false, yearView:false, debtPlanner:false, perAccountBudgets:false, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:false, manualReconcile:false, csvTemplates:false },
+    Plus:        { limit:3, label:'Plus', price:19.99, forecast:true,  dayByDay:false, review:true,  yearView:true,  debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:false },
+    Pro:         { limit:Infinity, label:'Pro', price:29.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:true },
     // Books tiers — also unlock all Pro-style budget features so Books customers
     // get a full personal-side experience too (one app, two modes, one license).
-    Books:       { limit:Infinity, label:'Books', price:49.99, forecast:true, dayByDay:false, review:true, yearView:true, debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true },
-    'Books Pro': { limit:Infinity, label:'Books Pro', price:79.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true }
+    Books:       { limit:Infinity, label:'Books', price:49.99, forecast:true, dayByDay:false, review:true, yearView:true, debtPlanner:false, perAccountBudgets:true, paymentScheduling:false, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:true },
+    'Books Pro': { limit:Infinity, label:'Books Pro', price:79.99, forecast:true, dayByDay:true, review:true, yearView:true, debtPlanner:true, perAccountBudgets:true, paymentScheduling:true, budget:true, payeeRules:true, groups:true, autoCategorize:true, savingsGoals:true, manualReconcile:true, csvTemplates:true }
   }),[]);
   const [license, setLicense] = useState(()=>{ try { return JSON.parse(localStorage.getItem('ambit_license'))||null; } catch{ return null; } });
   const [showLicenseGate, setShowLicenseGate] = useState(false);
@@ -2414,6 +2415,9 @@ function App({idbData}) {
     return (saved?.categories || []).map(c => ({...c, catType: normCatType(c)}));
   });
   const [myDictionary, setMyDictionary] = useState(saved?.dictionary || []);
+  // Import templates (Phase 2 reconciler) — saved column-mapping fingerprints
+  // so a re-import from the same bank skips the mapping flow. Pro-tier feature.
+  const [myImportTemplates, setMyImportTemplates] = useState(saved?.importTemplates || []);
   // Initial transactions go through normalizeTransaction so any rows
   // written by older builds with a "PENDING - <date>" string baked into
   // the date field get split into a clean date + a pending:true flag.
@@ -2425,6 +2429,7 @@ function App({idbData}) {
   const [demoAccounts, setDemoAccounts] = useState(DEMO_DATA.accounts);
   const [demoCategories, setDemoCategories] = useState(DEMO_DATA.categories);
   const [demoDictionary, setDemoDictionary] = useState(DEMO_DATA.dictionary);
+  const [demoImportTemplates, setDemoImportTemplates] = useState([]);
   const [demoTransactions, setDemoTransactions] = useState(DEMO_DATA.transactions);
   const [demoGroups, setDemoGroups] = useState(DEFAULT_GROUPS);
 
@@ -2435,6 +2440,7 @@ function App({idbData}) {
   const [bizAccounts, setBizAccounts] = useState(()=> bizSaved?.accounts || []);
   const [bizCategories, setBizCategories] = useState(()=> (bizSaved?.categories || DEFAULT_BUSINESS_CATEGORIES).map(c=>({...c, catType: normCatType(c)})));
   const [bizDictionary, setBizDictionary] = useState(()=> bizSaved?.dictionary || []);
+  const [bizImportTemplates, setBizImportTemplates] = useState(()=> bizSaved?.importTemplates || []);
   const [bizTransactions, setBizTransactions] = useState(()=> bizSaved?.transactions || []);
   const [bizGroups, setBizGroups] = useState(()=> bizSaved?.groups || DEFAULT_BUSINESS_GROUPS);
   const [bizPartners, setBizPartners] = useState(()=> bizSaved?.partners || DEFAULT_BUSINESS_PARTNERS);
@@ -2473,6 +2479,8 @@ function App({idbData}) {
   const setCategories = isDemo ? setDemoCategories : (inBusiness ? setBizCategories : setMyCategories);
   const dictionary = isDemo ? demoDictionary : (inBusiness ? bizDictionary : myDictionary);
   const setDictionary = isDemo ? setDemoDictionary : (inBusiness ? setBizDictionary : setMyDictionary);
+  const importTemplates = isDemo ? demoImportTemplates : (inBusiness ? bizImportTemplates : myImportTemplates);
+  const setImportTemplates = isDemo ? setDemoImportTemplates : (inBusiness ? setBizImportTemplates : setMyImportTemplates);
   const transactions = isDemo ? demoTransactions : (inBusiness ? bizTransactions : myTransactions);
   const setTransactions = isDemo ? setDemoTransactions : (inBusiness ? setBizTransactions : setMyTransactions);
   const groups = isDemo ? demoGroups : (inBusiness ? bizGroups : myGroups);
@@ -2571,10 +2579,10 @@ function App({idbData}) {
         return;
       }
       try {
-        const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure} : null;
+        const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure,importTemplates:bizImportTemplates} : null;
         const payload = buildBackupPayload({
           accounts: myAccounts, categories: myCategories, dictionary: myDictionary,
-          transactions: myTransactions, groups: myGroups, license, business
+          transactions: myTransactions, groups: myGroups, importTemplates: myImportTemplates, license, business
         });
         const fileName = await writeBackupToFolder(handle, payload);
         localStorage.setItem('ambit_last_backup', new Date().toISOString());
@@ -2589,16 +2597,16 @@ function App({idbData}) {
 
   // Save "My Budget" data on change (never save demo data)
   useEffect(()=>{
-    const state = {accounts: myAccounts, categories: myCategories, dictionary: myDictionary, transactions: myTransactions, groups: myGroups};
+    const state = {accounts: myAccounts, categories: myCategories, dictionary: myDictionary, transactions: myTransactions, groups: myGroups, importTemplates: myImportTemplates};
     AmbitDB.save(state); // Saves to IndexedDB + mirrors to localStorage
-  },[myAccounts, myCategories, myDictionary, myTransactions, myGroups]);
+  },[myAccounts, myCategories, myDictionary, myTransactions, myGroups, myImportTemplates]);
 
   // Save Business data separately (only when unlocked)
   useEffect(()=>{
     if(!businessUnlocked) return;
-    const state = {accounts: bizAccounts, categories: bizCategories, dictionary: bizDictionary, transactions: bizTransactions, groups: bizGroups, partners: bizPartners, mileageRate: bizMileageRate, structure: bizStructure};
+    const state = {accounts: bizAccounts, categories: bizCategories, dictionary: bizDictionary, transactions: bizTransactions, groups: bizGroups, partners: bizPartners, mileageRate: bizMileageRate, structure: bizStructure, importTemplates: bizImportTemplates};
     try { localStorage.setItem(BIZ_STORE_KEY, JSON.stringify(state)); } catch(e) {}
-  },[bizAccounts, bizCategories, bizDictionary, bizTransactions, bizGroups, bizPartners, bizMileageRate, bizStructure, businessUnlocked]);
+  },[bizAccounts, bizCategories, bizDictionary, bizTransactions, bizGroups, bizPartners, bizMileageRate, bizStructure, bizImportTemplates, businessUnlocked]);
 
   // When entity type changes to a single-owner type, ensure exactly one owner at 100% (preserve name)
   useEffect(()=>{
@@ -3011,8 +3019,8 @@ function App({idbData}) {
       h('div',{className:'nav-item'+(page==='import'?' active':''), ...a11yClick(()=>setPage('import'))}, h('span',{className:'icon','aria-hidden':'true'},'📥'), h('span',null,'Import Bank Data')),
       h('div',{className:'nav-item', ...a11yClick(()=>{
         if(confirm('Export all data as JSON backup?')) {
-          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure} : null;
-          const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,license,business});
+          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure,importTemplates:bizImportTemplates} : null;
+          const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,importTemplates:myImportTemplates,license,business});
           const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
           const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
           localStorage.setItem('ambit_last_backup', new Date().toISOString());
@@ -3028,8 +3036,8 @@ function App({idbData}) {
       // share_target manifest entry + service worker handler would make
       // this fully automatic, but that's a follow-up after Play approval.
       h('div',{className:'nav-item', ...a11yClick(async ()=>{
-        const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure} : null;
-        const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,license,business});
+        const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure,importTemplates:bizImportTemplates} : null;
+        const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,importTemplates:myImportTemplates,license,business});
         const fileName = 'ambit-backup-'+new Date().toISOString().slice(0,10)+'.json';
         let file;
         try {
@@ -3073,6 +3081,7 @@ function App({idbData}) {
               if(d.dictionary) setMyDictionary(d.dictionary);
               if(d.transactions) setMyTransactions(d.transactions.map(normalizeTransaction));
               if(d.groups) setMyGroups(d.groups);
+              if(Array.isArray(d.importTemplates)) setMyImportTemplates(d.importTemplates);
               // Business data (if present in backup AND unlocked)
               let bizMsg = '';
               if(d.business && businessUnlocked) {
@@ -3081,6 +3090,7 @@ function App({idbData}) {
                 if(d.business.dictionary) setBizDictionary(d.business.dictionary);
                 if(d.business.transactions) setBizTransactions(d.business.transactions);
                 if(d.business.groups) setBizGroups(d.business.groups);
+                if(Array.isArray(d.business.importTemplates)) setBizImportTemplates(d.business.importTemplates);
                 if(d.business.partners) setBizPartners(d.business.partners);
                 if(typeof d.business.mileageRate === 'number') setBizMileageRate(d.business.mileageRate);
                 if(d.business.structure) setBizStructure({...DEFAULT_BUSINESS_STRUCTURE, ...d.business.structure});
@@ -3212,8 +3222,8 @@ function App({idbData}) {
             : 'Last backup: '+backupNeeded.days+' days ago. Your local data file needs updating. Export a backup now to prevent data loss. For extra protection, save your backup to OneDrive, Google Drive, or iCloud.'
         ),
         h('button',{className:'btn sm primary',onClick:()=>{
-          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure} : null;
-          const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,license,business});
+          const business = businessUnlocked ? {accounts:bizAccounts,categories:bizCategories,dictionary:bizDictionary,transactions:bizTransactions,groups:bizGroups,partners:bizPartners,mileageRate:bizMileageRate,structure:bizStructure,importTemplates:bizImportTemplates} : null;
+          const payload = buildBackupPayload({accounts:myAccounts,categories:myCategories,dictionary:myDictionary,transactions:myTransactions,groups:myGroups,importTemplates:myImportTemplates,license,business});
           const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
           const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ambit-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
           localStorage.setItem('ambit_last_backup', new Date().toISOString());
@@ -3245,7 +3255,7 @@ function App({idbData}) {
       }),
       page==='dashboard' && h(DashboardPage, {categories, transactions:liveTxns, catMap, accounts, setAccounts, dictionary, setDictionary, onStartTour:()=>setTourStep(0), tier, isDemo, demoBypass, isTierDemo, groupColors, defaultAcct, setPage, onUpgrade:()=>setShowLicenseGate(true)}),
       page==='transactions' && h(TransactionsPage, {transactions:liveTxns, setTransactions, catMap, accounts, setAccounts, defaultAcct, categories, setCategories, dictionary, setDictionary, showToast, groupList, groups, setGroups, groupColors, tier, onUpgrade:()=>setShowLicenseGate(true)}),
-      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, setCategories, catMap, categorize, showToast, accounts, setAccounts, setPage, tier, groupColors}),
+      page==='import' && h(ImportPage, {transactions, setTransactions, dictionary, categories, setCategories, catMap, categorize, showToast, accounts, setAccounts, setPage, tier, groupColors, importTemplates, setImportTemplates}),
       page==='budget' && h(BudgetPage, {categories, setCategories, transactions:liveTxns, setTransactions, catMap, dictionary, setDictionary, groupColors, accounts, defaultAcct, groups, setGroups, groupList, showToast}),
       page==='accounts' && h(AccountsPage, {accounts, setAccounts, transactions:liveTxns, setTransactions, catMap, showToast, accountLimit, tier, isDemo, demoBypass}),
     ),
@@ -3864,11 +3874,44 @@ function detectColumns(headers, sampleRows) {
   return result;
 }
 
+// ── Import template helpers (Phase 2 reconciler) ────────
+// Fingerprint = normalized header signature + delimiter + column count.
+// Two CSVs from the same bank produce identical fingerprints; the saved
+// template's columnMapping then applies automatically.
+function normalizeHeader(h) {
+  return (h || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+}
+function fingerprintCSV(headers, delimiter) {
+  return {
+    delimiter,
+    columnCount: headers.length,
+    headerSignature: headers.map(normalizeHeader)
+  };
+}
+function fingerprintsMatch(a, b) {
+  if(!a || !b) return false;
+  if(a.delimiter !== b.delimiter) return false;
+  if(a.columnCount !== b.columnCount) return false;
+  if(a.headerSignature.length !== b.headerSignature.length) return false;
+  for(let i=0;i<a.headerSignature.length;i++) {
+    if(a.headerSignature[i] !== b.headerSignature[i]) return false;
+  }
+  return true;
+}
+function findMatchingTemplate(templates, fingerprint) {
+  if(!Array.isArray(templates) || !fingerprint) return null;
+  for(const tpl of templates) {
+    if(tpl?.sourceType === 'csv' && fingerprintsMatch(tpl.fingerprint, fingerprint)) return tpl;
+  }
+  return null;
+}
+
 // (UnmatchedRow removed — Import is now a pure data utility)
 
 // ── Import Page ─────────────────────────────────────────
-function ImportPage({transactions, setTransactions, dictionary, categories, setCategories, catMap, categorize, showToast, accounts, setAccounts, setPage, tier, groupColors}) {
+function ImportPage({transactions, setTransactions, dictionary, categories, setCategories, catMap, categorize, showToast, accounts, setAccounts, setPage, tier, groupColors, importTemplates, setImportTemplates}) {
   const isFree = tier && tier.autoCategorize === false;
+  const canSaveTemplates = !!tier?.csvTemplates;
   const [csv, setCsv] = useState('');
   const [parsedData, setParsedData] = useState(null);
   const [colMap, setColMap] = useState({dateCol:-1, descCol:-1, amountCol:-1, debitCol:-1, creditCol:-1});
@@ -3879,6 +3922,11 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
   const [newAcctName, setNewAcctName] = useState('');
   const [newAcctType, setNewAcctType] = useState('Checking');
   const [newAcctBal, setNewAcctBal] = useState('0');
+  // Template state — which (if any) saved template applied to the current parse
+  const [appliedTemplate, setAppliedTemplate] = useState(null);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const [showTemplateList, setShowTemplateList] = useState(false);
 
   // Auto-select single account
   useEffect(()=>{
@@ -3907,9 +3955,55 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
     const sampleRows = dataRows.slice(0, Math.min(10, dataRows.length));
     const detected = detectColumns(headers, sampleRows);
 
-    setParsedData({headers, rows:dataRows, delimiter, detected});
-    setColMap(detected);
-    showToast(`✅ Parsed ${dataRows.length} rows (${delimiter==='\t'?'tab':'comma'}-delimited, ${headers.length} columns)`);
+    // Check if any saved template matches this header fingerprint. If so,
+    // auto-apply its column mapping and skip the manual mapping step.
+    const fingerprint = fingerprintCSV(headers, delimiter);
+    const matched = findMatchingTemplate(importTemplates, fingerprint);
+
+    setParsedData({headers, rows:dataRows, delimiter, detected, fingerprint});
+    if(matched) {
+      setColMap(matched.columnMapping);
+      setAppliedTemplate(matched);
+      if(matched.defaultAccountId && accounts.find(a=>a.id===matched.defaultAccountId)) {
+        setSelectedAccount(matched.defaultAccountId);
+      }
+      showToast(`✨ Auto-mapped using saved template: ${matched.name}`);
+    } else {
+      setColMap(detected);
+      setAppliedTemplate(null);
+      showToast(`✅ Parsed ${dataRows.length} rows (${delimiter==='\t'?'tab':'comma'}-delimited, ${headers.length} columns)`);
+    }
+  };
+  // Save the current column mapping as a reusable template.
+  const saveCurrentAsTemplate = ()=>{
+    if(!parsedData || !parsedData.fingerprint) return;
+    const name = newTemplateName.trim();
+    if(!name) { showToast('⚠️ Please name the template first'); return; }
+    if(importTemplates.some(t=>t.name.toLowerCase()===name.toLowerCase())) {
+      if(!confirm(`A template named "${name}" already exists. Replace it?`)) return;
+    }
+    const tpl = {
+      id: 'tpl_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+      name,
+      createdAt: new Date().toISOString(),
+      sourceType: 'csv',
+      defaultAccountId: selectedAccount || null,
+      fingerprint: parsedData.fingerprint,
+      columnMapping: {...colMap}
+    };
+    setImportTemplates(prev=>[...prev.filter(t=>t.name.toLowerCase()!==name.toLowerCase()), tpl]);
+    setAppliedTemplate(tpl);
+    setShowSaveTemplate(false);
+    setNewTemplateName('');
+    showToast(`💾 Saved template: ${name}`);
+  };
+  const deleteTemplate = (id)=>{
+    const tpl = importTemplates.find(t=>t.id===id);
+    if(!tpl) return;
+    if(!confirm(`Delete the "${tpl.name}" template?\n\nFuture imports from this bank will need manual column mapping again.`)) return;
+    setImportTemplates(prev=>prev.filter(t=>t.id!==id));
+    if(appliedTemplate?.id === id) setAppliedTemplate(null);
+    showToast(`🗑 Deleted template: ${tpl.name}`);
   };
 
   // Build a map of last4 digits to account for transfer auto-detection
@@ -4150,7 +4244,7 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
     const pendMsg = pendingUpdates.length > 0 ? `, ${pendingUpdates.length} pending cleared` : '';
     showToast(`\u2705 ${totalImported} transactions imported${pairMsg}${pendMsg}`);
     setPostImport({total:totalImported, matched:matchedCount, unmatched:unmatchedCount, transfers:paired.length, autoTransfers, pendingMatched, dupes, errors});
-    setCsv(''); setParsedData(null);
+    setCsv(''); setParsedData(null); setAppliedTemplate(null); setShowSaveTemplate(false); setNewTemplateName('');
   };
 
   // File upload handler
@@ -4245,12 +4339,12 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
             ? h('div',null,
                 h('h3',null, h('span',{className:'icon'},'📋'), 'Paste from Excel or CSV', h(InfoPill,{text:'Copy rows from your bank\'s spreadsheet or CSV export and paste them here. Include columns for date, description, and amount at minimum.'})),
                 h('p',{style:{color:'var(--text2)',fontSize:12,marginBottom:10}},'Works with tab-separated (Excel copy) or comma-separated data. Headers are auto-detected.'),
-                h('textarea',{className:'input',value:csv,onChange:e=>{setCsv(e.target.value);setParsedData(null);},
+                h('textarea',{className:'input',value:csv,onChange:e=>{setCsv(e.target.value);setParsedData(null);setAppliedTemplate(null);},
                   placeholder:'Paste data from Excel, or CSV like:\nDate,Description,Amount\n02/01/2026,PAYCHECK DEPOSIT,3500.00\n02/01/2026,MORTGAGE PAYMENT,-1987.00\n02/03/2026,WALMART GROCERY,-87.43',
                   style:{width:'100%',height:200}}),
                 h('div',{style:{display:'flex',gap:8,marginTop:12}},
                   h('button',{className:'btn primary',onClick:()=>parseRaw(csv),disabled:!csv.trim()}, '🔍 Parse'),
-                  csv && h('button',{className:'btn',onClick:()=>{setCsv('');setParsedData(null);}},'Clear')
+                  csv && h('button',{className:'btn',onClick:()=>{setCsv('');setParsedData(null);setAppliedTemplate(null);setShowSaveTemplate(false);setNewTemplateName('');}},'Clear')
                 )
               )
             : h('div',null,
@@ -4281,9 +4375,17 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
         // Column mapping (shown after parsing)
         parsedData && h('div',{className:'card animate-in',style:{marginTop:16,border:'1px solid var(--accent)'}},
           h('h3',null, h('span',{className:'icon'},'🔧'), 'Column Mapping', h(InfoPill,{text:'Tell the app which columns contain the date, description, and amount. For files with separate debit/credit columns, map both.'})),
+          // Auto-applied template chip — only when a saved template matched
+          appliedTemplate && h('div',{style:{padding:'10px 14px',marginBottom:12,background:'rgba(80,144,232,0.10)',border:'1px solid rgba(80,144,232,0.3)',borderRadius:8,display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap',fontSize:12}},
+            h('span',null, '✨ Auto-mapped using saved template: ', h('strong',null, appliedTemplate.name)),
+            h('div',{style:{display:'flex',gap:6}},
+              h('button',{className:'btn sm',onClick:()=>{ setColMap(parsedData.detected); setAppliedTemplate(null); showToast('Reverted to auto-detected mapping'); },title:'Use auto-detected columns instead of this template'}, 'Override'),
+              h('button',{className:'btn sm',onClick:()=>deleteTemplate(appliedTemplate.id),title:'Permanently delete this template'}, '🗑')
+            )
+          ),
           h('p',{style:{color:'var(--text2)',fontSize:12,marginBottom:12}},
             'Detected ', parsedData.rows.length, ' data rows with ', parsedData.headers.length, ' columns. ',
-            'Verify or adjust the column assignments below.'
+            appliedTemplate ? 'Mapping applied from template — adjust if needed.' : 'Verify or adjust the column assignments below.'
           ),
 
           // Sample data preview
@@ -4347,9 +4449,47 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
             )
           ),
 
-          h('button',{className:'btn primary',onClick:importTransactions,
-            disabled:colMap.dateCol<0||colMap.descCol<0||(colMap.amountCol<0&&colMap.debitCol<0)||!selectedAccount
-          }, '📥 Import Transactions')
+          h('div',{style:{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}},
+            h('button',{className:'btn primary',onClick:importTransactions,
+              disabled:colMap.dateCol<0||colMap.descCol<0||(colMap.amountCol<0&&colMap.debitCol<0)||!selectedAccount
+            }, '📥 Import Transactions'),
+            // Save-as-template button — Pro+ only, hidden if a template is already applied
+            canSaveTemplates && !appliedTemplate && colMap.dateCol>=0 && colMap.descCol>=0 && (colMap.amountCol>=0 || colMap.debitCol>=0) && (
+              showSaveTemplate
+                ? h('div',{style:{display:'flex',gap:6,alignItems:'center',padding:'6px 10px',background:'rgba(80,144,232,0.06)',border:'1px solid rgba(80,144,232,0.25)',borderRadius:8}},
+                    h('input',{className:'input',value:newTemplateName,onChange:e=>setNewTemplateName(e.target.value),placeholder:'e.g. PNC Personal Checking',style:{fontSize:12,padding:'4px 8px',width:200},autoFocus:true,onKeyDown:e=>{if(e.key==='Enter'){e.preventDefault();saveCurrentAsTemplate();}if(e.key==='Escape'){setShowSaveTemplate(false);setNewTemplateName('');}}}),
+                    h('button',{className:'btn sm primary',onClick:saveCurrentAsTemplate,disabled:!newTemplateName.trim()},'Save'),
+                    h('button',{className:'btn sm',onClick:()=>{setShowSaveTemplate(false);setNewTemplateName('');}},'Cancel')
+                  )
+                : h('button',{className:'btn sm',onClick:()=>setShowSaveTemplate(true),title:'Save these column choices so future imports from this bank auto-map'}, '💾 Save as template')
+            ),
+            // Pro upsell hint for non-Pro tiers who have paid (Plus shouldn't see this on every parse — only the first time. Keep it always-visible for now; tweak after testing.)
+            !canSaveTemplates && tier && tier.label !== 'Free' && tier.label !== 'Pro' && h('span',{style:{fontSize:11,color:'var(--text2)',fontStyle:'italic'}},
+              '⚡ Pro tier: save mapping as a template so future imports auto-map.'
+            )
+          )
+        ),
+
+        // Saved templates list — Pro+ only, collapsible
+        canSaveTemplates && Array.isArray(importTemplates) && importTemplates.length>0 && h('div',{className:'card',style:{marginTop:14}},
+          h('div',{...a11yClick(()=>setShowTemplateList(v=>!v)), style:{cursor:'pointer',display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600}},
+            h('span',null, showTemplateList?'▾':'▸'),
+            h('span',null, '💾 Saved import templates (', importTemplates.length, ')')
+          ),
+          showTemplateList && h('div',{style:{marginTop:10,display:'flex',flexDirection:'column',gap:6}},
+            importTemplates.map(tpl => h('div',{key:tpl.id,style:{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,padding:'8px 12px',background:'rgba(80,144,232,0.05)',border:'1px solid rgba(80,144,232,0.15)',borderRadius:6,fontSize:12}},
+              h('div',null,
+                h('strong',null, tpl.name),
+                h('div',{style:{fontSize:10,color:'var(--text2)',marginTop:2}},
+                  (tpl.fingerprint?.columnCount||0)+' cols • ',
+                  tpl.fingerprint?.delimiter==='\t' ? 'TSV' : 'CSV',
+                  tpl.defaultAccountId && accounts.find(a=>a.id===tpl.defaultAccountId) ? ' • → '+accounts.find(a=>a.id===tpl.defaultAccountId).name : '',
+                  ' • saved ', tpl.createdAt ? new Date(tpl.createdAt).toLocaleDateString() : ''
+                )
+              ),
+              h('button',{className:'btn sm',onClick:()=>deleteTemplate(tpl.id),title:'Delete this template'}, '🗑')
+            ))
+          )
         ),
 
       )
@@ -4384,7 +4524,7 @@ function ImportPage({transactions, setTransactions, dictionary, categories, setC
       ),
       h('div',{style:{display:'flex',gap:12,flexWrap:'wrap'}},
         h('button',{className:'btn primary',onClick:()=>{setPage('transactions');}},'Go to Transactions \u2192'),
-        h('button',{className:'btn',onClick:()=>{setPostImport(null);setCsv('');setParsedData(null);}},'Import More')
+        h('button',{className:'btn',onClick:()=>{setPostImport(null);setCsv('');setParsedData(null);setAppliedTemplate(null);}},'Import More')
       )
     )
   );
