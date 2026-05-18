@@ -4374,9 +4374,29 @@ function descSimilarity(a, b) {
   return 1 - (dist / Math.max(max, 1));
 }
 
+// Best-similarity comparison that handles user-edited cleanNames. The app
+// stores both the original imported description (raw bank text, likely to
+// match the PDF wording verbatim) and a cleanName (user-editable display
+// name — often a 1-2 word brand). Take the higher of the two.
+function maxDescSimilarity(stmtDesc, appTxn) {
+  const a = descSimilarity(stmtDesc, appTxn.cleanName || '');
+  const b = descSimilarity(stmtDesc, appTxn.description || '');
+  return Math.max(a, b);
+}
+
 // Match extracted PDF transactions against in-app transactions. Returns
 // { matched: [...], fuzzy: [...], statementOnly: [...], appOnly: [...] }.
 // Greedy 1-to-1: each app txn can match at most one stmt txn and vice versa.
+//
+// Matching policy:
+//   • exact date + exact amount → matched (auto-confirm regardless of desc;
+//     users rename cleanNames freely so description divergence shouldn't
+//     downgrade an otherwise-perfect match)
+//   • ±5 days + exact amount → fuzzy (user confirms in HITL review)
+//   • no candidate → statementOnly
+//
+// When multiple candidates share amount+date, the highest-description-
+// similarity one wins.
 function matchStatementAgainstApp(stmtTxns, appTxns) {
   const appPool = appTxns.filter(t => !t.pending).map(t => ({...t, _used:false}));
   const matched = [];
@@ -4386,24 +4406,26 @@ function matchStatementAgainstApp(stmtTxns, appTxns) {
   for(const stmt of stmtTxns) {
     const stmtDate = safeDate(stmt.date);
     let best = null;
-    let bestScore = 0;
+    let bestScore = -1;
     for(const app of appPool) {
       if(app._used) continue;
       if(Math.abs(app.amount - stmt.amount) > 0.011) continue;
       const dateDiff = Math.abs(safeDate(app.date) - stmtDate) / 86400000;
       if(dateDiff > 5) continue;
-      const sim = descSimilarity(stmt.description, app.cleanName || app.description);
-      // Score: weighted combo of date proximity (closer = better) and desc sim
+      const sim = maxDescSimilarity(stmt.description, app);
+      // Score weights: same-date wins everything; if multiple same-date
+      // candidates, description similarity tie-breaks.
       const dateScore = 1 - Math.min(dateDiff / 5, 1);
-      const score = sim * 0.7 + dateScore * 0.3;
+      const score = dateScore * 10 + sim;          // date dominates, sim breaks ties
       if(score > bestScore) { bestScore = score; best = app; }
     }
     if(best) {
       best._used = true;
       const dateDiff = Math.abs(safeDate(best.date) - stmtDate) / 86400000;
-      const sim = descSimilarity(stmt.description, best.cleanName || best.description);
-      // Perfect: same date AND high desc similarity → auto-matched
-      if(dateDiff === 0 && sim >= 0.8) matched.push({ stmt, appTxn: best, confidence:'perfect', sim });
+      const sim = maxDescSimilarity(stmt.description, best);
+      // Same date + same amount → auto-matched. The amount filter above
+      // already guarantees exact amount; description is just for confidence.
+      if(dateDiff === 0) matched.push({ stmt, appTxn: best, confidence:'perfect', sim });
       else fuzzy.push({ stmt, appTxn: best, confidence:'fuzzy', sim, dateDiff });
     } else {
       statementOnly.push(stmt);
