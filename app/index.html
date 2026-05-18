@@ -4398,7 +4398,11 @@ function maxDescSimilarity(stmtDesc, appTxn) {
 // When multiple candidates share amount+date, the highest-description-
 // similarity one wins.
 function matchStatementAgainstApp(stmtTxns, appTxns) {
-  const appPool = appTxns.filter(t => !t.pending).map(t => ({...t, _used:false}));
+  // Include pending app txns in the match pool. Pending transactions are
+  // exactly what a reconcile is supposed to clear — if the PDF posts them,
+  // they shouldn't be hidden from the matcher. On commit, matched-pending
+  // rows get pending=false AND reconciled=true.
+  const appPool = appTxns.map(t => ({...t, _used:false}));
   const matched = [];
   const fuzzy = [];
   const statementOnly = [];
@@ -5385,10 +5389,12 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       setPdfSession(s=>({...s, step:'drop', error:'Failed to parse PDF: '+(err?.message || 'unknown error')}));
     }
   };
-  // Build the list of in-app transactions that should be considered for matching:
-  // current account, not pending, in (or near) the statement period.
+  // Build the list of in-app transactions to consider for matching:
+  // current account, in (or near) the statement period. Pending txns are
+  // INCLUDED so the reconcile can clear them — that's the main reason
+  // people drop a PDF in.
   const transactionsForMatch = useCallback((metadata)=>{
-    const acctTxns = transactions.filter(t => t.accountId === acctFilter && !t.pending);
+    const acctTxns = transactions.filter(t => t.accountId === acctFilter);
     if(!metadata?.periodStart || !metadata?.periodEnd) return acctTxns;
     // Include a 5-day buffer on each side so a transaction posted just outside the window can still match
     const start = safeDate(metadata.periodStart) - 5*86400000;
@@ -5441,7 +5447,13 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
       }
     });
     setTransactions(prev => {
-      const updated = prev.map(t => reconciledIds.has(t.id) ? {...t, reconciled:true} : t);
+      const updated = prev.map(t => {
+        if(!reconciledIds.has(t.id)) return t;
+        // If this row was pending, the PDF posting confirms it — clear pending.
+        const next = {...t, reconciled:true};
+        if(next.pending) delete next.pending;
+        return next;
+      });
       return [...updated, ...newTxns];
     });
     // 3. Advance reconciledThrough to the statement period end (if known)
