@@ -5382,6 +5382,7 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
         fileName: file.name,
         extracted: { transactions, metadata, pageCount: pages.length },
         match,
+        candidatePool: acctTxns,    // kept so we can show a diagnostic if 0 matched
         fuzzyDecisions: new Map(),
         statementOnlyDecisions: new Map()
       });
@@ -6234,6 +6235,44 @@ function TransactionsPage({transactions, setTransactions, catMap, accounts, setA
             Pill('Fuzzy', match.fuzzy.length, '#e8a020'),
             Pill('In stmt only', match.statementOnly.length, '#5090e8'),
             Pill('In app only', match.appOnly.length, '#a060c0')
+          ),
+          // Diagnostic panel — when zero rows matched, show first 5 of each side so the user can spot what's different (sign convention, date format, wrong account, etc.)
+          match.matched.length === 0 && match.fuzzy.length === 0 && match.statementOnly.length > 0 && h('details',{style:{marginBottom:12,padding:'8px 12px',background:'rgba(232,160,32,0.10)',border:'1px solid rgba(232,160,32,0.30)',borderRadius:8}, open:true},
+            h('summary',{style:{cursor:'pointer',fontSize:12,fontWeight:600,color:'var(--text)'}}, '⚠️ Zero matches — let’s figure out why'),
+            h('div',{style:{marginTop:8,fontSize:11,color:'var(--card-text2)'}},
+              'Statement and app rows should share exact date and amount (with sign — debits negative). Compare the first 5 rows from each side below.'
+            ),
+            h('div',{style:{display:'flex',gap:10,marginTop:10,flexWrap:'wrap'}},
+              h('div',{style:{flex:'1 1 260px',minWidth:240}},
+                h('div',{style:{fontWeight:600,fontSize:11,marginBottom:4}}, 'First 5 from PDF (statement)'),
+                h('div',{style:{display:'flex',flexDirection:'column',gap:3}},
+                  extracted.transactions.slice(0,5).map((t,i) =>
+                    h('div',{key:i,style:{fontSize:11,padding:'4px 6px',background:'rgba(80,144,232,0.06)',borderRadius:4,fontFamily:'monospace'}},
+                      t.date, ' • ', h('span',{style:{color:t.amount>=0?'var(--green)':'var(--red)'}}, (t.amount>=0?'+':'')+fmt(t.amount)), ' • ', (t.description||'').slice(0,40)
+                    )
+                  )
+                )
+              ),
+              h('div',{style:{flex:'1 1 260px',minWidth:240}},
+                h('div',{style:{fontWeight:600,fontSize:11,marginBottom:4}},
+                  'First 5 from app (account, in period) — ', s.candidatePool ? s.candidatePool.length : 0, ' total'
+                ),
+                h('div',{style:{display:'flex',flexDirection:'column',gap:3}},
+                  (s.candidatePool || []).slice(0,5).map((t,i) =>
+                    h('div',{key:i,style:{fontSize:11,padding:'4px 6px',background:'rgba(160,96,192,0.06)',borderRadius:4,fontFamily:'monospace'}},
+                      t.date, ' • ', h('span',{style:{color:t.amount>=0?'var(--green)':'var(--red)'}}, (t.amount>=0?'+':'')+fmt(t.amount)), ' • ', (t.cleanName||t.description||'').slice(0,40),
+                      t.pending && h('span',{style:{color:'#e8a020',marginLeft:4,fontSize:9}},' [pending]')
+                    )
+                  ),
+                  s.candidatePool && s.candidatePool.length === 0 && h('div',{style:{fontSize:11,fontStyle:'italic',color:'var(--card-text2)'}},
+                    'No app transactions found on this account in the statement period (±5 days). Check that the right account is selected and the data exists for this period.'
+                  )
+                )
+              )
+            ),
+            h('div',{style:{marginTop:8,fontSize:11,color:'var(--card-text2)'}},
+              'Common causes: 1) signs flipped (debits stored positive in app, negative in PDF), 2) right account not selected on Activity page, 3) statement period doesn’t overlap with imported data.'
+            )
           ),
           // Running tally + ending balance check
           h('div',{style:{padding:'10px 14px',marginBottom:14,background:'rgba(80,144,232,0.08)',border:'1px solid rgba(80,144,232,0.25)',borderRadius:8,fontSize:13,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}},
